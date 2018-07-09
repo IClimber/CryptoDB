@@ -1,0 +1,136 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:local="clr-namespace:ImageConverter"
+		xmlns:virt="clr-namespace:CryptoDataBase"
+        x:Class="CryptoDataBase.MainWindow"
+        Title="CryptoDB" Height="600" Width="1130" MinHeight="335" MinWidth="650" Name="mainWindow"
+		Drop="Files_Drop" AllowDrop="true" WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" Loaded="Window_Loaded" Closed="Window_Closed" Icon="MainIcon.ico">
+
+	<Window.Resources>
+		<local:BitmapToImageSourceConvert x:Key="Convert" />
+	</Window.Resources>
+
+	<Grid x:Name="grid1" Background="#FF222227">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<DockPanel Background="#FF222227">
+			<Menu DockPanel.Dock="Top" Background="#FF222227">
+				<MenuItem Header="База данных" >
+					<MenuItem Header="Открыть / Создать" Click="button1_Click"/>
+				</MenuItem>
+				<MenuItem Header="Вид" >
+					<MenuItem Header="Сортировать">
+						<RadioButton Name="NameSort" Click="Sort_Click" GroupName="SortButton" Content="Имя" />
+						<RadioButton Name="TypeSort" Click="Sort_Click" GroupName="SortButton" Content="Тип" />
+						<RadioButton Name="SizeSort" Click="Sort_Click" GroupName="SortButton" Content="Размер" />
+						<RadioButton Name="DateSort" Click="Sort_Click" GroupName="SortButton" Content="Дата" />
+					</MenuItem>
+				</MenuItem>
+				<MenuItem Header="Файлы" >
+					<CheckBox Content="Не добавлять дубликаты" Click="CompareFileHash_Click"/>
+					<MenuItem Header="Похожие изображения" >
+						<CheckBox Content="Не добавлять" Click="CompareImagePHash_Click"/>
+						<StackPanel Orientation="Horizontal">
+							<Slider Name="sensativeImg_Slider" Maximum="10" Width="100" IsSnapToTickEnabled="True" ValueChanged="DuplicateSensative_Change" />
+							<Label Content="{Binding ElementName=sensativeImg_Slider, Path=Value}" HorizontalContentAlignment="Center" Width="15" Margin="5,0,0,0"/>
+						</StackPanel>
+					</MenuItem>
+					<CheckBox Content="Предупреждать о дубликатах" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
+				</MenuItem>
+				<MenuItem Header="Буффер обмена">
+					<CheckBox Content="Автоматическая вставка" Click="AutoInsert"/>
+					<CheckBox Name="clipboardClean_CheckBox" Content="Очищать после вставки"/>
+				</MenuItem>
+
+			</Menu>
+		</DockPanel>
+
+		<StackPanel Name="pathPanel" Grid.Row="1" Height="Auto" Orientation="Horizontal" Background="#FF333337"/>
+
+		<ListView x:Name="listView" Grid.Row="2" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                  SelectionChanged="listView_SelectionChanged" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                  Background="#FF333337" Foreground="#FFD2FFCE" MouseDown="listView_MouseDown" Style="{x:Null}"
+				  KeyboardNavigation.DirectionalNavigation="Cycle" KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.IsTabStop="True"
+                  KeyboardNavigation.AcceptsReturn="True">
+
+			<ListView.ContextMenu>
+				<ContextMenu Foreground="#FF333337" Name="MainContextMenu">
+					<MenuItem Header="Создать папку" Click="MenuItem_CreateNewDir" Style="{x:Null}" />
+					<MenuItem Header="Создать текстовый документ" Click="MenuItem_CreateNewTextFile" Style="{x:Null}" />
+					<MenuItem Header="Вставить" Click="Insert_Click" Style="{x:Null}" />
+				</ContextMenu>
+			</ListView.ContextMenu>
+
+			<ListView.ItemContainerStyle>
+				<Style TargetType="{x:Type ListViewItem}">
+					<EventSetter Event="Control.MouseDoubleClick" Handler="listView_MouseDoubleClick"/>
+					<EventSetter Event="KeyDown" Handler="listView_PreviewKeyDown"/>
+					<Setter Property="Template">
+						<Setter.Value>
+							<ControlTemplate TargetType="{x:Type ListViewItem}">
+								<Border x:Name="Border" Padding="2" SnapsToDevicePixels="true">
+									<ContentPresenter/>
+								</Border>
+								<ControlTemplate.Triggers>
+									<Trigger Property="IsSelected" Value="true">
+										<Setter TargetName="Border" Property="Background" Value="#FF3DDE00"/>
+										<Setter Property="Foreground" Value="Black"/>
+									</Trigger>
+								</ControlTemplate.Triggers>
+							</ControlTemplate>
+						</Setter.Value>
+					</Setter>
+				</Style>
+			</ListView.ItemContainerStyle>
+
+			<ListView.ItemsPanel>
+				<ItemsPanelTemplate>
+					<virt:VirtualizingTilePanel/>
+				</ItemsPanelTemplate>
+			</ListView.ItemsPanel>
+
+			<ListView.ItemTemplate>
+				<DataTemplate>
+					<StackPanel Orientation="Vertical" MaxWidth="200" MaxHeight="240" Height="240" >
+						<StackPanel.ContextMenu>
+							<ContextMenu Foreground="#FF333337">
+								<MenuItem Header="Вырезать" Click="MenuItem_Click" Style="{x:Null}" />
+								<MenuItem Header="Поиск дубликата" Click="MenuItem_Click_1" Style="{x:Null}" />
+							</ContextMenu>
+						</StackPanel.ContextMenu>
+						<Image Width="200" Height="200" Stretch="None" Source="{Binding Converter={StaticResource Convert}}" />
+						<TextBlock TextWrapping="Wrap" Text="{Binding Name}" HorizontalAlignment="Center" VerticalAlignment="Top" />
+					</StackPanel>
+				</DataTemplate>
+			</ListView.ItemTemplate>
+
+		</ListView>
+
+		<StatusBar HorizontalAlignment="Stretch"  Margin="0,0,0,0" Grid.Row="3" VerticalAlignment="Stretch" Background="#FF222227">
+
+			<StatusBarItem HorizontalContentAlignment="Left">
+				<TextBlock x:Name="TextBlockStatus1" Margin="5,0,0,0" Width="150" Foreground="#FFD2FFCE" />
+			</StatusBarItem>
+
+			<Separator/>
+
+			<StatusBarItem HorizontalContentAlignment="Left">
+				<TextBlock x:Name="TextBlockStatus2" Margin="5,0,0,0" Width="150" Foreground="#FFD2FFCE"/>
+			</StatusBarItem>
+
+			<Separator/>
+
+			<StatusBarItem HorizontalContentAlignment="Stretch">
+				<ProgressBar x:Name="progressbar1" Height="15" />
+			</StatusBarItem>
+
+		</StatusBar>
+
+	</Grid>
+</Window>

@@ -1,0 +1,38 @@
+﻿<Window x:Class="CryptoDataBase.RenameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CryptoDataBase"
+        mc:Ignorable="d"
+        Title="Rename" Height="121" Width="409" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="NoResize" PreviewKeyDown="textBox_PreviewKeyDown">
+	<Grid Background="#FF222227">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition />
+		</Grid.RowDefinitions>
+		<Label x:Name="label" Grid.Row="0" Content="New name:" Foreground="#FFD2FFCE" HorizontalAlignment="Stretch" Margin="10,0,10,0" VerticalAlignment="Top" />
+		<TextBox x:Name="textBox" Grid.Row="1" Background="#FF333337" Foreground="#FFD2FFCE" HorizontalAlignment="Stretch" Height="24" Margin="10,0,10,0"
+				 VerticalAlignment="Top" KeyDown="textBox_KeyDown" />
+		<Button x:Name="button" Content="Cancel"  HorizontalAlignment="Left" Margin="50,5,0,0" Grid.Row="2" VerticalAlignment="Top" Width="75" Click="button_Click">
+			<Button.Background>
+				<LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+					<GradientStop Color="#FFF3F3F3" Offset="0"/>
+					<GradientStop Color="#FFDC5959" Offset="1"/>
+					<GradientStop Color="#FFD61E1E"/>
+				</LinearGradientBrush>
+			</Button.Background>
+		</Button>
+		<Button x:Name="button1" Content="Ok" HorizontalAlignment="Right" Margin="0,5,50,0" Grid.Row="2" VerticalAlignment="Top" Width="74" Click="button1_Click">
+			<Button.Background>
+				<LinearGradientBrush EndPoint="0,1" StartPoint="0,0">
+					<GradientStop Color="#FFF3F3F3"/>
+					<GradientStop Color="#FF81F025"/>
+					<GradientStop Color="#FF93F741" Offset="1"/>
+				</LinearGradientBrush>
+			</Button.Background>
+		</Button>
+
+	</Grid>
+</Window>

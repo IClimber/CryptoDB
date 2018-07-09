@@ -1,0 +1,37 @@
+﻿<Window x:Class="CryptoDataBase.Finder"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CryptoDataBase"
+        mc:Ignorable="d"
+		Drop="Window_Drop" AllowDrop="true"
+        Title="Поиск" Height="353.94" Width="270" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" KeyDown="Window_KeyDown" ShowInTaskbar="False" ResizeMode="NoResize">
+	<Grid Background="#FF222227">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="220"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Label x:Name="label" Content="Имя для поиска" HorizontalAlignment="Stretch" Margin="10,0,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE"/>
+		<TextBox x:Name="textBox" HorizontalAlignment="Stretch" Height="23" Margin="10,0,10,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Background="#FF333337" Foreground="#FFD2FFCE"/>
+		<Image x:Name="image" HorizontalAlignment="Stretch" Margin="10,10,10,0" Grid.Row="2" VerticalAlignment="Stretch" />
+		<DockPanel HorizontalAlignment="Stretch" Height="Auto" LastChildFill="True" Margin="0,0,0,0" Grid.Row="3" VerticalAlignment="Stretch">
+			<Label Content="Отличие:" Foreground="#FFD2FFCE" Margin="5,0,0,0"/>
+			<Label Content="{Binding ElementName=slider, Path=Value}" Width="30" Margin="5,0,0,0" Foreground="#FFD2FFCE"/>
+			<Slider x:Name="slider" Height="17" Margin="0,0,10,0" IsSnapToTickEnabled="True" Maximum="32" />
+		</DockPanel>
+		<Grid Grid.Row="4" Height="40">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition/>
+				<ColumnDefinition/>
+			</Grid.ColumnDefinitions>
+			<Button Name="buttonClear" Grid.Column="0" Width="70" Margin="10,5,10,5" Content="Очистиь" Click="Button_Click_1" />
+			<Button Name="buttonFind" Grid.Column="1" Width="70" Margin="10,5,10,5" Content="Поиск" Click="ButtonFind_Click" />
+
+		</Grid>
+
+	</Grid>
+</Window>
