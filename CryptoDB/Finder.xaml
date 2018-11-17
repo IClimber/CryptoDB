@@ -15,7 +15,8 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
-		<Label x:Name="label" Content="Имя для поиска" HorizontalAlignment="Stretch" Margin="10,0,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE"/>
+		<Label x:Name="label" Content="Имя для поиска" HorizontalAlignment="Left" Margin="10,0,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE"/>
+		<CheckBox x:Name="findAsTag" Content="Искать как теги" HorizontalAlignment="Right" Margin="10,0,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="False"/>
 		<TextBox x:Name="textBox" HorizontalAlignment="Stretch" Height="23" Margin="10,0,10,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Background="#FF333337" Foreground="#FFD2FFCE"/>
 		<Image x:Name="image" HorizontalAlignment="Stretch" Margin="10,10,10,0" Grid.Row="2" VerticalAlignment="Stretch" />
 		<DockPanel HorizontalAlignment="Stretch" Height="Auto" LastChildFill="True" Margin="0,0,0,0" Grid.Row="3" VerticalAlignment="Stretch">

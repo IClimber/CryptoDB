@@ -836,7 +836,7 @@ namespace CryptoDataBase
 			return null;
 		}
 
-		public List<Element> FindByName(string Name, bool FindInSubDirectories = true)
+		public List<Element> FindByName(string Name, bool FindAsTag = false, bool FindInSubDirectories = true)
 		{
 			if (_Type == ElementType.File)
 			{
@@ -844,9 +844,41 @@ namespace CryptoDataBase
 			}
 
 			List<Element> result = new List<Element>();
-			_Find(result, Name, FindInSubDirectories);
+
+			if (FindAsTag)
+			{
+				string[] tags = Name.Split(' ');
+				_FindAsTags(result, tags, FindInSubDirectories);
+			}
+			else
+			{
+				_Find(result, Name, FindInSubDirectories);
+			}
 
 			return result;
+		}
+
+		private void _FindAsTags(List<Element> resultList, string[] tags, bool FindInSubDirectories)
+		{
+			lock (_changeElementsLocker)
+			{
+				foreach (var element in _Elements)
+				{
+					foreach (string tag in tags)
+					{
+						if (element.Name.IndexOf(tag, StringComparison.CurrentCultureIgnoreCase) >= 0)
+						{
+							resultList.Add(element);
+							break;
+						}
+					}
+
+					if ((element.Type == ElementType.Dir) && (FindInSubDirectories))
+					{
+						element._FindAsTags(resultList, tags, FindInSubDirectories);
+					}
+				}
+			}
 		}
 
 		private void _Find(List<Element> resultList, string Name, bool FindInSubDirectories)

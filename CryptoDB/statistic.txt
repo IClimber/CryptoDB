@@ -1,0 +1,21 @@
+FileCount=1 FileSize=533.6 Mb
+
+RijndaelManaged (1 thread) Encrypt: 16.142 sec (33.05 Mb/sec)
+RijndaelManaged (1 thread) Decrypt: 15.766 sec (33.84 Mb/sec)
+
+AesCryptoServiceProvider (1 thread) Encrypt: 7.154 sec (74.58 Mb/sec)
+AesCryptoServiceProvider (1 thread) Decrypt: 5.986 sec (89.14 Mb/sec)
+
+AesCryptoServiceProvider (multithread) Decrypt: 2.896 sec (184.25 Mb/sec)
+
+
+
+FileCount=207 Directories=3 FileSize=145.6 Mb
+
+RijndaelManaged (1 thread) Encrypt: 16.335 sec
+RijndaelManaged (1 thread) Decrypt: 4.418 sec
+
+AesCryptoServiceProvider (1 thread) Encrypt: 13.789 sec
+AesCryptoServiceProvider (1 thread) Decrypt: 1.813 sec
+
+AesCryptoServiceProvider (multithread) Decrypt: 1.190 sec
