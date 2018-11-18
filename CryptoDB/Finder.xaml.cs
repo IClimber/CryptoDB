@@ -59,7 +59,7 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				resultCallback(root.FindByName(textBox.Text, findAsTag.IsChecked == true));
+				resultCallback(root.FindByName(textBox.Text, findAsTag.IsChecked == true, allTags.IsChecked == true));
 			}
 		}
 
