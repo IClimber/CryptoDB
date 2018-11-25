@@ -466,7 +466,7 @@ namespace CryptoDataBase
 			return new BindingList<Element>(result.OrderByDescending(x => x.Type).ToList());
 		}
 
-		private void ShowFiles(Element element)
+		private void ShowFiles(Element element, Element selected = null)
 		{
 			if (element == null)
 			{
@@ -478,7 +478,13 @@ namespace CryptoDataBase
 			{
 				RefreshPathPanel(element);
 				listView.ItemsSource = OrderBy(element.Elements);// new BindingList<Element>(element.Elements.OrderByDescending(x => x.Type).ToList());
-				if (element.Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
+
+				if (selected != null)
+				{
+					listView.ScrollIntoView(selected);
+					listView.SelectedItem = selected;
+				}
+				else if (element.Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
 				{
 					listView.ScrollIntoView((listView.ItemsSource as BindingList<Element>)[0]);
 				}
@@ -715,9 +721,7 @@ namespace CryptoDataBase
 
 			if (Refresh)
 			{
-				ShowFiles((Element)listView.Tag);
-				SelectItem(newFile);
-				listView.SelectedItem = newFile;
+				ShowFiles((Element)listView.Tag, newFile);
 			}
 
 			if (clipboardClean_CheckBox.IsChecked == true)
@@ -769,15 +773,17 @@ namespace CryptoDataBase
 				//return;
 			}
 
+			Element newParent = (Element)listView.Tag;
+
 			foreach (var item in CutList)
 			{
-				item.Parent = (Element)listView.Tag;
+				item.Parent = newParent;
 			}
 
 			if (CutList.Count > 0)
 			{
 				CutList.Clear();
-				ShowFiles(((Element)listView.Tag));
+				ShowFiles(newParent);
 			}
 		}
 

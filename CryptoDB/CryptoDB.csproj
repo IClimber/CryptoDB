@@ -130,7 +130,6 @@
       <DependentUpon>RenameWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="SafeStreamAccess.cs" />
-    <Compile Include="SaveFilesAsync.cs" />
     <Compile Include="XDB\SPoint.cs" />
     <Compile Include="SysImageList.cs" />
     <Compile Include="TextWindow.xaml.cs">
