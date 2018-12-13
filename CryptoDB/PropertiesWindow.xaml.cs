@@ -37,10 +37,11 @@ namespace CryptoDataBase
 				Title += (i < (Math.Min(elements.Count, 3) - 1)) ? elements[i].Name + ", " : elements.Count > 3 ? elements[i].Name + "..." : elements[i].Name;
 			}
 
+			ulong data_size = GetSize(elements);
 			ParentLabel.Text = GetPath(elements);
-			FilesCountLabel.Text = GetFilesCount(elements).ToString();
-			DirsCountLabel.Text = GetDirsCount(elements).ToString();
-			SizeLabel.Text = GetSize(elements).ToString("#,0");
+			FilesCountLabel.Text = GetFilesCount(elements).ToString("#,0");
+			DirsCountLabel.Text = GetDirsCount(elements).ToString("#,0");
+			SizeLabel.Text = SizeToStr(data_size) + " (" + data_size.ToString("#,0") + " байт)";
 
 			if (elements.Count == 1)
 			{
@@ -51,6 +52,16 @@ namespace CryptoDataBase
 			{
 				IconRow.Height = new GridLength(0, GridUnitType.Pixel);
 			}
+		}
+
+		public static string SizeToStr(ulong size)
+		{
+			string[] suf = { "байт", "КБ", "МБ", "ГБ", "ТБ" };
+			if (size == 0)
+				return "0 " + suf[0];
+			int place = Convert.ToInt32(Math.Floor(Math.Log(size, 1024)));
+			double num = Math.Round(size / Math.Pow(1024, place), 2);
+			return (Math.Sign((long)size) * num).ToString() + " " + suf[place];
 		}
 
 		private string GetPath(List<Element> elements)
