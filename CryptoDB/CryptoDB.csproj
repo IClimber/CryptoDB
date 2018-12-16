@@ -103,6 +103,7 @@
     <Compile Include="ClipboardChange.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="FileItem.cs" />
     <Compile Include="XDB\Comparers.cs" />
     <Compile Include="Crypto.cs" />
     <Compile Include="CryptoRandom.cs" />

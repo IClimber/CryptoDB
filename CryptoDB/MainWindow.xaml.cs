@@ -32,7 +32,7 @@ namespace CryptoDataBase
 		private BackgroundWorker FileLoadWorker = new BackgroundWorker();
 		private BackgroundWorker FileExportWorker = new BackgroundWorker();
 		Stopwatch sw = new Stopwatch();
-		List<string> addedFilesList = new List<string>();
+		List<FileItem> addedFilesList = new List<FileItem>();
 		Element LastParent;
 		private int AddedFilesCount;
 		public bool editable = true;
@@ -123,29 +123,6 @@ namespace CryptoDataBase
 			return TextExtensions.Contains(System.IO.Path.GetExtension(FileName).ToLower());
 		}
 
-		private void OpenDir(string dir, Element parent)
-		{
-			try
-			{
-				Element newParent = parent.CreateDir(System.IO.Path.GetFileName(dir));
-
-				foreach (var file in Directory.GetFiles(dir))
-				{
-					AddFile(newParent, file);
-					AddedFilesCount++;
-				}
-
-				foreach (var directory in Directory.GetDirectories(dir))
-				{
-					OpenDir(directory, newParent);
-				}
-			}
-			catch (Exception m)
-			{
-				System.Windows.MessageBox.Show(m.Message);
-			}
-		}
-
 		private void CountFilesInDir(string dir, ref int count)
 		{
 			count += Directory.GetFiles(dir).Length;
@@ -207,40 +184,48 @@ namespace CryptoDataBase
 			this.Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
 		}
 
-		private void AddFile(Element parent, string FileName)
+		private void AddFile(FileItem item)
 		{
-			if (parent.FileExists(Path.GetFileName(FileName)))
+			if (item.parentElement.FileExists(Path.GetFileName(item.name)))
 			{
 				return;
 			}
 
-			Bitmap bmp = ImgConverter.GetIcon(FileName, thumbnailSize);
-			var duplicates = GetDuplicates(FileName, bmp);
-			if (duplicates.Count > 0)
+			if (item.type == FileItemType.File)
 			{
-				ShowDuplicateFilesList(duplicates, FileName, bmp);
+				Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
+				var duplicates = GetDuplicates(item.name, bmp);
+				if (duplicates.Count > 0)
+				{
+					ShowDuplicateFilesList(duplicates, item.name, bmp);
+					bmp?.Dispose();
+					return;
+				}
+
+				item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
 				bmp?.Dispose();
-				return;
+
+				AddedFilesCount++;
 			}
-			
-			parent.AddFile(FileName, Path.GetFileName(FileName), false, bmp, ReportProgress);
-			bmp?.Dispose();
+			else
+			{
+				Element newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
+
+				foreach (FileItem sub_item in item.children)
+				{
+					sub_item.parentElement = newParent;
+					AddFile(sub_item);
+				}
+			}
 		}
 
-		private void AddFiles(List<string> files, Element parent)
+		private void AddFiles(List<FileItem> files)
 		{
 			sw = Stopwatch.StartNew();
-			foreach (var file in files)
+
+			for (int i = 0; i < files.Count; i++)
 			{
-				if (Directory.Exists(file))
-				{
-					OpenDir(file, parent);
-				}
-				else
-				{
-					AddFile(parent, file);
-					AddedFilesCount++;
-				}
+				AddFile(files[i]);
 			}
 		}
 
@@ -256,19 +241,22 @@ namespace CryptoDataBase
 			{
 				string[] files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
 
-				int count = files.Count(x => File.Exists(x));
-				foreach (var item in files.Where(x => Directory.Exists(x)))
+				foreach (var file in files)
 				{
-					CountFilesInDir(item, ref count);
+					addedFilesList.Add(new FileItem(file, parent));
 				}
 
-				AddedFilesCount = 0;
-				TextBlockStatus1.Text = AddedFilesCount.ToString();
+				int count = 0;
+				foreach (var item in addedFilesList)
+				{
+					count += item.SubFilesCount();
+				}
 				TextBlockStatus2.Text = count.ToString();
 
-				addedFilesList.AddRange(files);
 				if (!FileLoadWorker.IsBusy)
 				{
+					AddedFilesCount = 0;
+					TextBlockStatus1.Text = AddedFilesCount.ToString();
 					FileLoadWorker.RunWorkerAsync(parent);
 				}
 			}
@@ -282,7 +270,7 @@ namespace CryptoDataBase
 				return;
 			}
 			editable = false;
-			AddFiles(addedFilesList, (Element)e.Argument);
+			AddFiles(addedFilesList);
 		}
 
 		private void ReportProgress(double progress)
