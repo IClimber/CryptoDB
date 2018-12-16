@@ -126,6 +126,18 @@
 
 			<Separator/>
 
+			<StatusBarItem HorizontalContentAlignment="Left" Name="statusBlock3" Visibility="Collapsed">
+				<TextBlock x:Name="TextBlockStatus3" Margin="5,0,0,0" Width="50" Foreground="#FFD2FFCE"/>
+			</StatusBarItem>
+
+			<Separator Visibility="{Binding ElementName=statusBlock3, Path=Visibility}"/>
+
+			<StatusBarItem HorizontalContentAlignment="Left" Name="statusBlock4" Visibility="{Binding ElementName=statusBlock3, Path=Visibility}">
+				<TextBlock x:Name="TextBlockStatus4" Margin="5,0,0,0" Width="50" Foreground="#FFD2FFCE"/>
+			</StatusBarItem>
+
+			<Separator Visibility="{Binding ElementName=statusBlock3, Path=Visibility}"/>
+
 			<StatusBarItem HorizontalContentAlignment="Stretch">
 				<ProgressBar x:Name="progressbar1" Height="15" />
 			</StatusBarItem>

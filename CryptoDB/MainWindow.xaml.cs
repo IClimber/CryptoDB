@@ -243,7 +243,19 @@ namespace CryptoDataBase
 
 				foreach (var file in files)
 				{
-					addedFilesList.Add(new FileItem(file, parent));
+					var exists = false;
+					foreach (var item in addedFilesList)
+					{
+						if (item.name == file && item.parentElement == parent)
+						{
+							exists = true;
+						}
+					}
+
+					if (!exists)
+					{
+						addedFilesList.Add(new FileItem(file, parent));
+					}
 				}
 
 				int count = 0;
@@ -251,12 +263,14 @@ namespace CryptoDataBase
 				{
 					count += item.SubFilesCount();
 				}
-				TextBlockStatus2.Text = count.ToString();
+
+				TextBlockStatus4.Text = count.ToString();
 
 				if (!FileLoadWorker.IsBusy)
 				{
 					AddedFilesCount = 0;
-					TextBlockStatus1.Text = AddedFilesCount.ToString();
+					statusBlock3.Visibility = Visibility.Visible;
+					TextBlockStatus3.Text = AddedFilesCount.ToString();
 					FileLoadWorker.RunWorkerAsync(parent);
 				}
 			}
@@ -281,9 +295,9 @@ namespace CryptoDataBase
 		private void FileProgress(object sender, ProgressChangedEventArgs e)
 		{
 			progressbar1.Value = e.ProgressPercentage;
-			if (TextBlockStatus1.Text != AddedFilesCount.ToString())
+			if (TextBlockStatus3.Text != AddedFilesCount.ToString())
 			{
-				TextBlockStatus1.Text = AddedFilesCount.ToString();
+				TextBlockStatus3.Text = AddedFilesCount.ToString();
 			}
 		}
 
@@ -292,6 +306,7 @@ namespace CryptoDataBase
 			editable = true;
 			Title = sw.ElapsedMilliseconds.ToString();
 			addedFilesList.Clear();
+			statusBlock3.Visibility = Visibility.Collapsed;
 			//TextBlockStatus1.Text = (AddedFilesCount++).ToString();
 			progressbar1.Value = 0;
 
