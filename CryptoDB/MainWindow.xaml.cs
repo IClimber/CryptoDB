@@ -669,6 +669,30 @@ namespace CryptoDataBase
 				return;
 			}
 
+			if (e.Key == Key.D && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == (ModifierKeys.Control | ModifierKeys.Alt))
+			{
+				Bitmap icon;
+
+				if (IsImage(((Element)listView.SelectedItem).Name))
+				{
+					MemoryStream ms = new MemoryStream();
+					((Element)listView.SelectedItem).SaveTo(ms);
+					ms.Position = 0;
+					Bitmap tmp = new Bitmap(ms);
+					icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
+					tmp?.Dispose();
+					ms.Dispose();
+				}
+				else
+				{
+					icon = ((Element)listView.SelectedItem).Icon;
+				}
+
+				ShowList(xdb.FindAllByIcon(icon, 0));
+
+				return;
+			}
+
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.D))
 			{
 				CreateNewDir();
