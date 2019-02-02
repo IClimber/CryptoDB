@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
+		xmlns:gif="clr-namespace:WpfAnimatedGif"
+		mc:Ignorable="d"
         Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip">
     <Grid Name="grid" Background="#FF222227" MouseMove="grid_MouseMove">
         <Grid.ColumnDefinitions>
@@ -26,17 +27,17 @@
             <Image Stretch="Uniform" Source="Resources/Arrow.png"/>
         </Border>
 
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="nextImg" Background="#FF111117" Opacity="0.5" Tag="1" MouseDown="Image_MouseDown">
-            <Image Stretch="Uniform" RenderTransformOrigin="0.5,0.5" Source="Resources/Arrow.png">
-                <Image.RenderTransform>
-                    <TransformGroup>
-                        <ScaleTransform ScaleY="1" ScaleX="-1"/>
-                    </TransformGroup>
-                </Image.RenderTransform>
-            </Image>
-        </Border>
+		<Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="nextImg" Background="#FF111117" Opacity="0.5" Tag="1" MouseDown="Image_MouseDown">
+			<Image Stretch="Uniform" RenderTransformOrigin="0.5,0.5" Source="Resources/Arrow.png">
+				<Image.RenderTransform>
+					<TransformGroup>
+						<ScaleTransform ScaleY="1" ScaleX="-1"/>
+					</TransformGroup>
+				</Image.RenderTransform>
+			</Image>
+		</Border>
 
-        <ToolBar Grid.Row="0" Grid.ColumnSpan="3" Name="toolPanel" >
+		<ToolBar Grid.Row="0" Grid.ColumnSpan="3" Name="toolPanel" >
             <Button Content="Сохранить как" Width="100" Click="SaveAs_Click" />
             <Button Content="Переименовать" Width="100" Click="Rename_Click" />
             <Button Content="Удалить" Width="100" Click="Delete_Click" />

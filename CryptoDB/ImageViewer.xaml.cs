@@ -13,6 +13,7 @@ using System.Windows.Shapes;
 using System.Windows.Forms;
 using System.IO;
 using ImageConverter;
+using WpfAnimatedGif;
 
 namespace CryptoDataBase
 {
@@ -130,29 +131,33 @@ namespace CryptoDataBase
 
 			MemoryStream ms = new MemoryStream();
 			elements[currentIndex].SaveTo(ms);
-			BitmapImage img = ImgConverter.StreamToBitmapImage(ms);
 			//image.SnapsToDevicePixels = false;
 			image.RenderTransform = new ScaleTransform();
 			Zoom = 1;
-			image.Source = img;
+			//image.Source = img;
+
+			ms.Position = 0;
+			var bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+			ImageBehavior.SetAnimatedSource(image, bmp);
+			//bmp = null;
 			ms.Dispose();
 
 			TextBlockStatus1.Text = "Image size: " + FormatingSize(elements[currentIndex].Size);
-			TextBlockStatus2.Text = "Image resolution: " + img?.PixelWidth + " x " + img?.PixelHeight;
-			TextBlockStatus3.Text = "DPI: X=" + (int?)img?.DpiX + "  Y=" + (int?)img?.DpiY;
+			TextBlockStatus2.Text = "Image resolution: " + bmp?.PixelWidth + " x " + bmp?.PixelHeight;
+			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();
 
 
 			try
 			{
-				if (((img.Width * (img.DpiX / 96)) > border.RenderSize.Width) || ((img.Height * (img.DpiY / 96)) > border.RenderSize.Height) || (border.Width == 0) || (img.DpiX == 0) || (img.DpiY == 0))
+				if (((bmp.Width * (bmp.DpiX / 96)) > border.RenderSize.Width) || ((bmp.Height * (bmp.DpiY / 96)) > border.RenderSize.Height) || (border.Width == 0) || (bmp.DpiX == 0) || (bmp.DpiY == 0))
 				{
 					image.Stretch = Stretch.Uniform;
 				}
 				else
 				{
 					image.Stretch = Stretch.None;
-					image.RenderTransform = new ScaleTransform(img.DpiX / 96, img.DpiY / 96, img.Width / 2, img.Height / 2);
+					image.RenderTransform = new ScaleTransform(bmp.DpiX / 96, bmp.DpiY / 96, bmp.Width / 2, bmp.Height / 2);
 				}
 			}
 			catch
