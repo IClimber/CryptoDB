@@ -622,7 +622,7 @@ namespace CryptoDataBase
 				{
 					if (randomNames)
 					{
-						element.ExportDir(destPath + '\\' + tempName, GetFileName(Path.GetExtension(element.Name)), Progress: Progress);
+						element.ExportDir(destPath + '\\' + tempName, GetFileName(Path.GetExtension(element.Name)), Progress: Progress, GetFileName: GetFileName);
 					}
 					else
 					{
