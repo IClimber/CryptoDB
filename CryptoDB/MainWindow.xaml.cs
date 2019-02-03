@@ -42,6 +42,7 @@ namespace CryptoDataBase
 		ClipboardMonitor cl = new ClipboardMonitor();
 		bool isCompareHash = false;
 		bool isCompareImage = false;
+		bool save_real_file_name = false;
 		byte imgDuplicateSensative = 0;
 		public bool ShowDuplicateMessage
 		{
@@ -304,7 +305,7 @@ namespace CryptoDataBase
 		private void FileLoadCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
 			editable = true;
-			Title = sw.ElapsedMilliseconds.ToString();
+			//Title = sw.ElapsedMilliseconds.ToString();
 			addedFilesList.Clear();
 			statusBlock3.Visibility = Visibility.Collapsed;
 			//TextBlockStatus1.Text = (AddedFilesCount++).ToString();
@@ -324,7 +325,14 @@ namespace CryptoDataBase
 				//sw.Restart();
 				if ((e.Argument as ExportInfo).SaveAs)
 				{
-					(e.Argument as ExportInfo).Elements[0]?.SaveAs((e.Argument as ExportInfo).FileName, ReportProgress1);
+					if (save_real_file_name)
+					{
+						(e.Argument as ExportInfo).Elements[0]?.SaveAs((e.Argument as ExportInfo).FileName, ReportProgress1);
+					}
+					else
+					{
+						(e.Argument as ExportInfo).Elements[0]?.SaveAs((e.Argument as ExportInfo).FileName, ReportProgress1, GetRandomName);
+					}
 				}
 				else
 				{
@@ -337,7 +345,14 @@ namespace CryptoDataBase
 
 			foreach (var element in (e.Argument as ExportInfo).Elements)
 			{
-				element?.SaveTo((e.Argument as ExportInfo).FileName, ReportProgress1);
+				if (save_real_file_name)
+				{
+					element?.SaveTo((e.Argument as ExportInfo).FileName, ReportProgress1);
+				}
+				else
+				{
+					element?.SaveAs((e.Argument as ExportInfo).FileName + "\\" + GetRandomName(Path.GetExtension(element.Name)), ReportProgress1, GetRandomName);
+				}
 			}
 		}
 
@@ -396,7 +411,7 @@ namespace CryptoDataBase
 		private void XDBLoadCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
 			sw.Stop();
-			TextBlockStatus1.Text = sw.ElapsedMilliseconds.ToString() + "ms";
+			//TextBlockStatus1.Text = sw.ElapsedMilliseconds.ToString() + "ms";
 			progressbar1.Value = 0;
 
 			ShowFiles(xdb);
@@ -838,11 +853,31 @@ namespace CryptoDataBase
 			}
 		}
 
+		public static string GetRandomName(int length)
+		{
+			byte[] buf = new byte[length];
+
+			CryptoRandom.GetBytes(buf);
+			return BitConverter.ToString(buf).Replace("-", String.Empty).Substring(0, length);
+		}
+
+		public static string GetRandomName(string file_ext = "")
+		{
+			int length = (int)CryptoRandom.Random(64) + 32;
+			return GetRandomName(length) + file_ext;
+		}
+
 		private void SaveAs(Element element, bool execute = false)
 		{
+			string element_name = element.Name;
+			if (!save_real_file_name)
+			{
+				element_name = GetRandomName();
+			}
+
 			SaveFileDialog sd = new SaveFileDialog
 			{
-				FileName = element.Name,
+				FileName = element_name,
 				DefaultExt = Path.GetExtension(element.Name)
 			};
 
@@ -1092,6 +1127,11 @@ namespace CryptoDataBase
 			{
 				InsertImageFromClipboard(true);
 			}
+		}
+
+		private void SaveRealFileName_Click(object sender, RoutedEventArgs e)
+		{
+			save_real_file_name = (sender as System.Windows.Controls.CheckBox).IsChecked == true;
 		}
 	}
 

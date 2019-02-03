@@ -570,23 +570,23 @@ namespace CryptoDataBase
 			AES.Dispose();
 		}
 
-		public void SaveTo(string Path, SafeStreamAccess.ProgressCallback Progress = null)
+		public void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
 		{
 			if (_Type == ElementType.File)
 			{
-				Directory.CreateDirectory(Path);
-				using (FileStream stream = new FileStream(Path + '\\' + Name, FileMode.Create, FileAccess.Write, FileShare.Read))
+				Directory.CreateDirectory(PathToSave);
+				using (FileStream stream = new FileStream(PathToSave + '\\' + Name, FileMode.Create, FileAccess.Write, FileShare.Read))
 				{
 					SaveTo(stream, Progress);
 				}
 			}
 			else
 			{
-				ExportDir(Path, Progress: Progress);
+				ExportDir(PathToSave, Progress: Progress);
 			}
 		}
 
-		public void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null)
+		public void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
 		{
 			if (_Type == ElementType.File)
 			{
@@ -598,12 +598,14 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				ExportDir(Path.GetDirectoryName(FullName), Path.GetFileName(FullName), Progress: Progress);
+				ExportDir(Path.GetDirectoryName(FullName), Path.GetFileName(FullName), Progress: Progress, GetFileName: GetFileName);
 			}
 		}
 
-		private void ExportDir(string destPath, string Name = "", bool randomNames = false, SafeStreamAccess.ProgressCallback Progress = null)
+		private void ExportDir(string destPath, string Name = "", SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
 		{
+			bool randomNames = (GetFileName != null);
+			
 			string tempName = Name == "" ? _Name : Name;
 			Directory.CreateDirectory(destPath + '\\' + tempName);
 			Element[] elementList;
@@ -620,7 +622,7 @@ namespace CryptoDataBase
 				{
 					if (randomNames)
 					{
-						element.ExportDir(destPath + '\\' + tempName, GetCryptoName(), Progress: Progress);
+						element.ExportDir(destPath + '\\' + tempName, GetFileName(Path.GetExtension(element.Name)), Progress: Progress);
 					}
 					else
 					{
@@ -631,7 +633,7 @@ namespace CryptoDataBase
 				{
 					if (randomNames)
 					{
-						element.SaveAs(destPath + '\\' + tempName + "\\" + GetCryptoName(), Progress);
+						element.SaveAs(destPath + '\\' + tempName + "\\" + GetFileName(Path.GetExtension(element.Name)), Progress);
 					}
 					else
 					{
@@ -641,11 +643,6 @@ namespace CryptoDataBase
 			}
 
 			elementList = null;
-		}
-
-		private string GetCryptoName()
-		{
-			return BitConverter.ToString(Crypto.GetMD5(Crypto.GetMD5(_FileIV))).Replace("-", String.Empty).ToUpper() + Path.GetExtension(_Name);
 		}
 
 		//Шукає в сортованому по Name списку

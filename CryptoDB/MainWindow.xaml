@@ -34,6 +34,7 @@
 				</MenuItem>
 				<MenuItem Header="Файлы" >
 					<CheckBox Content="Не добавлять дубликаты" Click="CompareFileHash_Click"/>
+
 					<MenuItem Header="Похожие изображения" >
 						<CheckBox Content="Не добавлять" Click="CompareImagePHash_Click"/>
 						<StackPanel Orientation="Horizontal">
@@ -42,6 +43,8 @@
 						</StackPanel>
 					</MenuItem>
 					<CheckBox Content="Предупреждать о дубликатах" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
+					<Separator/>
+					<CheckBox Content="Сохранять реальные имена файлов" Click="SaveRealFileName_Click"/>
 				</MenuItem>
 				<MenuItem Header="Буффер обмена">
 					<CheckBox Content="Автоматическая вставка" Click="AutoInsert"/>
