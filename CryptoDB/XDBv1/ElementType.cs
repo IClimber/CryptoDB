@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CryptoDataBasev0
+namespace CryptoDataBase
 {
 	public enum ElementType
 	{

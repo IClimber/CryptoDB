@@ -124,9 +124,22 @@
     <Compile Include="WpfAnimatedGif\Decoding\GifTrailer.cs" />
     <Compile Include="WpfAnimatedGif\ImageAnimationController.cs" />
     <Compile Include="WpfAnimatedGif\ImageBehavior.cs" />
+    <Compile Include="XDBv1\ArrayReader.cs" />
+    <Compile Include="XDBv1\Comparers.cs" />
+    <Compile Include="XDBv1\Crypto.cs" />
+    <Compile Include="XDBv1\CryptoRandom.cs" />
+    <Compile Include="XDBv1\Element.cs" />
+    <Compile Include="XDBv1\ElementType.cs" />
+    <Compile Include="XDBv1\DirElement.cs" />
+    <Compile Include="XDBv1\FileElement.cs" />
+    <Compile Include="XDBv1\Head.cs" />
+    <Compile Include="XDBv1\IElement.cs" />
+    <Compile Include="XDBv1\SafeStreamAccess.cs" />
+    <Compile Include="XDBv1\SPoint.cs" />
+    <Compile Include="XDBv1\XDB.cs" />
     <Compile Include="XDB\Comparers.cs" />
-    <Compile Include="Crypto.cs" />
-    <Compile Include="CryptoRandom.cs" />
+    <Compile Include="XDB\Crypto.cs" />
+    <Compile Include="XDB\CryptoRandom.cs" />
     <Compile Include="DuplicatesWindow.xaml.cs">
       <DependentUpon>DuplicatesWindow.xaml</DependentUpon>
     </Compile>
@@ -150,7 +163,7 @@
     <Compile Include="RenameWindow.xaml.cs">
       <DependentUpon>RenameWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="SafeStreamAccess.cs" />
+    <Compile Include="XDB\SafeStreamAccess.cs" />
     <Compile Include="XDB\SPoint.cs" />
     <Compile Include="SysImageList.cs" />
     <Compile Include="TextWindow.xaml.cs">

@@ -9,7 +9,7 @@ namespace CryptoDataBase
 {
 	class FileItem
 	{
-		public Element parentElement;
+		public DirElement parentElement;
 		public List<FileItem> children = new List<FileItem>();
 		public string name;
 		public FileItemType type;
@@ -17,14 +17,12 @@ namespace CryptoDataBase
 		//public uint SubFilesCount { get { return _fileCount; } }
 		private uint _fileCount = 0;
 
-		private static uint i;
-
-		public FileItem(string file, Element parentElement = null) : this(file, parentElement, 0)
+		public FileItem(string file, DirElement parentElement = null) : this(file, parentElement, 0)
 		{
 
 		}
 
-		private FileItem(string file, Element parentElement = null, uint count = 0)
+		private FileItem(string file, DirElement parentElement = null, uint count = 0)
 		{
 			this.parentElement = parentElement;
 			name = file;

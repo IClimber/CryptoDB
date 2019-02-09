@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CryptoDataBase
+namespace CryptoDataBasev0
 {
 	public class SafeStreamAccess
 	{

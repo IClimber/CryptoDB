@@ -66,10 +66,10 @@ namespace CryptoDataBase
 
 		private string GetPath(List<Element> elements)
 		{
-			string path = elements[0].GetPath;
+			string path = elements[0].FullPath;
 			for (int i = 1; i < elements.Count; i++)
 			{
-				if (string.Compare(path, elements[i].GetPath, true) != 0)
+				if (string.Compare(path, elements[i].FullPath, true) != 0)
 				{
 					path = "разное";
 					break;
@@ -83,7 +83,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.File).Count();
 
-			foreach (var item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
 			{
 				result += GetFilesCount(item.Elements.ToList());
 			}
@@ -95,7 +95,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.Dir).Count();
 
-			foreach (var item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
 			{
 				result += GetDirsCount(item.Elements.ToList());
 			}

@@ -13,7 +13,7 @@ namespace CryptoDataBase
 	{
 		public delegate void CallBackResult(List<Element> result);
 
-		Element root;
+		DirElement root;
 		Bitmap bitmap;
 		private CallBackResult resultCallback;
 
@@ -22,12 +22,12 @@ namespace CryptoDataBase
 			InitializeComponent();
 		}
 
-		public Finder(Element Root) : this()
+		public Finder(DirElement Root) : this()
 		{
 			root = Root;
 		}
 
-		public Finder(Element Root, Bitmap thumbnail, CallBackResult Result) : this()
+		public Finder(DirElement Root, Bitmap thumbnail, CallBackResult Result) : this()
 		{
 			root = Root;
 			resultCallback = Result;
@@ -42,7 +42,7 @@ namespace CryptoDataBase
 			slider.Focus();
 		}
 
-		public Finder(Element Root, CallBackResult Result) : this()
+		public Finder(DirElement Root, CallBackResult Result) : this()
 		{
 			root = Root;
 			image.Source = null;

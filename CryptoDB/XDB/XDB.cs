@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.Security.Cryptography;
 
-namespace CryptoDataBase
+namespace CryptoDataBasev0
 {
 	class XDB : Element
 	{

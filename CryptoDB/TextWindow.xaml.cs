@@ -26,7 +26,7 @@ namespace CryptoDataBase
 					  WS_MAXIMIZEBOX = 0x10000,
 					  WS_MINIMIZEBOX = 0x20000;
 		private IntPtr _windowHandle;
-		Element element;
+		FileElement element;
 		byte[] textHash;
 
 		[DllImport("user32.dll")]
@@ -77,7 +77,7 @@ namespace CryptoDataBase
 			Owner.Activate();
 		}
 
-		public TextWindow(Element element) : this()
+		public TextWindow(FileElement element) : this()
 		{
 			this.element = element;
 			MemoryStream ms = new MemoryStream();

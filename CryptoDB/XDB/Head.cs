@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.IO;
 
-namespace CryptoDataBase
+namespace CryptoDataBasev0
 {
     public struct Head
     {

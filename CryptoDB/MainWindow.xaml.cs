@@ -33,7 +33,7 @@ namespace CryptoDataBase
 		private BackgroundWorker FileExportWorker = new BackgroundWorker();
 		Stopwatch sw = new Stopwatch();
 		List<FileItem> addedFilesList = new List<FileItem>();
-		Element LastParent;
+		DirElement LastParent;
 		private int AddedFilesCount;
 		public bool editable = true;
 		private string FindText = "";
@@ -53,34 +53,34 @@ namespace CryptoDataBase
 
 		private void MoveTest()
 		{
-			Random r = new Random();
-			List<Element> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
-			foreach (var dir in dirs)
-			{
-				for (int i = 0; i < dir.Elements.Count; i++)
-				{
-					if (dir.Elements[i].Type == ElementType.File)
-					{
-						dir.Elements[i].Parent = dirs[r.Next(dirs.Count)];
-					}
-				}
-			}
+			//Random r = new Random();
+			//List<DirElement> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
+			//foreach (var dir in dirs)
+			//{
+			//	for (int i = 0; i < dir.Elements.Count; i++)
+			//	{
+			//		if (dir.Elements[i].Type == ElementType.File)
+			//		{
+			//			dir.Elements[i].Parent = dirs[r.Next(dirs.Count)];
+			//		}
+			//	}
+			//}
 		}
 
 		private void RenameTest()
 		{
-			Random r = new Random();
-			List<Element> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
-			foreach (var dir in dirs)
-			{
-				for (int i = 0; i < dir.Elements.Count; i++)
-				{
-					if (dir.Elements[i].Type == ElementType.File)
-					{
-						dir.Elements[i].Name = CryptoRandom.Random(UInt64.MaxValue - 2).ToString();
-					}
-				}
-			}
+			//Random r = new Random();
+			//List<Element> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
+			//foreach (var dir in dirs)
+			//{
+			//	for (int i = 0; i < dir.Elements.Count; i++)
+			//	{
+			//		if (dir.Elements[i].Type == ElementType.File)
+			//		{
+			//			dir.Elements[i].Name = CryptoRandom.Random(UInt64.MaxValue - 2).ToString();
+			//		}
+			//	}
+			//}
 		}
 
 		public MainWindow(string DatabaseFile)
@@ -135,9 +135,14 @@ namespace CryptoDataBase
 
 		private int GetCountSubElements(Element root)
 		{
-			int result = root.Elements.Count;
+			if (root is FileElement)
+			{
+				return 1;
+			}
 
-			foreach (var item in root.Elements)
+			int result = (root as DirElement).Elements.Count;
+
+			foreach (var item in (root as DirElement).Elements)
 			{
 				result += GetCountSubElements(item);
 			}
@@ -210,7 +215,7 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				Element newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
+				DirElement newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
 
 				foreach (FileItem sub_item in item.children)
 				{
@@ -232,7 +237,7 @@ namespace CryptoDataBase
 
 		private void Files_Drop(object sender, System.Windows.DragEventArgs e)
 		{
-			Element parent = (Element)listView.Tag;
+			DirElement parent = (DirElement)listView.Tag;
 			if ((xdb == null) || (parent == null))
 			{
 				return;
@@ -492,21 +497,21 @@ namespace CryptoDataBase
 			}
 
 			//Відкриваємо папку
-			if (element.Type == ElementType.Dir)
+			if (element is DirElement)
 			{
 				RefreshPathPanel(element);
-				listView.ItemsSource = OrderBy(element.Elements);// new BindingList<Element>(element.Elements.OrderByDescending(x => x.Type).ToList());
+				listView.ItemsSource = OrderBy((element as DirElement).Elements);// new BindingList<Element>(element.Elements.OrderByDescending(x => x.Type).ToList());
 
 				if (selected != null)
 				{
 					listView.ScrollIntoView(selected);
 					listView.SelectedItem = selected;
 				}
-				else if (element.Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
+				else if ((element as DirElement).Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
 				{
-					listView.ScrollIntoView((listView.ItemsSource as BindingList<Element>)[0]);
+					//listView.ScrollIntoView((listView.ItemsSource as BindingList<Element>)[0]);
 				}
-				LastParent = element;
+				LastParent = element as DirElement;
 				listView.Tag = element;
 				listView.Focus();
 				ShowInfo();
@@ -520,7 +525,7 @@ namespace CryptoDataBase
 			}
 			else if (IsText(element.Name))
 			{
-				OpenTextDoc(element);
+				OpenTextDoc(element as FileElement);
 			}
 			else
 			{
@@ -617,7 +622,7 @@ namespace CryptoDataBase
 			window.Show();
 		}
 
-		private void OpenTextDoc(Element file)
+		private void OpenTextDoc(FileElement file)
 		{
 			TextWindow window = new TextWindow(file) { Owner = this };
 			window.Show();
@@ -756,7 +761,7 @@ namespace CryptoDataBase
 				}
 
 				stream.Position = 0;
-				newFile = (listView.Tag as Element)?.AddFile(stream, FileName, false, icon);
+				newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
 				icon?.Dispose();
 			}
 			tmp?.Dispose();
@@ -815,7 +820,7 @@ namespace CryptoDataBase
 				//return;
 			}
 
-			Element newParent = (Element)listView.Tag;
+			DirElement newParent = (DirElement)listView.Tag;
 
 			foreach (var item in CutList)
 			{
@@ -1013,7 +1018,7 @@ namespace CryptoDataBase
 			newdir.label.Content = "Имя папки";
 			if ((newdir.ShowDialog() == true) && (newdir.textBox.Text != ""))
 			{
-				var newDir = ((Element)listView.Tag).CreateDir(newdir.textBox.Text);
+				var newDir = (listView.Tag as DirElement).CreateDir(newdir.textBox.Text);
 				ShowFiles(((Element)listView.Tag));
 				SelectItem(newDir);
 			}
@@ -1037,7 +1042,7 @@ namespace CryptoDataBase
 				{
 					Stream ms = Stream.Null;
 					Bitmap bmp = ImgConverter.GetIcon(".txt", thumbnailSize);
-					var newTextFile = ((Element)listView.Tag).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
+					var newTextFile = (listView.Tag as DirElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
 					bmp?.Dispose();
 					ShowFiles((Element)listView.Tag);
 					SelectItem(newTextFile);

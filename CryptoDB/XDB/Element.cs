@@ -9,7 +9,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CryptoDataBase
+namespace CryptoDataBasev0
 {
 	public class Element : INotifyPropertyChanged
 	{
