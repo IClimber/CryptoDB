@@ -161,7 +161,7 @@ namespace ImageConverter
 		{
 			using (Bitmap bmp = (value as Element).Icon)
 			{
-				if ((bmp == null) && (((Element)value).Type == ElementType.Dir))
+				if ((bmp == null) && (value is DirElement))
 				{
 					return ImgConverter.BitmapToImageSource(CryptoDataBase.Properties.Resources.DirIcon);
 				}

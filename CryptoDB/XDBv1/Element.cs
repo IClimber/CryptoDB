@@ -106,22 +106,12 @@ namespace CryptoDataBase
 			return result;
 		}
 
-		protected virtual UInt64 GetSize(UInt64 size)
-		{
-			return 0;
-		}
-
 		protected virtual void ChangeParent(DirElement NewParent)
 		{
 
 		}
 
 		public virtual void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
-		{
-
-		}
-
-		public virtual void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback Progress = null)
 		{
 
 		}

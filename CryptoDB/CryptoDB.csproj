@@ -133,7 +133,6 @@
     <Compile Include="XDBv1\DirElement.cs" />
     <Compile Include="XDBv1\FileElement.cs" />
     <Compile Include="XDBv1\Header.cs" />
-    <Compile Include="XDBv1\IElement.cs" />
     <Compile Include="XDBv1\SafeStreamAccess.cs" />
     <Compile Include="XDBv1\SPoint.cs" />
     <Compile Include="XDBv1\XDB.cs" />

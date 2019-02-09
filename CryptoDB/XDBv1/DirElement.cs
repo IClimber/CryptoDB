@@ -66,15 +66,15 @@ namespace CryptoDataBase
 			_Name = Name;
 			_ID = GenID();
 			_ParentID = parent.ID;
-			_Parent = parent;
 			_IconStartPos = iconStartPos;
 			_IconSize = iconSize;
 			_PHash = GetPHash(Icon);
+			Parent = parent;
 
 			SaveInf();
 		}
 
-		protected override UInt64 GetSize(UInt64 size)
+		private UInt64 GetSize(UInt64 size)
 		{
 			UInt64 result = size;
 
@@ -82,14 +82,7 @@ namespace CryptoDataBase
 			{
 				foreach (var element in _Elements)
 				{
-					if (element is FileElement)
-					{
-						result += (element as FileElement).Size;
-					}
-					else
-					{
-						result += (element as DirElement).Size;
-					}
+					result += element.Size;
 				}
 			}
 			
@@ -168,11 +161,11 @@ namespace CryptoDataBase
 				{
 					if (randomNames)
 					{
-						(element as FileElement).SaveAs(destPath + '\\' + tempName + "\\" + GetFileName(Path.GetExtension(element.Name)), Progress);
+						element.SaveAs(destPath + '\\' + tempName + "\\" + GetFileName(Path.GetExtension(element.Name)), Progress);
 					}
 					else
 					{
-						(element as FileElement).SaveTo(destPath + '\\' + tempName, Progress);
+						element.SaveTo(destPath + '\\' + tempName, Progress);
 					}
 				}
 			}
@@ -234,7 +227,7 @@ namespace CryptoDataBase
 
 		protected override void ChangeParent(DirElement NewParent)
 		{
-			if ((NewParent == null) || !(NewParent is DirElement) || (NewParent == this))
+			if ((NewParent == null) || (NewParent == this))
 			{
 				return;
 			}
@@ -590,7 +583,7 @@ namespace CryptoDataBase
 				{
 					if (element is FileElement)
 					{
-						(element as FileElement).Delete();
+						element.Delete();
 					}
 					else if (element is DirElement)
 					{

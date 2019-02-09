@@ -237,7 +237,7 @@ namespace CryptoDataBase
 
 		private void Files_Drop(object sender, System.Windows.DragEventArgs e)
 		{
-			DirElement parent = (DirElement)listView.Tag;
+			DirElement parent = (listView.Tag as DirElement);
 			if ((xdb == null) || (parent == null))
 			{
 				return;
@@ -316,7 +316,7 @@ namespace CryptoDataBase
 			//TextBlockStatus1.Text = (AddedFilesCount++).ToString();
 			progressbar1.Value = 0;
 
-			ShowFiles((Element)listView.Tag);
+			ShowFiles(listView.Tag as Element);
 		}
 		#endregion
 
@@ -587,7 +587,7 @@ namespace CryptoDataBase
 				e.Handled = true;
 				if (listView.SelectedItem != null)
 				{
-					ShowFiles((Element)listView.SelectedItem);
+					ShowFiles(listView.SelectedItem as Element);
 				}
 			}
 
@@ -604,7 +604,7 @@ namespace CryptoDataBase
 
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.P))
 			{
-				OpenParentDir((Element)listView.SelectedItem);
+				OpenParentDir(listView.SelectedItem as Element);
 			}
 		}
 
@@ -617,8 +617,8 @@ namespace CryptoDataBase
 
 		private void OpenImage(Element file)
 		{
-			List<Element> list = (listView.ItemsSource as IEnumerable<Element>).Where(x => x.Type == ElementType.File && IsImage(x.Name)).ToList();// ((Element)listView.Tag).Elements.Where(x => x.Type == ElementType.File && isImage(x.Name)).ToList<Element>();
-			ImageViewer window = new ImageViewer(list, (Element)listView.SelectedItem, listView) { Owner = this };
+			List<Element> list = (listView.ItemsSource as IEnumerable<Element>).Where(x => x.Type == ElementType.File && IsImage(x.Name)).ToList();
+			ImageViewer window = new ImageViewer(list, listView.SelectedItem as FileElement, listView) { Owner = this };
 			window.Show();
 		}
 
@@ -644,14 +644,14 @@ namespace CryptoDataBase
 
 			if (e.Key == Key.F5)
 			{
-				ShowFiles((Element)listView.Tag);
+				ShowFiles(listView.Tag as DirElement);
 			}
 
 			if (e.Key == Key.Back)
 			{
 				if (LastParent != null)
 				{
-					var el = (Element)listView.Tag;
+					var el = listView.Tag as Element;
 					ShowFiles(LastParent.Parent == null ? LastParent : LastParent.Parent);
 					SelectItem(el);
 				}
@@ -693,10 +693,10 @@ namespace CryptoDataBase
 			{
 				Bitmap icon;
 
-				if (IsImage(((Element)listView.SelectedItem).Name))
+				if ((listView.SelectedItem is FileElement) && IsImage((listView.SelectedItem as Element).Name))
 				{
 					MemoryStream ms = new MemoryStream();
-					((Element)listView.SelectedItem).SaveTo(ms);
+					(listView.SelectedItem as FileElement).SaveTo(ms);
 					ms.Position = 0;
 					Bitmap tmp = new Bitmap(ms);
 					icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
@@ -705,7 +705,7 @@ namespace CryptoDataBase
 				}
 				else
 				{
-					icon = ((Element)listView.SelectedItem).Icon;
+					icon = (listView.SelectedItem as Element).Icon;
 				}
 
 				ShowList(xdb.FindAllByIcon(icon, 0));
@@ -768,7 +768,7 @@ namespace CryptoDataBase
 
 			if (Refresh)
 			{
-				ShowFiles((Element)listView.Tag, newFile);
+				ShowFiles(listView.Tag as Element, newFile);
 			}
 
 			if (clipboardClean_CheckBox.IsChecked == true)
@@ -809,7 +809,7 @@ namespace CryptoDataBase
 			CutList.Clear();
 			foreach (var item in listView.SelectedItems)
 			{
-				CutList.Add((Element)item);
+				CutList.Add(item as Element);
 			}
 		}
 
@@ -820,7 +820,7 @@ namespace CryptoDataBase
 				//return;
 			}
 
-			DirElement newParent = (DirElement)listView.Tag;
+			DirElement newParent = (listView.Tag as DirElement);
 
 			foreach (var item in CutList)
 			{
@@ -913,7 +913,7 @@ namespace CryptoDataBase
 				return;
 			}
 
-			Element element = (Element)listView.SelectedItem;
+			Element element = listView.SelectedItem as Element;
 
 			RenameWindow renamer = new RenameWindow(element.Name, element.Type) { Owner = this };
 			if (renamer.ShowDialog() == true)
@@ -944,7 +944,7 @@ namespace CryptoDataBase
 
 			/*if (listView.SelectedItems.Count > 0)
 			{
-				ShowFiles((Element)listView.Tag);
+				ShowFiles(listView.Tag as Element);
 			}*/
 		}
 
@@ -984,10 +984,10 @@ namespace CryptoDataBase
 		{
 			Bitmap icon;
 
-			if (IsImage(((Element)listView.SelectedItem).Name))
+			if ((listView.SelectedItem is FileElement) && IsImage((listView.SelectedItem as Element).Name))
 			{
 				MemoryStream ms = new MemoryStream();
-				((Element)listView.SelectedItem).SaveTo(ms);
+				(listView.SelectedItem as FileElement).SaveTo(ms);
 				ms.Position = 0;
 				Bitmap tmp = new Bitmap(ms);
 				icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
@@ -996,7 +996,7 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				icon = ((Element)listView.SelectedItem).Icon;
+				icon = (listView.SelectedItem as Element).Icon;
 			}
 
 			Finder f = new Finder(xdb, icon, ShowList);
@@ -1019,7 +1019,7 @@ namespace CryptoDataBase
 			if ((newdir.ShowDialog() == true) && (newdir.textBox.Text != ""))
 			{
 				var newDir = (listView.Tag as DirElement).CreateDir(newdir.textBox.Text);
-				ShowFiles(((Element)listView.Tag));
+				ShowFiles(listView.Tag as Element);
 				SelectItem(newDir);
 			}
 		}
@@ -1031,7 +1031,7 @@ namespace CryptoDataBase
 
 		private void MenuItem_CreateNewTextFile(object sender, RoutedEventArgs e)
 		{
-			if ((Element)listView.Tag != null)
+			if ((listView.Tag as Element) != null)
 			{
 
 				RenameWindow newDoc = new RenameWindow();// ".txt", ElementType.File);
@@ -1044,7 +1044,7 @@ namespace CryptoDataBase
 					Bitmap bmp = ImgConverter.GetIcon(".txt", thumbnailSize);
 					var newTextFile = (listView.Tag as DirElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
 					bmp?.Dispose();
-					ShowFiles((Element)listView.Tag);
+					ShowFiles(listView.Tag as Element);
 					SelectItem(newTextFile);
 				}
 			}

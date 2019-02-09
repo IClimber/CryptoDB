@@ -43,7 +43,7 @@ namespace CryptoDataBase
 			nextImg.Visibility = Visibility.Hidden;
 		}
 
-		public ImageViewer(List<Element> elementList, Element current, System.Windows.Controls.ListView ParentListView) : this()
+		public ImageViewer(List<Element> elementList, FileElement current, System.Windows.Controls.ListView ParentListView) : this()
 		{
 			parentListView = ParentListView;
 			elements = elementList;
@@ -130,7 +130,7 @@ namespace CryptoDataBase
 			Title = elements[currentIndex].Name;
 
 			MemoryStream ms = new MemoryStream();
-			elements[currentIndex].SaveTo(ms);
+			(elements[currentIndex] as FileElement).SaveTo(ms);
 			//image.SnapsToDevicePixels = false;
 			image.RenderTransform = new ScaleTransform();
 			Zoom = 1;

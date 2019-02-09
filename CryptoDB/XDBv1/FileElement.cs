@@ -80,7 +80,7 @@ namespace CryptoDataBase
 			_IsCompressed = isCompressed;
 			_Hash = tempHash;
 			_PHash = GetPHash(Icon);
-			_Parent = parent;
+			Parent = parent;
 
 			SaveInf();
 		}
@@ -125,12 +125,12 @@ namespace CryptoDataBase
 			header.SaveInfo(buf, realLength);
 		}
 
-		protected override UInt64 GetSize(UInt64 size)
+		private UInt64 GetSize(UInt64 size)
 		{
 			return _FileSize;
 		}
 
-		public override void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback Progress = null)
+		public void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback Progress = null)
 		{
 			if (_FileSize == 0)
 			{
@@ -230,7 +230,7 @@ namespace CryptoDataBase
 
 		protected override void ChangeParent(DirElement NewParent)
 		{
-			if ((NewParent == null) || !(NewParent is DirElement))
+			if (NewParent == null)
 			{
 				return;
 			}

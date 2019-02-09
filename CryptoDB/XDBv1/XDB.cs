@@ -200,28 +200,7 @@ namespace CryptoDataBase
 			foreach (var element in elementList)
 			{
 				DirElement parent = FindParentByID(dirsList, element.ParentID);
-				if (parent != null)
-				{
-					if (element is FileElement)
-					{
-						(element as FileElement).Parent = parent;
-					}
-					else if (element is DirElement)
-					{
-						(element as DirElement).Parent = parent;
-					}
-				}
-				else
-				{
-					if (element is FileElement)
-					{
-						(element as FileElement).Parent = this;
-					}
-					else if (element is DirElement)
-					{
-						(element as DirElement).Parent = this;
-					}
-				}
+				element.Parent = parent != null ? parent : this;
 			}
 		}
 
