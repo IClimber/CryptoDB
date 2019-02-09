@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CryptoDataBase
 {
@@ -25,14 +24,14 @@ namespace CryptoDataBase
 			_Elements = new List<Element>();
 		}
 
-		public DirElement(UInt64 ID)
-		{
-			_ID = ID;
-		}
-
 		private DirElement(string Name)
 		{
 			_Name = Name;
+		}
+
+		public DirElement(UInt64 ID)
+		{
+			_ID = ID;
 		}
 
 		//Створення папки при читані з файлу
@@ -299,6 +298,8 @@ namespace CryptoDataBase
 				(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
 				SaveInf();
 			}
+
+			base.Rename(newName);
 		}
 
 		public bool RemoveElementFromElementsList(Element element)
@@ -583,7 +584,7 @@ namespace CryptoDataBase
 				{
 					if (element is FileElement)
 					{
-						element.Delete();
+						(element as FileElement)._Delete();
 					}
 					else if (element is DirElement)
 					{

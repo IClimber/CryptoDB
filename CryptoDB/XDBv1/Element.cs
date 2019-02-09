@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace CryptoDataBase
 {
@@ -18,8 +15,8 @@ namespace CryptoDataBase
 
 		public event PropertyChangedEventHandler PropertyChanged;
 		protected Header header;
-		public virtual ElementType Type { get; }
-		public virtual UInt64 Size { get; }
+		public abstract ElementType Type { get; }
+		public abstract UInt64 Size { get; }
 		public bool Exists { get { return header.Exists; } }
 		public Bitmap Icon { get { return GetIcon(); } set { SetIcon(value); } }
 		public UInt64 IconStartPos { get { return _IconStartPos; } }
@@ -32,7 +29,7 @@ namespace CryptoDataBase
 		private byte[] __IconIV;
 		public UInt64 ParentID { get { return _ParentID; } }
 		protected UInt64 _ParentID;
-		public virtual DirElement Parent { get; set; }
+		public abstract DirElement Parent { get; set; }
 		protected DirElement _Parent;
 
 		public string Name { get { return _Name; } set { Rename(value); } }
@@ -51,12 +48,7 @@ namespace CryptoDataBase
 
 		}
 
-		public Element(string Name)
-		{
-			_Name = Name;
-		}
-
-		protected Element(Header header, SafeStreamAccess dataFileStream) : this()
+		protected Element(Header header, SafeStreamAccess dataFileStream)
 		{
 			this.header = header;
 			this.dataFileStream = dataFileStream;
@@ -72,10 +64,7 @@ namespace CryptoDataBase
 			return length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
 		}
 
-		protected virtual void SaveInf()
-		{
-			//return new byte[1];// _Type == ElementType.File ? ToBufferFileInf() : ToBufferDirInf();
-		}
+		protected abstract void SaveInf();
 
 		protected UInt64 GenID()
 		{
@@ -106,20 +95,11 @@ namespace CryptoDataBase
 			return result;
 		}
 
-		protected virtual void ChangeParent(DirElement NewParent)
-		{
+		protected abstract void ChangeParent(DirElement NewParent);
 
-		}
+		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
 
-		public virtual void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
-		{
-
-		}
-
-		public virtual void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
-		{
-
-		}
+		public abstract void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null);
 
 		private Bitmap GetIcon()
 		{
@@ -295,9 +275,6 @@ namespace CryptoDataBase
 			return (dist <= sensative) || (dist >= (64 - sensative));
 		}
 
-		public virtual bool Delete()
-		{
-			return true;
-		}
+		public abstract bool Delete();
 	}
 }

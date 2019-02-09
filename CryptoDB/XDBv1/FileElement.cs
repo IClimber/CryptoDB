@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
-using System.Drawing;
+using System.Text;
 
 namespace CryptoDataBase
 {
@@ -181,6 +178,8 @@ namespace CryptoDataBase
 				(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
 				SaveInf();
 			}
+
+			base.Rename(newName);
 		}
 
 		public void ChangeContent(Stream NewData, SafeStreamAccess.ProgressCallback Progress = null)
@@ -278,7 +277,7 @@ namespace CryptoDataBase
 			}
 		}
 
-		private bool _Delete()
+		public virtual bool _Delete()
 		{
 			try
 			{
