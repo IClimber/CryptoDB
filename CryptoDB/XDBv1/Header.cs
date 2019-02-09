@@ -143,6 +143,7 @@ namespace CryptoDataBase
 				DeleteAndWrite();
 				_Exists = true;
 				_StartPos = (UInt64)_headersFileStream.Length;
+				_InfSize = (ushort)info.Length;
 
 				Save();
 			}

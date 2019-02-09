@@ -37,10 +37,10 @@ namespace CryptoDataBase
 		}
 
 		//Створення файлу вручну
-		public FileElement(DirElement parent, SafeStreamAccess dataFileStream, string Name, Stream fileStream, bool isCompressed,
+		public FileElement(DirElement parent, Header parentHeader, SafeStreamAccess dataFileStream, string Name, Stream fileStream, bool isCompressed,
 			Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null)
 		{
-			header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.File);
+			header = new Header(parentHeader.headersFileStream, parentHeader.AES, ElementType.File);
 			this.dataFileStream = dataFileStream;
 
 			UInt64 fileSize = (UInt64)fileStream.Length;

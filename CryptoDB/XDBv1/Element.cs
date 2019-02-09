@@ -17,7 +17,7 @@ namespace CryptoDataBase
 		protected static Object _addFileLocker = new Object();
 
 		public event PropertyChangedEventHandler PropertyChanged;
-		public Header header;
+		protected Header header;
 		public virtual ElementType Type { get; }
 		public virtual UInt64 Size { get; }
 		public bool Exists { get { return header.Exists; } }

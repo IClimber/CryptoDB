@@ -49,7 +49,7 @@ namespace CryptoDataBase
 		//Створення папки вручну
 		protected DirElement(DirElement parent, SafeStreamAccess dataFileStream, string Name, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null) : this()
 		{
-			header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.File);
+			header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
 			this.dataFileStream = dataFileStream;
 
 			byte[] icon = GetIconBytes(Icon);
@@ -197,7 +197,7 @@ namespace CryptoDataBase
 				try
 				{
 					//зробити щось таке _changeElementsLocker тут 
-					file = new FileElement(this, dataFileStream, destFileName, stream, compressFile, Icon, Progress);
+					file = new FileElement(this, header, dataFileStream, destFileName, stream, compressFile, Icon, Progress);
 				}
 				catch
 				{
