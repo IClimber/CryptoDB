@@ -16,14 +16,14 @@ namespace CryptoDataBase
 		public Stream BaseStream { get { return _stream; } }
 		public long Length { get { return Math.Max(_stream.Length, _Length); } }
 		private long _Length;
-		private Object _freeSpaceMapLocker = new Object();
-		protected List<SPoint> FreeSpaceMap = new List<SPoint>();
+		private FreeSpaceMap freeSpaceMap;
 		//private byte[] ecnryptBuffer = new byte[1048576];
 		//private byte[] decryptBuffer = new byte[1048576];
 
 		public SafeStreamAccess(Stream stream)
 		{
 			_stream = stream;
+			freeSpaceMap = new FreeSpaceMap(stream.Length);
 		}
 
 		//Кодує файли, перед викликом не забути присвоїти потрібний IV
@@ -252,53 +252,14 @@ namespace CryptoDataBase
 			Buffer.BlockCopy(inputBuffer, lenght - 16, lastIV, 0, 16);
 		}
 
-		private int GetStartPos(UInt64 Size)
+		public UInt64 GetFreeSpaceStartPos(UInt64 size, bool withWrite = true)
 		{
-			int index = -1;
-			int min = 0,
-				max = FreeSpaceMap.Count - 1;
-
-			while (min <= max)
-			{
-				int mid = (min + max) / 2;
-				if (Size == FreeSpaceMap[mid].Size)
-				{
-					return mid;// ++mid;
-				}
-				else if (Size < FreeSpaceMap[mid].Size)
-				{
-					max = mid - 1;
-					index = mid;
-				}
-				else
-				{
-					min = mid + 1;
-				}
-			}
-			return index;
+			return freeSpaceMap.GetFreeSpacePos(size, Length, withWrite);
 		}
 
-		public UInt64 GetStartPosAndSaveChange(UInt64 Size)
+		public void RemoveFreeSpace(ulong start, ulong length)
 		{
-			lock (_freeSpaceMapLocker)
-			{
-				//Вибираємо місце куди писати файл
-				//Якщо розмір = 0, то генеримо любі цифри, так, як файл все одно не буде записуватись
-				if (Size == 0)
-				{
-					return CryptoRandom.Random(UInt64.MaxValue - 2) + 2;
-				}
-
-				UInt64 result = (ulong)Length;
-				int pos = GetStartPos(Size);
-				if (pos >= 0)
-				{
-					result = FreeSpaceMap[pos].Start;
-					FreeSpaceMap[pos] = new SPoint(FreeSpaceMap[pos].Start + Size, FreeSpaceMap[pos].Size - Size);
-				}
-
-				return result;
-			}
+			freeSpaceMap.RemoveFreeSpace(start, length);
 		}
 	}
 }

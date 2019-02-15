@@ -105,7 +105,6 @@ namespace CryptoDataBase
 			elements = null;
 			dirs.Clear();
 			dirs = null;
-			FreeSpaceAnalyse();
 		}
 
 		private Element GetNextElementFromStream(Stream stream)
@@ -141,57 +140,13 @@ namespace CryptoDataBase
 
 			if ((element is FileElement) && ((element as FileElement).Size > 0))
 			{
-				//FreeSpaceMap.Add(new SPoint((element as FileElement).FileStartPos, Element.GetMod16((element as FileElement).Size)));
+				dataFileStream.RemoveFreeSpace((element as FileElement).FileStartPos, GetMod16((element as FileElement).Size));
 			}
 
 			if (element.IconSize > 0)
 			{
-				//FreeSpaceMap.Add(new SPoint(element.IconStartPos, Element.GetMod16(element.IconSize)));
+				dataFileStream.RemoveFreeSpace(element.IconStartPos, GetMod16(element.IconSize));
 			}
-		}
-
-		private void FreeSpaceAnalyse()
-		{
-			//FreeSpaceMap.Sort(new PosComparer());
-			//int count = 0;
-			//UInt64 start = 0, size = 0;
-
-			//if (FreeSpaceMap.Count == 0)
-			//{
-			//	if (_dataFileStream.Length > 0)
-			//	{
-			//		FreeSpaceMap.Add(new SPoint(0, (UInt64)_dataFileStream.Length));
-			//	}
-			//	return;
-			//}
-
-			//if (FreeSpaceMap[0].Start > 0)
-			//{
-			//	FreeSpaceMap.Insert(0, new SPoint(0, FreeSpaceMap[0].Start));
-			//	count++;
-			//}
-
-			//for (int i = count; i < FreeSpaceMap.Count - 1; i++)
-			//{
-			//	if ((FreeSpaceMap[i].Start + FreeSpaceMap[i].Size) < FreeSpaceMap[i + 1].Start)
-			//	{
-			//		start = (FreeSpaceMap[i].Start + FreeSpaceMap[i].Size);
-			//		size = FreeSpaceMap[i + 1].Start - start;
-			//		FreeSpaceMap[count] = new SPoint(start, size);
-			//		count++;
-			//	}
-			//}
-
-			//if ((long)(FreeSpaceMap[FreeSpaceMap.Count - 1].Start + FreeSpaceMap[FreeSpaceMap.Count - 1].Size) < _dataFileStream.Length)
-			//{
-			//	start = FreeSpaceMap[FreeSpaceMap.Count - 1].Start + FreeSpaceMap[FreeSpaceMap.Count - 1].Size;
-			//	size = (UInt64)_dataFileStream.Length - start;
-			//	FreeSpaceMap[count] = new SPoint(start, size);
-			//	count++;
-			//}
-
-			//FreeSpaceMap.RemoveRange(count, FreeSpaceMap.Count - count);
-			//FreeSpaceMap.Sort(new PSizeComparer());
 		}
 
 		private void FillParents(List<DirElement> dirsList, List<Element> elementList)

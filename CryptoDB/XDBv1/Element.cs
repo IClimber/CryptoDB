@@ -161,7 +161,7 @@ namespace CryptoDataBase
 				{
 					lock (_addFileLocker)
 					{
-						_IconStartPos = dataFileStream.GetStartPosAndSaveChange(GetMod16(_IconSize));
+						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(_IconSize));
 
 						AesCryptoServiceProvider AES = GetFileAES(_IconIV);
 						dataFileStream.WriteEncrypt((long)_IconStartPos, buf, AES);

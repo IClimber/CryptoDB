@@ -416,7 +416,7 @@ namespace CryptoDataBase
 		private void XDBLoadCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
 			sw.Stop();
-			//TextBlockStatus1.Text = sw.ElapsedMilliseconds.ToString() + "ms";
+			Title = sw.ElapsedMilliseconds.ToString() + "ms";
 			progressbar1.Value = 0;
 
 			ShowFiles(xdb);
