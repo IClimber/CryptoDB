@@ -31,6 +31,10 @@ namespace CryptoDataBase
 		{
 			lock (_WriteLock)
 			{
+				if (streamOffset > _stream.Length)
+				{
+					throw new Exception("");
+				}
 				_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
 
 				byte[] buffer = new byte[1048576];
@@ -260,6 +264,11 @@ namespace CryptoDataBase
 		public void RemoveFreeSpace(ulong start, ulong length)
 		{
 			freeSpaceMap.RemoveFreeSpace(start, length);
+		}
+
+		public void AddFreeSpace(ulong start, ulong length)
+		{
+			freeSpaceMap.AddFreeSpace(start, length);
 		}
 	}
 }

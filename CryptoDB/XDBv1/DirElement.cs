@@ -53,7 +53,7 @@ namespace CryptoDataBase
 
 			byte[] icon = GetIconBytes(Icon);
 			UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
-			UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+			UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(iconSize == 0 ? 0 : GetMod16(iconSize)); //Вибираємо місце куди писати іконку
 
 			AesCryptoServiceProvider AES = GetFileAES(_IconIV);
 
@@ -579,6 +579,7 @@ namespace CryptoDataBase
 			try
 			{
 				header.DeleteAndWrite();
+				dataFileStream.AddFreeSpace(_IconStartPos, _IconSize == 0 ? 0 : GetMod16(_IconSize));
 
 				foreach (var element in _Elements)
 				{
