@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
 using System.Security.Cryptography;
 
-namespace CryptoDataBasev0
+namespace CryptoDataBase
 {
-	class XDB : Element
+	class XDB : DirElement
 	{
 		public delegate void ProgressCallback(double percent, string message);
 
@@ -16,12 +15,13 @@ namespace CryptoDataBasev0
 		FileStream _headersFileStream;
 		FileStream _dataFileStream;
 
-		public XDB(string FileName, string Password, ProgressCallback Progress = null) : base(true)
+		public XDB(string FileName, string Password, ProgressCallback Progress = null)
 		{
 			Progress?.Invoke(0, "Creating AES key");
 			InitKey(Password);
-			head = new Head();
-			head.AES = AES;
+
+			_addElementLocker = new Object();
+			_changeElementsLocker = new Object();
 
 			string DataFilename = Path.GetDirectoryName(FileName) + "\\" + Path.GetFileNameWithoutExtension(FileName) + ".Data";
 
@@ -46,15 +46,24 @@ namespace CryptoDataBasev0
 				_dataFileStream = new FileStream(DataFilename, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
 			}
 
-			headersFileStream = new SafeStreamAccess(_headersFileStream);
+			header = new Header(new SafeStreamAccess(_headersFileStream), AES, ElementType.Dir);
+
 			dataFileStream = new SafeStreamAccess(_dataFileStream);
 
 			ReadFileStruct(Progress);
 		}
 
+		private void ReadVersion(Stream stream)
+		{
+			stream.Position = 0;
+			byte[] buf = new byte[1];
+			stream.Read(buf, 0, 1);
+			Version = buf[0];
+		}
+
 		private void ReadFileStruct(ProgressCallback Progress)
 		{
-			List<Element> dirs = new List<Element>(); //Потім зробити приватним
+			List<DirElement> dirs = new List<DirElement>(); //Потім зробити приватним
 			List<Element> elements = new List<Element>();
 			dirs.Add(this);
 
@@ -70,20 +79,17 @@ namespace CryptoDataBasev0
 
 				Progress?.Invoke(_headersFileStream.Position / (double)_headersFileStream.Length * 100.0, "Read file list");
 			}
-			headers.Position = 1;
+			//headers.Position = 1;
+			ReadVersion(headers);
 
 			int lastProgress = 0;
 
 			while (headers.Position < headers.Length) //Читаємо список файлів з пам’яті
 			{
-				Head head = new Head(headers, (UInt64)headers.Position, AES);
-				if (head.Exists)
+				Element element = GetNextElementFromStream(headers);
+				if (element != null)
 				{
-					AddElement(dirs, elements, new Element(headers, headersFileStream, dataFileStream, head));
-				}
-				else
-				{
-					headers.Position += head.InfSize;
+					AddElement(dirs, elements, element);
 				}
 
 				percent = headers.Position / (double)headers.Length * 100.0;
@@ -94,6 +100,7 @@ namespace CryptoDataBasev0
 				}
 			}
 
+			dataFileStream.FreeSpaceAnalyse();
 			headers.Dispose();
 
 			FillParents(dirs, elements);
@@ -101,92 +108,64 @@ namespace CryptoDataBasev0
 			elements = null;
 			dirs.Clear();
 			dirs = null;
-			FreeSpaceAnalyse();
 		}
 
-		private void AddElement(List<Element> DirsList, List<Element> elementList, Element element)
+		private Element GetNextElementFromStream(Stream stream)
 		{
-			elementList.Add(element);
-			if (element.Type == ElementType.Dir)
+			Header header = new Header(stream, (UInt64)stream.Position, this.header.headersFileStream, AES);
+
+			if (header.Exists)
 			{
-				DirsList.Add(element);
+				if (header.ElType == ElementType.File)
+				{
+					return new FileElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
+				}
+				else if (header.ElType == ElementType.Dir)
+				{
+					return new DirElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
+				}
+			}
+			else
+			{
+				stream.Position += header.InfSize;
 			}
 
-			if ((element.Type == ElementType.File) && (element.Size > 0))
+			return null;
+		}
+
+		private void AddElement(List<DirElement> DirsList, List<Element> elementList, Element element)
+		{
+			elementList.Add(element);
+			if (element is DirElement)
 			{
-				FreeSpaceMap.Add(new SPoint(element.FileStartPos, Element.GetMod16(element.Size)));
+				DirsList.Add(element as DirElement);
+			}
+
+			if ((element is FileElement) && ((element as FileElement).Size > 0))
+			{
+				dataFileStream.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
 			}
 
 			if (element.IconSize > 0)
 			{
-				FreeSpaceMap.Add(new SPoint(element.IconStartPos, Element.GetMod16(element.IconSize)));
+				dataFileStream.RemoveFreeSpace(element.IconStartPos, Crypto.GetMod16(element.IconSize));
 			}
 		}
 
-		private void FreeSpaceAnalyse()
-		{
-			FreeSpaceMap.Sort(new PosComparer());
-			int count = 0;
-			UInt64 start = 0, size = 0;
-
-			if (FreeSpaceMap.Count == 0)
-			{
-				if (_dataFileStream.Length > 0)
-				{
-					FreeSpaceMap.Add(new SPoint(0, (UInt64)_dataFileStream.Length));
-				}
-				return;
-			}
-
-			if (FreeSpaceMap[0].Start > 0)
-			{
-				FreeSpaceMap.Insert(0, new SPoint(0, FreeSpaceMap[0].Start));
-				count++;
-			}
-
-			for (int i = count; i < FreeSpaceMap.Count - 1; i++)
-			{
-				if ((FreeSpaceMap[i].Start + FreeSpaceMap[i].Size) < FreeSpaceMap[i + 1].Start)
-				{
-					start = (FreeSpaceMap[i].Start + FreeSpaceMap[i].Size);
-					size = FreeSpaceMap[i + 1].Start - start;
-					FreeSpaceMap[count] = new SPoint(start, size);
-					count++;
-				}
-			}
-
-			if ((long)(FreeSpaceMap[FreeSpaceMap.Count - 1].Start + FreeSpaceMap[FreeSpaceMap.Count - 1].Size) < _dataFileStream.Length)
-			{
-				start = FreeSpaceMap[FreeSpaceMap.Count - 1].Start + FreeSpaceMap[FreeSpaceMap.Count - 1].Size;
-				size = (UInt64)_dataFileStream.Length - start;
-				FreeSpaceMap[count] = new SPoint(start, size);
-				count++;
-			}
-
-			FreeSpaceMap.RemoveRange(count, FreeSpaceMap.Count - count);
-			FreeSpaceMap.Sort(new PSizeComparer());
-		}
-
-		private void FillParents(List<Element> dirsList, List<Element> elementList)
+		private void FillParents(List<DirElement> dirsList, List<Element> elementList)
 		{
 			dirsList.Sort(new IDComparer());
 			foreach (var element in elementList)
 			{
-				Element parent = FindParentByID(dirsList, element.ParentID);
-				if (parent != null)
-				{
-					element.LocalParent = parent;
-				}
-				else
-				{
-					element.LocalParent = this;
-				}
+				DirElement parent = FindParentByID(dirsList, element.ParentID);
+				element.Parent = parent != null ? parent : this;
 			}
 		}
 
-		private Element FindParentByID(List<Element> dirs, UInt64 ParentID) //Шукає в сортованому по ID списку
+		//Шукає в сортованому по ID списку
+		private DirElement FindParentByID(List<DirElement> dirs, UInt64 ParentID)
 		{
-			var dir = new Element(ParentID);
+			var dir = new DirElement(ParentID);
 			int index = dirs.BinarySearch(dir, new IDComparer());
 
 			return index >= 0 ? dirs[index] : null;

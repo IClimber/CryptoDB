@@ -2,7 +2,7 @@
 using System.IO;
 using System;
 
-namespace CryptoDataBasev0
+namespace CryptoDataBase
 {
 	public class Crypto
 	{
@@ -57,6 +57,16 @@ namespace CryptoDataBasev0
 		{
 			CryptoStream cs = new CryptoStream(inputStream, AES.CreateDecryptor(), CryptoStreamMode.Read);
 			cs.Read(outputData, 0, DataSize);
+		}
+
+		public static UInt16 GetMod16(UInt16 length)
+		{
+			return (UInt16)GetMod16((UInt64)length);
+		}
+
+		public static UInt64 GetMod16(UInt64 length)
+		{
+			return length == 0 ? 0 : length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
 		}
 	}
 }

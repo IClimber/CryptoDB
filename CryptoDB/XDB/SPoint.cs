@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CryptoDataBasev0
+namespace CryptoDataBase
 {
-	public struct SPoint
+	public class SPoint
 	{
 		public UInt64 Start;
 		public UInt64 Size;
@@ -14,6 +14,11 @@ namespace CryptoDataBasev0
 		{
 			Start = start;
 			Size = size;
+		}
+
+		public SPoint Clone()
+		{
+			return new SPoint(Start, Size);
 		}
 	}
 }

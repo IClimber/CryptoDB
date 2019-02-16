@@ -4,11 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace CryptoDataBasev0
+namespace CryptoDataBase
 {
-	public class IDComparer : IComparer<Element>
+	public class IDComparer : IComparer<DirElement>
 	{
-		int IComparer<Element>.Compare(Element x, Element y)
+		int IComparer<DirElement>.Compare(DirElement x, DirElement y)
 		{
 			return x.ID == y.ID ? 0 : x.ID < y.ID ? -1 : 1;
 		}
