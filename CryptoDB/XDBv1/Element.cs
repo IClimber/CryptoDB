@@ -10,9 +10,8 @@ namespace CryptoDataBase
 {
 	public abstract class Element : INotifyPropertyChanged
 	{
-		protected static Object _changeElementsLocker = new Object();
-		protected static Object _addFileLocker = new Object();
-
+		protected Object _addElementLocker;
+		protected Object _changeElementsLocker;
 		public event PropertyChangedEventHandler PropertyChanged;
 		protected Header header;
 		public abstract ElementType Type { get; }
@@ -48,20 +47,18 @@ namespace CryptoDataBase
 
 		}
 
-		protected Element(Header header, SafeStreamAccess dataFileStream)
+		protected Element(Header header, SafeStreamAccess dataFileStream, Object addElementLocker, Object changeElementsLocker)
 		{
 			this.header = header;
 			this.dataFileStream = dataFileStream;
+			_addElementLocker = addElementLocker;
+			_changeElementsLocker = changeElementsLocker;
 		}
 
-		public static UInt16 GetMod16(UInt16 length)
+		protected Element(Object addElementLocker, Object changeElementsLocker)
 		{
-			return (UInt16)GetMod16((UInt64)length);
-		}
-
-		public static UInt64 GetMod16(UInt64 length)
-		{
-			return length == 0 ? 0 : length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
+			_addElementLocker = addElementLocker;
+			_changeElementsLocker = changeElementsLocker;
 		}
 
 		protected abstract void SaveInf();
@@ -141,38 +138,39 @@ namespace CryptoDataBase
 
 		private void SetIcon(Bitmap icon)
 		{
-			byte[] buf;
-			UInt32 oldIconSize = _IconSize;
-			//Якщо стара іконка видаляється, то зробити пошук в FreeSpaceMap і додавати туди вільне місце
-			_IconSize = 0;
-			_IconStartPos = GenID();
-			_PHash = GetPHash(Icon);
-
-			if (icon != null)
+			lock (_addElementLocker)
 			{
-				buf = GetIconBytes(icon);
+				byte[] buf;
+				UInt32 oldIconSize = _IconSize;
+				//Якщо стара іконка видаляється, то зробити пошук в FreeSpaceMap і додавати туди вільне місце
+				_IconSize = 0;
+				_IconStartPos = GenID();
+				_PHash = GetPHash(Icon);
 
-				_IconSize = (UInt32)buf.Length;
-				if (_IconSize == 0) //Вибираємо місце куди писати іконку
+				if (icon != null)
 				{
-					_IconStartPos = GenID();
-				}
-				else
-				{
-					lock (_addFileLocker)
+					buf = GetIconBytes(icon);
+
+					_IconSize = (UInt32)buf.Length;
+					if (_IconSize == 0) //Вибираємо місце куди писати іконку
 					{
-						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(_IconSize));
+						_IconStartPos = GenID();
+					}
+					else
+					{
+
+						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(_IconSize));
 
 						AesCryptoServiceProvider AES = GetFileAES(_IconIV);
 						dataFileStream.WriteEncrypt((long)_IconStartPos, buf, AES);
 					}
 				}
+
+				SaveInf();
+				NotifyPropertyChanged("Icon");
+
+				buf = null;
 			}
-
-			SaveInf();
-			NotifyPropertyChanged("Icon");
-
-			buf = null;
 		}
 
 		protected byte[] GetIconBytes(Bitmap Icon)

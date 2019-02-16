@@ -20,6 +20,9 @@ namespace CryptoDataBase
 			Progress?.Invoke(0, "Creating AES key");
 			InitKey(Password);
 
+			_addElementLocker = new Object();
+			_changeElementsLocker = new Object();
+
 			string DataFilename = Path.GetDirectoryName(FileName) + "\\" + Path.GetFileNameWithoutExtension(FileName) + ".Data";
 
 			try
@@ -115,11 +118,11 @@ namespace CryptoDataBase
 			{
 				if (header.ElType == ElementType.File)
 				{
-					return new FileElement(header, dataFileStream);
+					return new FileElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
 				}
 				else if (header.ElType == ElementType.Dir)
 				{
-					return new DirElement(header, dataFileStream);
+					return new DirElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
 				}
 			}
 			else
@@ -140,12 +143,12 @@ namespace CryptoDataBase
 
 			if ((element is FileElement) && ((element as FileElement).Size > 0))
 			{
-				dataFileStream.RemoveFreeSpace((element as FileElement).FileStartPos, GetMod16((element as FileElement).Size));
+				dataFileStream.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
 			}
 
 			if (element.IconSize > 0)
 			{
-				dataFileStream.RemoveFreeSpace(element.IconStartPos, GetMod16(element.IconSize));
+				dataFileStream.RemoveFreeSpace(element.IconStartPos, Crypto.GetMod16(element.IconSize));
 			}
 		}
 

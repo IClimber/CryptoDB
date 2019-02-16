@@ -24,6 +24,11 @@ namespace CryptoDataBase
 			_Elements = new List<Element>();
 		}
 
+		protected DirElement(Object addElementLocker, Object changeElementsLocker) : base(addElementLocker, changeElementsLocker)
+		{
+			_Elements = new List<Element>();
+		}
+
 		private DirElement(string Name)
 		{
 			_Name = Name;
@@ -35,7 +40,7 @@ namespace CryptoDataBase
 		}
 
 		//Створення папки при читані з файлу
-		public DirElement(Header header, SafeStreamAccess dataFileStream) : base(header, dataFileStream)
+		public DirElement(Header header, SafeStreamAccess dataFileStream, Object addElementLocker, Object changeElementsLocker) : base(header, dataFileStream, addElementLocker, changeElementsLocker)
 		{
 			_Elements = new List<Element>();
 			byte[] buf = header.GetInfoBuf();
@@ -46,31 +51,35 @@ namespace CryptoDataBase
 		}
 
 		//Створення папки вручну
-		protected DirElement(DirElement parent, SafeStreamAccess dataFileStream, string Name, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null) : this()
+		protected DirElement(DirElement parent, SafeStreamAccess dataFileStream, string Name, Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null,
+			SafeStreamAccess.ProgressCallback Progress = null) : this(addElementLocker, changeElementsLocker)
 		{
-			header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
-			this.dataFileStream = dataFileStream;
-
-			byte[] icon = GetIconBytes(Icon);
-			UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
-			UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(iconSize)); //Вибираємо місце куди писати іконку
-
-			AesCryptoServiceProvider AES = GetFileAES(_IconIV);
-
-			if ((icon != null) && (iconSize > 0))
+			lock (_addElementLocker)
 			{
-				dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+				header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
+				this.dataFileStream = dataFileStream;
+
+				byte[] icon = GetIconBytes(Icon);
+				UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
+				UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+
+				AesCryptoServiceProvider AES = GetFileAES(_IconIV);
+
+				if ((icon != null) && (iconSize > 0))
+				{
+					dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+				}
+
+				_Name = Name;
+				_ID = GenID();
+				_ParentID = parent.ID;
+				_IconStartPos = iconStartPos;
+				_IconSize = iconSize;
+				_PHash = GetPHash(Icon);
+				Parent = parent;
+
+				SaveInf();
 			}
-
-			_Name = Name;
-			_ID = GenID();
-			_ParentID = parent.ID;
-			_IconStartPos = iconStartPos;
-			_IconSize = iconSize;
-			_PHash = GetPHash(Icon);
-			Parent = parent;
-
-			SaveInf();
 		}
 
 		private UInt64 GetSize(UInt64 size)
@@ -174,34 +183,26 @@ namespace CryptoDataBase
 
 		private FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null, bool isPrivate = true)
 		{
-			lock (_addFileLocker)
+			lock (_changeElementsLocker)
 			{
-				lock (_changeElementsLocker)
+				if (FindByName(_Elements, destFileName) != null)
 				{
-					if (FindByName(_Elements, destFileName) != null)
-					{
-						throw new Exception("Файл або папка з таким ім’ям вже є.");
-					}
-				}				
-
-				FileElement file;
-
-				try
-				{
-					//зробити щось таке _changeElementsLocker тут 
-					file = new FileElement(this, header, dataFileStream, destFileName, stream, compressFile, Icon, Progress);
-				}
-				catch
-				{
-					throw new Exception("Файл або іконка не записались.");
-				}
-
-				lock (_changeElementsLocker)
-				{
-					//Добавити створений файл в список файлів цієї папки
-					return file;
+					throw new Exception("Файл або папка з таким ім’ям вже є.");
 				}
 			}
+
+			FileElement file;
+
+			try
+			{
+				file = new FileElement(this, header, dataFileStream, destFileName, stream, compressFile, _addElementLocker, _changeElementsLocker, Icon, Progress);
+			}
+			catch
+			{
+				throw new Exception("Файл або іконка не записались.");
+			}
+
+			return file;
 		}
 
 		public FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null)
@@ -276,7 +277,10 @@ namespace CryptoDataBase
 
 		public void RefreshChildOrders()
 		{
-			_Elements.Sort(new NameComparer());
+			lock (_changeElementsLocker)
+			{
+				_Elements.Sort(new NameComparer());
+			}
 		}
 
 		protected override void Rename(string newName)
@@ -294,28 +298,34 @@ namespace CryptoDataBase
 					return;
 				}
 
-				_Name = newName;
-				(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
-				SaveInf();
-			}
+				lock (_addElementLocker)
+				{
+					_Name = newName;
+					(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
+					SaveInf();
 
-			base.Rename(newName);
+					base.Rename(newName);
+				}
+			}
 		}
 
 		public bool RemoveElementFromElementsList(Element element)
 		{
-			int index;
+			lock (_changeElementsLocker)
+			{
+				int index;
 
-			try
-			{
-				if (FindByName(_Elements, element.Name, out index) != null)
+				try
 				{
-					_Elements.RemoveAt(index);
+					if (FindByName(_Elements, element.Name, out index) != null)
+					{
+						_Elements.RemoveAt(index);
+					}
 				}
-			}
-			catch
-			{
-				return false;
+				catch
+				{
+					return false;
+				}
 			}
 
 			return true;
@@ -323,15 +333,18 @@ namespace CryptoDataBase
 
 		public bool InsertElementToElementsList(Element element)
 		{
-			int index;
+			lock (_changeElementsLocker)
+			{
+				int index;
 
-			if (FindByName(_Elements, element.Name, out index) == null)
-			{
-				_Elements.Insert(index, element);
-			}
-			else
-			{
-				throw new Exception("Елемент з такою назвою в цьому списку вже є!");
+				if (FindByName(_Elements, element.Name, out index) == null)
+				{
+					_Elements.Insert(index, element);
+				}
+				else
+				{
+					throw new Exception("Елемент з такою назвою в цьому списку вже є!");
+				}
 			}
 
 
@@ -352,7 +365,7 @@ namespace CryptoDataBase
 		{
 			DirElement result;
 
-			//lock (_changeElementsLocker)
+			lock (_changeElementsLocker)
 			{
 				foreach (DirElement element in _Elements.Where(x => (x.Type == ElementType.Dir)))
 				{
@@ -375,20 +388,26 @@ namespace CryptoDataBase
 		//Шукає в сортованому по Name списку
 		private Element FindByName(List<Element> elements, string Name)
 		{
-			int index = elements.BinarySearch(new DirElement(Name), new NameComparer());
-			Element result = index >= 0 ? elements[index] : null;
+			lock (_changeElementsLocker)
+			{
+				int index = elements.BinarySearch(new DirElement(Name), new NameComparer());
+				Element result = index >= 0 ? elements[index] : null;
 
-			return result;
+				return result;
+			}
 		}
 
 		//Шукає в сортованому по Name списку
 		private Element FindByName(List<Element> elements, string Name, out int index)
 		{
-			index = elements.BinarySearch(new DirElement(Name), new NameComparer());
-			Element result = index >= 0 ? elements[index] : null;
-			index = index < 0 ? Math.Abs(index) - 1 : index;
+			lock (_changeElementsLocker)
+			{
+				index = elements.BinarySearch(new DirElement(Name), new NameComparer());
+				Element result = index >= 0 ? elements[index] : null;
+				index = index < 0 ? Math.Abs(index) - 1 : index;
 
-			return result;
+				return result;
+			}
 		}
 
 		public List<Element> FindByName(string Name, bool FindAsTags = false, bool AllTagsRequired = false, bool FindInSubDirectories = true)
@@ -480,10 +499,7 @@ namespace CryptoDataBase
 
 			try
 			{
-				lock (_addFileLocker)
-				{
-					dir = new DirElement(this, dataFileStream, Name, Icon);
-				}
+				dir = new DirElement(this, dataFileStream, Name, _addElementLocker, _changeElementsLocker, Icon);
 			}
 			catch
 			{
@@ -579,7 +595,7 @@ namespace CryptoDataBase
 			try
 			{
 				header.DeleteAndWrite();
-				dataFileStream.AddFreeSpace(_IconStartPos, GetMod16(_IconSize));
+				dataFileStream.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
 
 				foreach (var element in _Elements)
 				{

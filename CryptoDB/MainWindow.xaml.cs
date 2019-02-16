@@ -908,7 +908,7 @@ namespace CryptoDataBase
 
 		public void Rename()
 		{
-			if ((listView.SelectedItem == null) || (!editable))
+			if (listView.SelectedItem == null)
 			{
 				return;
 			}

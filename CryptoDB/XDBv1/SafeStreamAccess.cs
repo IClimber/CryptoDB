@@ -8,6 +8,7 @@ namespace CryptoDataBase
 	public class SafeStreamAccess
 	{
 		public delegate void ProgressCallback(double percent);
+		public readonly Object writeLock = new Object();
 		private Object _ReadWriteLock = new Object();
 		private Object _WriteLock = new Object();
 		private Stream _stream;
@@ -33,7 +34,15 @@ namespace CryptoDataBase
 				{
 					throw new Exception("");
 				}
-				_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+
+				if (AES.Padding == PaddingMode.None)
+				{
+					_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+				}
+				else
+				{
+					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)(inputStream.Length - inputStream.Position));
+				}
 
 				byte[] buffer = new byte[1048576];
 				CryptoStream cs = new CryptoStream(_stream, AES.CreateEncryptor(), CryptoStreamMode.Write);
@@ -72,12 +81,19 @@ namespace CryptoDataBase
 			}
 		}
 
-		//Кодує файли, перед викликом не забути присвоїти потрібний IV
+		//Кодує і записує масив байт, перед викликом не забути присвоїти потрібний IV
 		public void WriteEncrypt(long streamOffset, byte[] inputData, AesCryptoServiceProvider AES)
 		{
 			lock (_WriteLock)
 			{
-				_Length = streamOffset + inputData.Length;
+				if (AES.Padding == PaddingMode.None)
+				{
+					_Length = streamOffset + inputData.Length;
+				}
+				else
+				{
+					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)inputData.Length);
+				}
 
 				lock (_ReadWriteLock)
 				{
@@ -179,7 +195,7 @@ namespace CryptoDataBase
 			byte[] buffer = new byte[1048576];
 			byte[] outputBuffer = new byte[buffer.Length];
 			byte[] IV = AES.IV;
-			long max = (long)Element.GetMod16((ulong)dataSize);
+			long max = (long)Crypto.GetMod16((ulong)dataSize);
 			long position = streamOffset;
 
 			while (max > 0)

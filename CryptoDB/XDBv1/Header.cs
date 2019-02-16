@@ -123,11 +123,14 @@ namespace CryptoDataBase
 
 		public bool Save()
 		{
-			SetAESValue();
+			lock (_headersFileStream.writeLock)
+			{
+				SetAESValue();
 
-			byte[] buf = ToBufferFirstBlock();
-			_headersFileStream.Write((long)(_StartPos), buf, 0, buf.Length);
-			_headersFileStream.WriteEncrypt((long)(_StartPos) + buf.Length, ToBufferEncryptBlock(), AES);
+				byte[] buf = ToBufferFirstBlock();
+				_headersFileStream.Write((long)(_StartPos), buf, 0, buf.Length);
+				_headersFileStream.WriteEncrypt((long)(_StartPos) + buf.Length, ToBufferEncryptBlock(), AES);
+			}
 
 			writedInFile = true;
 
@@ -138,19 +141,22 @@ namespace CryptoDataBase
 		{
 			CryptoRandom.GetBytes(info, realLength, info.Length - realLength);
 
-			if (info.Length > _InfSize)
+			lock (_headersFileStream.writeLock)
 			{
-				DeleteAndWrite();
-				_Exists = true;
-				_StartPos = (UInt64)_headersFileStream.Length;
-				_InfSize = (ushort)info.Length;
+				if (info.Length > _InfSize)
+				{
+					DeleteAndWrite();
+					_Exists = true;
+					_StartPos = (UInt64)_headersFileStream.Length;
+					_InfSize = (ushort)info.Length;
 
-				Save();
+					Save();
+				}
+
+				SetAESValue();
+
+				_headersFileStream.WriteEncrypt((long)(_StartPos + Length), info, AES);
 			}
-
-			SetAESValue();
-
-			_headersFileStream.WriteEncrypt((long)(_StartPos + Length), info, AES);
 
 			return true;
 		}

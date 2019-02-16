@@ -317,55 +317,58 @@ namespace CryptoDataBase
 				return;
 			}
 
-			_freeSpaceMapPos.Sort(new PosComparer());
-			int count = 0;
-			UInt64 start = 0;
-			UInt64 size = 0;
-
-			if (_freeSpaceMapPos.Count == 0)
+			lock (_freeSpaceMapLocker)
 			{
-				if (fileSize > 0)
+				_freeSpaceMapPos.Sort(new PosComparer());
+				int count = 0;
+				UInt64 start = 0;
+				UInt64 size = 0;
+
+				if (_freeSpaceMapPos.Count == 0)
 				{
-					_freeSpaceMapPos.Add(new SPoint(0, fileSize));
+					if (fileSize > 0)
+					{
+						_freeSpaceMapPos.Add(new SPoint(0, fileSize));
+					}
+
+					_isAnalysed = true;
+
+					return;
 				}
 
-				_isAnalysed = true;
-
-				return;
-			}
-
-			if (_freeSpaceMapPos[0].Start > 0)
-			{
-				_freeSpaceMapPos.Insert(0, new SPoint(0, _freeSpaceMapPos[0].Start));
-				count++;
-			}
-
-			for (int i = count; i < _freeSpaceMapPos.Count - 1; i++)
-			{
-				if ((_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size) < _freeSpaceMapPos[i + 1].Start)
+				if (_freeSpaceMapPos[0].Start > 0)
 				{
-					start = (_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size);
-					size = _freeSpaceMapPos[i + 1].Start - start;
+					_freeSpaceMapPos.Insert(0, new SPoint(0, _freeSpaceMapPos[0].Start));
+					count++;
+				}
+
+				for (int i = count; i < _freeSpaceMapPos.Count - 1; i++)
+				{
+					if ((_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size) < _freeSpaceMapPos[i + 1].Start)
+					{
+						start = (_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size);
+						size = _freeSpaceMapPos[i + 1].Start - start;
+						_freeSpaceMapPos[count] = new SPoint(start, size);
+						count++;
+					}
+				}
+
+				if ((_freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size) < fileSize)
+				{
+					start = _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size;
+					size = fileSize - start;
 					_freeSpaceMapPos[count] = new SPoint(start, size);
 					count++;
 				}
+
+				_freeSpaceMapPos.RemoveRange(count, _freeSpaceMapPos.Count - count);
+
+				_freeSpaceMapSize.Clear();
+				_freeSpaceMapSize.AddRange(_freeSpaceMapPos);
+				_freeSpaceMapSize.Sort(new PSizeComparer());
+
+				_isAnalysed = true;
 			}
-
-			if ((_freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size) < fileSize)
-			{
-				start = _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size;
-				size = fileSize - start;
-				_freeSpaceMapPos[count] = new SPoint(start, size);
-				count++;
-			}
-
-			_freeSpaceMapPos.RemoveRange(count, _freeSpaceMapPos.Count - count);
-
-			_freeSpaceMapSize.Clear();
-			_freeSpaceMapSize.AddRange(_freeSpaceMapPos);
-			_freeSpaceMapSize.Sort(new PSizeComparer());
-
-			_isAnalysed = true;
 		}
 	}
 }
