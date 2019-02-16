@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace CryptoDataBase
@@ -23,7 +21,7 @@ namespace CryptoDataBase
 		public SafeStreamAccess(Stream stream)
 		{
 			_stream = stream;
-			freeSpaceMap = new FreeSpaceMap(stream.Length);
+			freeSpaceMap = new FreeSpaceMap(stream.Length, false);
 		}
 
 		//Кодує файли, перед викликом не забути присвоїти потрібний IV
@@ -269,6 +267,11 @@ namespace CryptoDataBase
 		public void AddFreeSpace(ulong start, ulong length)
 		{
 			freeSpaceMap.AddFreeSpace(start, length);
+		}
+
+		public void FreeSpaceAnalyse()
+		{
+			freeSpaceMap.FreeSpaceAnalyse((UInt64)Length);
 		}
 	}
 }

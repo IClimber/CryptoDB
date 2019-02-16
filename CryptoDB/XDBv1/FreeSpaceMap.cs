@@ -8,14 +8,21 @@ namespace CryptoDataBase
 		private Object _freeSpaceMapLocker = new Object();
 		private List<SPoint> _freeSpaceMapSize = new List<SPoint>();
 		private List<SPoint> _freeSpaceMapPos = new List<SPoint>();
+		private bool _realTimeCalculating;
+		private bool _isAnalysed = false;
 
-		public FreeSpaceMap(long freeSpaceSize)
+		public FreeSpaceMap(long freeSpaceSize, bool realTimeCalculating)
 		{
-			SPoint freeSpace = new SPoint(0, (ulong)freeSpaceSize);
-			if (freeSpaceSize > 0)
+			_realTimeCalculating = realTimeCalculating;
+
+			if (_realTimeCalculating)
 			{
-				_freeSpaceMapPos.Add(freeSpace);
-				_freeSpaceMapSize.Add(freeSpace);
+				SPoint freeSpace = new SPoint(0, (ulong)freeSpaceSize);
+				if (freeSpaceSize > 0)
+				{
+					_freeSpaceMapPos.Add(freeSpace);
+					_freeSpaceMapSize.Add(freeSpace);
+				}
 			}
 		}
 
@@ -126,6 +133,13 @@ namespace CryptoDataBase
 					return;
 				}
 
+				if (!_realTimeCalculating)
+				{
+					_freeSpaceMapPos.Add(new SPoint(start, length));
+
+					return;
+				}
+
 				int indexByPos = _GetIndexByPos(start);
 
 				if (indexByPos < 0)
@@ -162,6 +176,11 @@ namespace CryptoDataBase
 				if (size == 0)
 				{
 					return CryptoRandom.Random(UInt64.MaxValue - 2) + 2;
+				}
+
+				if (!_realTimeCalculating && !_isAnalysed)
+				{
+					throw new Exception("Не було проведено аналіз вільного місця. Використай метод FreeSpaceAnalyse()");
 				}
 
 				UInt64 result = (ulong)fileSize;
@@ -207,6 +226,11 @@ namespace CryptoDataBase
 				if (length == 0)
 				{
 					return true;
+				}
+
+				if (!_realTimeCalculating && !_isAnalysed)
+				{
+					throw new Exception("Не було проведено аналіз вільного місця. Використай метод FreeSpaceAnalyse()");
 				}
 
 				if (_freeSpaceMapPos.Count == 0)
@@ -284,6 +308,61 @@ namespace CryptoDataBase
 			indexBySize = indexBySize < 0 ? Math.Abs(indexBySize) - 1 : indexBySize;
 
 			_freeSpaceMapSize.Insert(indexBySize, sPoint);
+		}
+
+		public void FreeSpaceAnalyse(UInt64 fileSize)
+		{
+			if (_realTimeCalculating || _isAnalysed)
+			{
+				return;
+			}
+
+			_freeSpaceMapPos.Sort(new PosComparer());
+			int count = 0;
+			UInt64 start = 0;
+			UInt64 size = 0;
+
+			if (_freeSpaceMapPos.Count == 0)
+			{
+				if (fileSize > 0)
+				{
+					_freeSpaceMapPos.Add(new SPoint(0, fileSize));
+				}
+				return;
+			}
+
+			if (_freeSpaceMapPos[0].Start > 0)
+			{
+				_freeSpaceMapPos.Insert(0, new SPoint(0, _freeSpaceMapPos[0].Start));
+				count++;
+			}
+
+			for (int i = count; i < _freeSpaceMapPos.Count - 1; i++)
+			{
+				if ((_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size) < _freeSpaceMapPos[i + 1].Start)
+				{
+					start = (_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size);
+					size = _freeSpaceMapPos[i + 1].Start - start;
+					_freeSpaceMapPos[count] = new SPoint(start, size);
+					count++;
+				}
+			}
+
+			if ((_freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size) < fileSize)
+			{
+				start = _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size;
+				size = fileSize - start;
+				_freeSpaceMapPos[count] = new SPoint(start, size);
+				count++;
+			}
+
+			_freeSpaceMapPos.RemoveRange(count, _freeSpaceMapPos.Count - count);
+
+			_freeSpaceMapSize.Clear();
+			_freeSpaceMapSize.AddRange(_freeSpaceMapPos);
+			_freeSpaceMapSize.Sort(new PSizeComparer());
+
+			_isAnalysed = true;
 		}
 	}
 }
