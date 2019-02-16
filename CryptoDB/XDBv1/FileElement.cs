@@ -46,9 +46,9 @@ namespace CryptoDataBase
 			byte[] icon = GetIconBytes(Icon);
 			UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
 
-			UInt64 fileStartPos = dataFileStream.GetFreeSpaceStartPos(fileSize == 0 ? 0 : GetMod16(fileSize)); //Вибираємо місце куди писати файл
-			UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(iconSize == 0 ? 0 : GetMod16(iconSize)); //Вибираємо місце куди писати іконку
-			iconStartPos = (iconStartPos == fileStartPos) ? iconStartPos += fileSize == 0 ? 0 : GetMod16(fileSize) : iconStartPos;
+			UInt64 fileStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(fileSize)); //Вибираємо місце куди писати файл
+			UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+			iconStartPos = (iconStartPos == fileStartPos) ? iconStartPos += GetMod16(fileSize) : iconStartPos;
 			
 			AesCryptoServiceProvider AES = GetFileAES(_FileIV);
 
@@ -190,7 +190,7 @@ namespace CryptoDataBase
 				UInt64 fileStartPos = _FileStartPos;
 				if (fileSize >= GetMod16(_FileSize))
 				{
-					fileStartPos = dataFileStream.GetFreeSpaceStartPos(fileSize == 0 ? 0 : GetMod16(fileSize)); //Вибираємо місце куди писати файл
+					fileStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(fileSize)); //Вибираємо місце куди писати файл
 				}
 
 				byte[] tempHash;
@@ -282,8 +282,8 @@ namespace CryptoDataBase
 			try
 			{
 				header.DeleteAndWrite();
-				dataFileStream.AddFreeSpace(_FileStartPos, _FileSize == 0 ? 0 : GetMod16(_FileSize));
-				dataFileStream.AddFreeSpace(_IconStartPos, _IconSize == 0 ? 0 : GetMod16(_IconSize));
+				dataFileStream.AddFreeSpace(_FileStartPos, GetMod16(_FileSize));
+				dataFileStream.AddFreeSpace(_IconStartPos, GetMod16(_IconSize));
 			}
 			catch
 			{

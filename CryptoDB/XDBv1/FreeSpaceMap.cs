@@ -148,10 +148,7 @@ namespace CryptoDataBase
 				_InsertSPointToSizeMap(sPoint);
 
 				if (newSPoint != null)
-				{
-					//indexByPos = freeSpaceMapPos.BinarySearch(newSPoint, new PosComparer());
-					//indexByPos = indexByPos < 0 ? Math.Abs(indexByPos) - 1 : indexByPos;
-					
+				{					
 					_InsertSPointToSizeMap(newSPoint);
 					_freeSpaceMapPos.Insert(indexByPos + 1, newSPoint);
 				}

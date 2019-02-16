@@ -61,7 +61,7 @@ namespace CryptoDataBase
 
 		public static UInt64 GetMod16(UInt64 length)
 		{
-			return length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
+			return length == 0 ? 0 : length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
 		}
 
 		protected abstract void SaveInf();
@@ -161,7 +161,7 @@ namespace CryptoDataBase
 				{
 					lock (_addFileLocker)
 					{
-						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(_IconSize == 0 ? 0 : GetMod16(_IconSize));
+						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(GetMod16(_IconSize));
 
 						AesCryptoServiceProvider AES = GetFileAES(_IconIV);
 						dataFileStream.WriteEncrypt((long)_IconStartPos, buf, AES);
