@@ -328,6 +328,9 @@ namespace CryptoDataBase
 				{
 					_freeSpaceMapPos.Add(new SPoint(0, fileSize));
 				}
+
+				_isAnalysed = true;
+
 				return;
 			}
 
