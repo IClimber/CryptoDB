@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CDB;
+using ImageConverter;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -130,11 +131,23 @@ namespace CryptoDataBase
 			image.RenderTransform = new ScaleTransform();
 			Zoom = 1;
 			//image.Source = img;
+			//BitmapFrame bmp = null;
 
-			ms.Position = 0;
-			var bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-			ImageBehavior.SetAnimatedSource(image, bmp);
-			//bmp = null;
+			BitmapImage bmp = null;
+			try
+			{
+				ms.Position = 0;
+				bmp = ImgConverter.StreamToBitmapImage(ms);
+				image.Source = bmp;
+				//bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+				//ImageBehavior.SetAnimatedSource(image, bmp);
+				//bmp = null;
+			}
+			catch
+			{
+
+			}
+
 			ms.Dispose();
 
 			TextBlockStatus1.Text = "Image size: " + FormatingSize(elements[currentIndex].Size);
