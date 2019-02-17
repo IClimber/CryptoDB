@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Security.Cryptography;
+using CryptoDataBase.CDB.Exceptions;
 
 namespace CryptoDataBase.CDB
 {
-	class XDB : DirElement
+	class XDB : DirElement, IDisposable
 	{
 		public delegate void ProgressCallback(double percent, string message);
 
@@ -50,7 +51,14 @@ namespace CryptoDataBase.CDB
 
 			dataFileStream = new SafeStreamAccess(_dataFileStream);
 
-			ReadFileStruct(Progress);
+			try
+			{
+				ReadFileStruct(Progress);
+			}
+			catch (Exception e)
+			{
+				throw new ReadingDataException("Помилка читання даних. Можливо невірний пароль.");
+			}
 		}
 
 		private void ReadVersion(Stream stream)
@@ -193,6 +201,12 @@ namespace CryptoDataBase.CDB
 			AES.BlockSize = 128;
 			AES.Key = key.GetBytes(AES.KeySize / 8);
 			AES.Mode = CipherMode.CBC;
+		}
+
+		public void Dispose()
+		{
+			dataFileStream?.Close();
+			header?.headersFileStream.Close();
 		}
 	}
 }

@@ -1,5 +1,6 @@
 ﻿using ClipboardAssist;
 using CryptoDataBase.CDB;
+using CryptoDataBase.CDB.Exceptions;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -50,6 +51,7 @@ namespace CryptoDataBase
 			set { _ShowDuplicateMessage = value; }
 		}
 		public bool _ShowDuplicateMessage = true;
+		private bool _faildedOpen = false;
 
 		private void MoveTest()
 		{
@@ -406,7 +408,15 @@ namespace CryptoDataBase
 				return;
 			}
 
-			xdb = new XDB(databaseFile, e.Argument.ToString(), PerortProgress);
+			try
+			{
+				xdb = new XDB(databaseFile, e.Argument.ToString(), PerortProgress);
+			} 
+			catch (ReadingDataException ex)
+			{
+				_faildedOpen = true;
+				System.Windows.MessageBox.Show(ex.Message);
+			}
 		}
 
 		private void PerortProgress(double progress, string message)
@@ -425,6 +435,12 @@ namespace CryptoDataBase
 
 		private void XDBLoadCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
+			if (_faildedOpen)
+			{
+				OpenOrCreateCDB();
+				return;
+			}
+
 			sw.Stop();
 			Title = sw.ElapsedMilliseconds.ToString() + "ms";
 			progressbar1.Value = 0;
@@ -454,7 +470,7 @@ namespace CryptoDataBase
 
 			databaseFile = op.FileName;
 
-			Window_Loaded(null, null);
+			OpenOrCreateCDB();
 		}
 
 		private void ShowInfo()
@@ -993,8 +1009,10 @@ namespace CryptoDataBase
 			return false;
 		}
 
-		private void Window_Loaded(object sender, RoutedEventArgs e)
+		private void OpenOrCreateCDB()
 		{
+			_faildedOpen = false;
+
 			if ((databaseFile == "") || (!editable))
 			{
 				return;
@@ -1012,6 +1030,11 @@ namespace CryptoDataBase
 			{
 				xdbLoadWorker.RunWorkerAsync(password);
 			}
+		}
+
+		private void Window_Loaded(object sender, RoutedEventArgs e)
+		{
+			OpenOrCreateCDB();
 		}
 
 		private void FindDuplicate()

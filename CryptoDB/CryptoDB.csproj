@@ -101,6 +101,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="CDB\Exceptions\DuplicatesFileNameException.cs" />
+    <Compile Include="CDB\Exceptions\ReadingDataException.cs" />
     <Compile Include="CDB\Exceptions\RecursiveFolderAttachmentException.cs" />
     <Compile Include="CDB\Exceptions\HeaderWasNotWrittenException.cs" />
     <Compile Include="ClipboardChange.cs">
