@@ -56,29 +56,32 @@ namespace CryptoDataBase
 		{
 			lock (_addElementLocker)
 			{
-				header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
-				this.dataFileStream = dataFileStream;
-
-				byte[] icon = GetIconBytes(Icon);
-				UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
-				UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
-
-				AesCryptoServiceProvider AES = GetFileAES(_IconIV);
-
-				if ((icon != null) && (iconSize > 0))
+				lock (dataFileStream.writeLock)
 				{
-					dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+					header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
+					this.dataFileStream = dataFileStream;
+
+					byte[] icon = GetIconBytes(Icon);
+					UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
+					UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+
+					AesCryptoServiceProvider AES = GetFileAES(_IconIV);
+
+					if ((icon != null) && (iconSize > 0))
+					{
+						dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+					}
+
+					_Name = Name;
+					_ID = GenID();
+					_ParentID = parent.ID;
+					_IconStartPos = iconStartPos;
+					_IconSize = iconSize;
+					_PHash = GetPHash(Icon);
+					Parent = parent;
+
+					SaveInf();
 				}
-
-				_Name = Name;
-				_ID = GenID();
-				_ParentID = parent.ID;
-				_IconStartPos = iconStartPos;
-				_IconSize = iconSize;
-				_PHash = GetPHash(Icon);
-				Parent = parent;
-
-				SaveInf();
 			}
 		}
 
@@ -225,7 +228,7 @@ namespace CryptoDataBase
 			}
 		}
 
-		protected override void ChangeParent(DirElement NewParent)
+		private void ChangeParent(DirElement NewParent)
 		{
 			if ((NewParent == null) || (NewParent == this))
 			{
@@ -298,7 +301,7 @@ namespace CryptoDataBase
 					return;
 				}
 
-				lock (_addElementLocker)
+				lock (dataFileStream.writeLock)
 				{
 					_Name = newName;
 					(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
@@ -594,7 +597,7 @@ namespace CryptoDataBase
 		{
 			try
 			{
-				header.DeleteAndWrite();
+				header.Delete();
 				dataFileStream.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
 
 				foreach (var element in _Elements)

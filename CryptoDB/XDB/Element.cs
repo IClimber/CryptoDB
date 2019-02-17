@@ -16,7 +16,8 @@ namespace CryptoDataBase
 		protected Header header;
 		public abstract ElementType Type { get; }
 		public abstract UInt64 Size { get; }
-		public bool Exists { get { return header.Exists; } }
+		public bool Exists { get { return _Exists; } }
+		protected bool _Exists { get { return header.Exists; } set { if (value) header.Restore(); else header.Delete(); } }
 		public Bitmap Icon { get { return GetIcon(); } set { SetIcon(value); } }
 		public UInt64 IconStartPos { get { return _IconStartPos; } }
 		protected UInt64 _IconStartPos;
@@ -92,7 +93,7 @@ namespace CryptoDataBase
 			return result;
 		}
 
-		protected abstract void ChangeParent(DirElement NewParent);
+		//protected abstract void ChangeParent(DirElement NewParent);
 
 		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
 

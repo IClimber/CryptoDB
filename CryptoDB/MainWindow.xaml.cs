@@ -186,8 +186,8 @@ namespace CryptoDataBase
 			}
 
 			DuplicatesWindow duplicateWindow = null;
-			this.Dispatcher.Invoke(() => duplicateWindow = new DuplicatesWindow(thumbnail, mainFileName, duplicates) { Owner = this });
-			this.Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
+			Dispatcher.Invoke(() => duplicateWindow = new DuplicatesWindow(thumbnail, mainFileName, duplicates) { Owner = this });
+			Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
 		}
 
 		private void AddFile(FileItem item)

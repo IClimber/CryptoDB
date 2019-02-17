@@ -39,11 +39,7 @@ namespace CryptoDataBase
 		{
 			lock (_addElementLocker)
 			{
-				header = new Header(parentHeader.headersFileStream, parentHeader.AES, ElementType.File);
-				this.dataFileStream = dataFileStream;
-
 				UInt64 fileSize = (UInt64)fileStream.Length;
-				byte[] tempHash;
 
 				byte[] icon = GetIconBytes(Icon);
 				UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
@@ -52,16 +48,31 @@ namespace CryptoDataBase
 				UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
 				iconStartPos = (iconStartPos == fileStartPos) ? iconStartPos += Crypto.GetMod16(fileSize) : iconStartPos;
 
+				lock (dataFileStream.writeLock)
+				{
+					header = new Header(parentHeader.headersFileStream, parentHeader.AES, ElementType.File);
+					this.dataFileStream = dataFileStream;
+
+					_Name = Name;
+					_ParentID = parent.ID;
+					_FileStartPos = fileStartPos;
+					_FileSize = fileSize;
+					_IconStartPos = iconStartPos;
+					_IconSize = iconSize;
+					_IsCompressed = isCompressed;
+					_Hash = new byte[16];
+					CryptoRandom.GetBytes(_Hash);
+					_PHash = GetPHash(Icon);
+
+					SaveInf();
+					_Exists = false;
+				}
+
 				AesCryptoServiceProvider AES = GetFileAES(_FileIV);
 
 				if (fileSize > 0)
 				{
-					dataFileStream.WriteEncrypt((long)fileStartPos, fileStream, AES, out tempHash, Progress);
-				}
-				else
-				{
-					tempHash = new byte[16];
-					CryptoRandom.GetBytes(tempHash);
+					dataFileStream.WriteEncrypt((long)fileStartPos, fileStream, AES, out _Hash, Progress);
 				}
 
 				if ((icon != null) && (iconSize > 0))
@@ -70,18 +81,9 @@ namespace CryptoDataBase
 					dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
 				}
 
-				_Name = Name;
-				_ParentID = parent.ID;
-				_FileStartPos = fileStartPos;
-				_FileSize = fileSize;
-				_IconStartPos = iconStartPos;
-				_IconSize = iconSize;
-				_IsCompressed = isCompressed;
-				_Hash = tempHash;
-				_PHash = GetPHash(Icon);
-				Parent = parent;
-
-				SaveInf();
+				//Закидаємо файл в потрібну папку і записуємо зміни
+				_Exists = true;
+				ChangeParent(parent, true);
 			}
 		}
 
@@ -175,7 +177,7 @@ namespace CryptoDataBase
 				throw new Exception("Файл з таким ім'ям вже є");
 			}
 
-			lock (_addElementLocker)
+			lock (dataFileStream.writeLock)
 			{
 				lock (_changeElementsLocker)
 				{
@@ -233,7 +235,7 @@ namespace CryptoDataBase
 			}
 		}
 
-		protected override void ChangeParent(DirElement NewParent)
+		private void ChangeParent(DirElement NewParent, bool withWrite = false)
 		{
 			if (NewParent == null)
 			{
@@ -252,7 +254,7 @@ namespace CryptoDataBase
 					(_Parent as DirElement).RemoveElementFromElementsList(this);
 				}
 
-				bool writeToFile = _ParentID != NewParent.ID;
+				bool writeToFile = _ParentID != NewParent.ID || withWrite;
 				_Parent = NewParent;
 				_ParentID = NewParent.ID;
 
@@ -287,7 +289,7 @@ namespace CryptoDataBase
 		{
 			try
 			{
-				header.DeleteAndWrite();
+				header.Delete();
 				dataFileStream.AddFreeSpace(_FileStartPos, Crypto.GetMod16(_FileSize));
 				dataFileStream.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
 			}

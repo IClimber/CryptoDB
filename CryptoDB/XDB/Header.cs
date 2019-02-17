@@ -145,7 +145,7 @@ namespace CryptoDataBase
 			{
 				if (info.Length > _InfSize)
 				{
-					DeleteAndWrite();
+					Delete();
 					_Exists = true;
 					_StartPos = (UInt64)_headersFileStream.Length;
 					_InfSize = (ushort)info.Length;
@@ -178,13 +178,23 @@ namespace CryptoDataBase
 			return infDdata;
 		}
 
-		public void DeleteAndWrite()
+		public void Delete()
 		{
 			_Exists = false;
 
 			if (writedInFile)
 			{
-				_headersFileStream.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!Exists) * 128 + (int)CryptoRandom.Random(128)));
+				_headersFileStream.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
+			}
+		}
+
+		public void Restore()
+		{
+			_Exists = true;
+
+			if (writedInFile)
+			{
+				_headersFileStream.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
 			}
 		}
 	}
