@@ -5,8 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using CryptoDataBase.CDB.Exceptions;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class DirElement : Element
 	{
@@ -190,7 +191,7 @@ namespace CryptoDataBase
 			{
 				if (FindByName(_Elements, destFileName) != null)
 				{
-					throw new Exception("Файл або папка з таким ім’ям вже є.");
+					throw new DuplicatesFileNameException("Файл або папка з таким ім’ям вже є.");
 				}
 			}
 
@@ -202,7 +203,7 @@ namespace CryptoDataBase
 			}
 			catch
 			{
-				throw new Exception("Файл або іконка не записались.");
+				throw new DataWasNotWrittenException("Файл або іконка не записались.");
 			}
 
 			return file;
@@ -246,7 +247,7 @@ namespace CryptoDataBase
 
 				if (FindSubDirByID(NewParent.ID) != null)
 				{
-					throw new Exception("Невірна вкладеність папок");
+					throw new RecursiveFolderAttachmentException("Невірна вкладеність папок");
 				}
 
 				int index;
@@ -268,7 +269,7 @@ namespace CryptoDataBase
 				}
 				else
 				{
-					throw new Exception("Елемент з такою назвою в цьому списку вже є!");
+					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
 				}
 
 				if (writeToFile)
@@ -346,7 +347,7 @@ namespace CryptoDataBase
 				}
 				else
 				{
-					throw new Exception("Елемент з такою назвою в цьому списку вже є!");
+					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
 				}
 			}
 
@@ -494,7 +495,7 @@ namespace CryptoDataBase
 			{
 				if (FindByName(_Elements, Name, out index) != null)
 				{
-					throw new Exception("Не можна створити папку. Файл з таким ім’ям вже є.");
+					throw new DuplicatesFileNameException("Не можна створити папку. Файл з таким ім’ям вже є.");
 				}
 			}
 
@@ -506,7 +507,7 @@ namespace CryptoDataBase
 			}
 			catch
 			{
-				throw new Exception("Іконка папки не записалась.");
+				throw new DataWasNotWrittenException("Іконка папки не записалась.");
 			}
 
 			return dir;

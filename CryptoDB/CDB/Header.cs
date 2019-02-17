@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.IO;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	//Працює тільки з файлом заголовківю
 	//При шифрувані доповнення не використовується

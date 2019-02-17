@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class SafeStreamAccess
 	{

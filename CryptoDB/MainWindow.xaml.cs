@@ -1,18 +1,18 @@
-﻿using System;
+﻿using ClipboardAssist;
+using CryptoDataBase.CDB;
+using ImageConverter;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Diagnostics;
-using System.IO;
-using System.ComponentModel;
-using System.Drawing;
-using ImageConverter;
 using System.Windows.Forms;
-using System.Drawing.Imaging;
-using ClipboardAssist;
+using System.Windows.Input;
 
 namespace CryptoDataBase
 {
@@ -215,7 +215,17 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				DirElement newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
+				DirElement newParent;
+
+				try
+				{
+					newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
+				}
+				catch (Exception e)
+				{
+					System.Windows.MessageBox.Show(e.Message);
+					return;
+				}
 
 				foreach (FileItem sub_item in item.children)
 				{
@@ -737,7 +747,7 @@ namespace CryptoDataBase
 				return;
 			}
 
-			Element newFile;
+			Element newFile = null;
 			Bitmap tmp = ImgConverter.BitmapFromSource(System.Windows.Clipboard.GetImage());
 			using (MemoryStream stream = new MemoryStream())
 			{
@@ -761,7 +771,16 @@ namespace CryptoDataBase
 				}
 
 				stream.Position = 0;
-				newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
+				try
+				{
+					newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
+				}
+				catch (Exception e)
+				{
+					Refresh = false;
+					System.Windows.MessageBox.Show(e.Message);
+
+				}
 				icon?.Dispose();
 			}
 			tmp?.Dispose();
@@ -824,7 +843,14 @@ namespace CryptoDataBase
 
 			foreach (var item in CutList)
 			{
-				item.Parent = newParent;
+				try
+				{
+					item.Parent = newParent;
+				}
+				catch
+				{
+
+				}
 			}
 
 			if (CutList.Count > 0)
@@ -918,7 +944,15 @@ namespace CryptoDataBase
 			RenameWindow renamer = new RenameWindow(element.Name, element.Type) { Owner = this };
 			if (renamer.ShowDialog() == true)
 			{
-				element.Name = renamer.textBox.Text;
+				try
+				{
+					element.Name = renamer.textBox.Text;
+				}
+				catch (Exception ex)
+				{
+					System.Windows.MessageBox.Show(ex.Message);
+					return;
+				}
 			}
 		}
 
@@ -1018,7 +1052,17 @@ namespace CryptoDataBase
 			newdir.label.Content = "Имя папки";
 			if ((newdir.ShowDialog() == true) && (newdir.textBox.Text != ""))
 			{
-				var newDir = (listView.Tag as DirElement).CreateDir(newdir.textBox.Text);
+				DirElement newDir;
+				try
+				{
+					newDir = (listView.Tag as DirElement).CreateDir(newdir.textBox.Text);
+				}
+				catch (Exception ex)
+				{
+					System.Windows.MessageBox.Show(ex.Message);
+					return;
+				}
+
 				ShowFiles(listView.Tag as Element);
 				SelectItem(newDir);
 			}
@@ -1042,7 +1086,15 @@ namespace CryptoDataBase
 				{
 					Stream ms = Stream.Null;
 					Bitmap bmp = ImgConverter.GetIcon(".txt", thumbnailSize);
-					var newTextFile = (listView.Tag as DirElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
+					FileElement newTextFile = null;
+					try
+					{
+						newTextFile = (listView.Tag as DirElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
+					}
+					catch (Exception ex)
+					{
+						System.Windows.MessageBox.Show(ex.Message);
+					}
 					bmp?.Dispose();
 					ShowFiles(listView.Tag as Element);
 					SelectItem(newTextFile);

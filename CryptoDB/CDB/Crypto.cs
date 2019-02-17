@@ -2,7 +2,7 @@
 using System.IO;
 using System;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class Crypto
 	{

@@ -1,18 +1,13 @@
-﻿using System;
+﻿using CryptoDataBase.CDB;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Forms;
-using System.IO;
-using ImageConverter;
 using WpfAnimatedGif;
 
 namespace CryptoDataBase
@@ -311,7 +306,16 @@ namespace CryptoDataBase
 			RenameWindow renamer = new RenameWindow(elements[currentIndex].Name, elements[currentIndex].Type) { Owner = this };
 			if (renamer.ShowDialog() == true)
 			{
-				elements[currentIndex].Name = renamer.textBox.Text;
+				try
+				{
+					elements[currentIndex].Name = renamer.textBox.Text;
+				}
+				catch (Exception ex)
+				{
+					System.Windows.MessageBox.Show(ex.Message);
+					return;
+				}
+
 				Title = elements[currentIndex].Name;
 			}
 		}

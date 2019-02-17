@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class FreeSpaceMap
 	{

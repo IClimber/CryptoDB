@@ -3,8 +3,9 @@ using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using CryptoDataBase.CDB.Exceptions;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class FileElement : Element
 	{
@@ -174,7 +175,7 @@ namespace CryptoDataBase
 
 			if ((_Parent as DirElement).FileExists(newName))
 			{
-				throw new Exception("Файл з таким ім'ям вже є");
+				throw new DuplicatesFileNameException("Файл з таким ім'ям вже є");
 			}
 
 			lock (dataFileStream.writeLock)
@@ -218,9 +219,9 @@ namespace CryptoDataBase
 				}
 				catch
 				{
-					throw new Exception("Файл не записався.");
+					throw new DataWasNotWrittenException("Файл не записався.");
 				}
-
+			
 				try
 				{
 					_FileStartPos = fileStartPos;
@@ -230,7 +231,7 @@ namespace CryptoDataBase
 				}
 				catch
 				{
-					throw new Exception("Інформація про зміни не записалась!");
+					throw new HeaderWasNotWrittenException("Інформація про зміни не записалась!");
 				}
 			}
 		}

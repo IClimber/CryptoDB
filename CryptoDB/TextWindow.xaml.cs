@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using CryptoDataBase.CDB;
+using System;
 using System.IO;
-using System.Windows.Controls;
-using System.Windows.Data;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
 namespace CryptoDataBase
@@ -118,7 +110,14 @@ namespace CryptoDataBase
 			}
 
 			ms.Position = 0;
-			element.ChangeContent(ms);
+			try
+			{
+				element.ChangeContent(ms);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message);
+			}
 			ms.Dispose();
 			textHash = newHash;
 		}

@@ -100,6 +100,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CDB\Exceptions\DuplicatesFileNameException.cs" />
+    <Compile Include="CDB\Exceptions\RecursiveFolderAttachmentException.cs" />
+    <Compile Include="CDB\Exceptions\HeaderWasNotWrittenException.cs" />
     <Compile Include="ClipboardChange.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -124,19 +127,20 @@
     <Compile Include="WpfAnimatedGif\Decoding\GifTrailer.cs" />
     <Compile Include="WpfAnimatedGif\ImageAnimationController.cs" />
     <Compile Include="WpfAnimatedGif\ImageBehavior.cs" />
-    <Compile Include="XDB\ArrayReader.cs" />
-    <Compile Include="XDB\Comparers.cs" />
-    <Compile Include="XDB\Crypto.cs" />
-    <Compile Include="XDB\CryptoRandom.cs" />
-    <Compile Include="XDB\Element.cs" />
-    <Compile Include="XDB\ElementType.cs" />
-    <Compile Include="XDB\DirElement.cs" />
-    <Compile Include="XDB\FileElement.cs" />
-    <Compile Include="XDB\FreeSpaceMap.cs" />
-    <Compile Include="XDB\Header.cs" />
-    <Compile Include="XDB\SafeStreamAccess.cs" />
-    <Compile Include="XDB\SPoint.cs" />
-    <Compile Include="XDB\XDB.cs" />
+    <Compile Include="CDB\ArrayReader.cs" />
+    <Compile Include="CDB\Comparers.cs" />
+    <Compile Include="CDB\Crypto.cs" />
+    <Compile Include="CDB\CryptoRandom.cs" />
+    <Compile Include="CDB\Element.cs" />
+    <Compile Include="CDB\ElementType.cs" />
+    <Compile Include="CDB\DirElement.cs" />
+    <Compile Include="CDB\Exceptions\DataWasNotWrittenException.cs" />
+    <Compile Include="CDB\FileElement.cs" />
+    <Compile Include="CDB\FreeSpaceMap.cs" />
+    <Compile Include="CDB\Header.cs" />
+    <Compile Include="CDB\SafeStreamAccess.cs" />
+    <Compile Include="CDB\SPoint.cs" />
+    <Compile Include="CDB\XDB.cs" />
     <Compile Include="DuplicatesWindow.xaml.cs">
       <DependentUpon>DuplicatesWindow.xaml</DependentUpon>
     </Compile>

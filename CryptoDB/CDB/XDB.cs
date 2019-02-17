@@ -4,7 +4,7 @@ using System.Text;
 using System.IO;
 using System.Security.Cryptography;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	class XDB : DirElement
 	{
@@ -158,7 +158,14 @@ namespace CryptoDataBase
 			foreach (var element in elementList)
 			{
 				DirElement parent = FindParentByID(dirsList, element.ParentID);
-				element.Parent = parent != null ? parent : this;
+				try
+				{
+					element.Parent = parent != null ? parent : this;
+				}
+				catch
+				{
+
+				}
 			}
 		}
 
