@@ -11,7 +11,9 @@ namespace CryptoDataBase.CDB
 	{
 		public const int FileInfLength = 63;
 		public override ElementType Type { get { return ElementType.File; } }
-		public override UInt64 Size { get { return GetSize(0); } }
+		public override UInt64 Size { get { return GetSize(); } }
+		public override UInt64 FullSize { get { return GetFullSize(); } }
+		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
 		public byte[] Hash { get { return _Hash; } }
 		public bool IsCompressed { get { return _IsCompressed; } }
 		public UInt64 FileStartPos { get { return _FileStartPos; } }
@@ -128,9 +130,19 @@ namespace CryptoDataBase.CDB
 			header.SaveInfo(buf, realLength);
 		}
 
-		private UInt64 GetSize(UInt64 size)
+		private UInt64 GetSize()
 		{
 			return _FileSize;
+		}
+
+		private UInt64 GetFullSize()
+		{
+			return _FileSize + _IconSize;
+		}
+
+		private UInt64 GetFullEncryptSize()
+		{
+			return Crypto.GetMod16(_FileSize) + Crypto.GetMod16(_IconSize);
 		}
 
 		public void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback Progress = null)

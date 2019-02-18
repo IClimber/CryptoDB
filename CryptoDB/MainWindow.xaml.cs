@@ -1213,6 +1213,11 @@ namespace CryptoDataBase
 		{
 			save_real_file_name = (sender as System.Windows.Controls.CheckBox).IsChecked == true;
 		}
+
+		private void MenuItem_Info(object sender, RoutedEventArgs e)
+		{
+
+		}
 	}
 
 	class ExportInfo

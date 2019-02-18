@@ -30,11 +30,16 @@ namespace CryptoDataBase
 				Title += (i < (Math.Min(elements.Count, 3) - 1)) ? elements[i].Name + ", " : elements.Count > 3 ? elements[i].Name + "..." : elements[i].Name;
 			}
 
-			ulong data_size = GetSize(elements);
+			ulong data_size;
+			ulong fullSize;
+			ulong fullEncryptSize;
+			GetSize(elements, out data_size, out fullSize, out fullEncryptSize);
 			ParentLabel.Text = GetPath(elements);
 			FilesCountLabel.Text = GetFilesCount(elements).ToString("#,0");
 			DirsCountLabel.Text = GetDirsCount(elements).ToString("#,0");
 			SizeLabel.Text = SizeToStr(data_size) + " (" + data_size.ToString("#,0") + " байт)";
+			FullSizeLabel.Text = SizeToStr(fullSize) + " (" + fullSize.ToString("#,0") + " байт)";
+			FullEncryptSizeLabel.Text = SizeToStr(fullEncryptSize) + " (" + fullEncryptSize.ToString("#,0") + " байт)";
 
 			if (elements.Count == 1)
 			{
@@ -96,15 +101,17 @@ namespace CryptoDataBase
 			return result;
 		}
 
-		private UInt64 GetSize(List<Element> elements)
+		private void GetSize(List<Element> elements, out UInt64 size, out UInt64 fullSize, out UInt64 fullEncryptSize)
 		{
-			UInt64 size = 0;
+			size = 0;
+			fullSize = 0;
+			fullEncryptSize = 0;
 			for (int i = 0; i < elements.Count; i++)
 			{
 				size += elements[i].Size;
+				fullSize += elements[i].FullSize;
+				fullEncryptSize += elements[i].FullEncryptSize;
 			}
-
-			return size;
 		}
 
 		private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

@@ -16,6 +16,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*" Name="IconRow"/>
 		</Grid.RowDefinitions>
 
@@ -39,11 +41,21 @@
 			<TextBlock Name="SizeLabel"/>
 		</Label>
 
-		<StackPanel Grid.Row="4">
+		<Label Content="Полный размер:" Grid.Row="4" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+		<Label Grid.Row="4" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
+			<TextBlock Name="FullSizeLabel"/>
+		</Label>
+
+		<Label Content="Шифрованный размер:" Grid.Row="5" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+		<Label Grid.Row="5" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
+			<TextBlock Name="FullEncryptSizeLabel"/>
+		</Label>
+
+		<StackPanel Grid.Row="6">
 			<Label Content="Иконка:" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 			<Button Content="Изменить" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ChangeIcon_Button_Click"/>
 			<Button Content="Удалить" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ClearIcon_Button_Click"/>
 		</StackPanel>
-		<Image Name="Thumbnail" Grid.Row="4" Grid.Column="1" Width="200" Height="200" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" Stretch="None"/>
+		<Image Name="Thumbnail" Grid.Row="6" Grid.Column="1" Width="200" Height="200" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" Stretch="None"/>
 	</Grid>
 </Window>

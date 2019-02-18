@@ -16,6 +16,8 @@ namespace CryptoDataBase.CDB
 		protected Header header;
 		public abstract ElementType Type { get; }
 		public abstract UInt64 Size { get; }
+		public abstract UInt64 FullSize { get; }
+		public abstract UInt64 FullEncryptSize { get; }
 		public bool Exists { get { return _Exists; } }
 		protected bool _Exists { get { return header.Exists; } set { if (value) header.Restore(); else header.Delete(); } }
 		public Bitmap Icon { get { return GetIcon(); } set { SetIcon(value); } }

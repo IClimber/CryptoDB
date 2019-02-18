@@ -13,7 +13,9 @@ namespace CryptoDataBase.CDB
 	{
 		public override ElementType Type { get { return ElementType.Dir; } }
 		public IList<Element> Elements { get { return _Elements.AsReadOnly(); } }
-		public override UInt64 Size { get { return GetSize(0); } }
+		public override UInt64 Size { get { return GetSize(); } }
+		public override UInt64 FullSize { get { return GetFullSize(); } }
+		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
 		public UInt64 ID { get { return _ID; } }
 		private List<Element> _Elements;
 		private const int DirInfLength = 38;	
@@ -86,9 +88,9 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private UInt64 GetSize(UInt64 size)
+		private UInt64 GetSize()
 		{
-			UInt64 result = size;
+			UInt64 result = 0;
 
 			lock (_changeElementsLocker)
 			{
@@ -98,6 +100,36 @@ namespace CryptoDataBase.CDB
 				}
 			}
 			
+			return result;
+		}
+
+		private UInt64 GetFullSize()
+		{
+			UInt64 result = _IconSize;
+
+			lock (_changeElementsLocker)
+			{
+				foreach (var element in _Elements)
+				{
+					result += element.FullSize;
+				}
+			}
+
+			return result;
+		}
+
+		private UInt64 GetFullEncryptSize()
+		{
+			UInt64 result = Crypto.GetMod16(_IconSize);
+
+			lock (_changeElementsLocker)
+			{
+				foreach (var element in _Elements)
+				{
+					result += element.FullEncryptSize;
+				}
+			}
+
 			return result;
 		}
 

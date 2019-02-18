@@ -50,6 +50,9 @@
 					<CheckBox Content="Автоматическая вставка" Click="AutoInsert"/>
 					<CheckBox Name="clipboardClean_CheckBox" Content="Очищать после вставки"/>
 				</MenuItem>
+				<MenuItem Header="Параметры" Visibility="Hidden">
+					<MenuItem Header="Информация" Click="MenuItem_Info"/>
+				</MenuItem>
 
 			</Menu>
 		</DockPanel>
