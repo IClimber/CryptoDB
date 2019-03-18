@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace CryptoDataBase.CDB
 {
@@ -14,9 +15,12 @@ namespace CryptoDataBase.CDB
 
 	public class NameComparer : IComparer<Element>
 	{
+		[DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+		static extern int StrCmpLogicalW(string s1, string s2);
+
 		int IComparer<Element>.Compare(Element x, Element y)
 		{
-			return String.Compare(x.Name, y.Name, true);
+			return StrCmpLogicalW(x.Name, y.Name);//String.Compare(x.Name, y.Name, true);
 		}
 	}
 
