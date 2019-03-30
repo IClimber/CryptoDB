@@ -201,6 +201,7 @@ namespace CryptoDataBase
 
 			if (item.type == FileItemType.File)
 			{
+				AddedFilesCount++;
 				Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
 				var duplicates = GetDuplicates(item.name, bmp);
 				if (duplicates.Count > 0)
@@ -212,8 +213,6 @@ namespace CryptoDataBase
 
 				item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
 				bmp?.Dispose();
-
-				AddedFilesCount++;
 			}
 			else
 			{
