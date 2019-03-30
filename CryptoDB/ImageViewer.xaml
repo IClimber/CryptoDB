@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:gif="clr-namespace:WpfAnimatedGif"
 		mc:Ignorable="d"
-        Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip">
+        Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip" Closed="Window_Closed">
     <Grid Name="grid" Background="#FF222227" MouseMove="grid_MouseMove">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50" Name="prevImgColumn"/>

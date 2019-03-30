@@ -24,6 +24,7 @@ namespace CryptoDataBase
 		private Point start;   // Original Position of the mouse
 		private double Zoom = 1;
 		private System.Windows.Controls.ListView parentListView;
+		BitmapImage bmp = null;
 
 		public ImageViewer()
 		{
@@ -133,7 +134,8 @@ namespace CryptoDataBase
 			//image.Source = img;
 			//BitmapFrame bmp = null;
 
-			BitmapImage bmp = null;
+			bmp = null;
+			
 			try
 			{
 				ms.Position = 0;
@@ -170,6 +172,8 @@ namespace CryptoDataBase
 			}
 			catch
 			{ }
+
+			GC.Collect();
 		}
 
 		private void image_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -362,6 +366,13 @@ namespace CryptoDataBase
 			m.RotateAt(270, m.OffsetX + image.RenderSize.Width / 2, m.OffsetY + image.RenderSize.Height / 2);
 			Title = image.RenderSize.Width.ToString();
 			image.RenderTransform = new MatrixTransform(m);*/
+		}
+
+		private void Window_Closed(object sender, EventArgs e)
+		{
+			bmp = null;
+
+			GC.Collect();
 		}
 	}
 }

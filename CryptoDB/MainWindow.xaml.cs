@@ -646,6 +646,9 @@ namespace CryptoDataBase
 			List<Element> list = (listView.ItemsSource as IEnumerable<Element>).Where(x => x.Type == ElementType.File && IsImage(x.Name)).ToList();
 			ImageViewer window = new ImageViewer(list, listView.SelectedItem as FileElement, listView) { Owner = this };
 			window.Show();
+
+			list = null;
+			GC.Collect();
 		}
 
 		private void OpenTextDoc(FileElement file)
