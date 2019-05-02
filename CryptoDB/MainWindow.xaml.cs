@@ -527,6 +527,7 @@ namespace CryptoDataBase
 			{
 				RefreshPathPanel(element);
 				listView.ItemsSource = OrderBy((element as DirElement).Elements);// new BindingList<Element>(element.Elements.OrderByDescending(x => x.Type).ToList());
+				listView.Focus();
 
 				if (selected != null)
 				{
@@ -535,11 +536,15 @@ namespace CryptoDataBase
 				}
 				else if ((element as DirElement).Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
 				{
-					//listView.ScrollIntoView((listView.ItemsSource as BindingList<Element>)[0]);
+					Element first_element = (listView.ItemsSource as BindingList<Element>).First();
+					if (first_element != null)
+					{
+						SelectItem(first_element);
+					}
 				}
+
 				LastParent = element as DirElement;
 				listView.Tag = element;
-				listView.Focus();
 				ShowInfo();
 				return;
 			}
