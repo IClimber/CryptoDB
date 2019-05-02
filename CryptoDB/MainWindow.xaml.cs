@@ -37,9 +37,7 @@ namespace CryptoDataBase
 		DirElement LastParent;
 		private int AddedFilesCount;
 		public bool editable = true;
-		private string FindText = "";
-		private bool isFind = false;
-		Stopwatch FindedTimer = new Stopwatch();
+		private IEnumerable<Element> temp_search_list = null;
 		ClipboardMonitor cl = new ClipboardMonitor();
 		bool isCompareHash = false;
 		bool isCompareImage = false;
@@ -109,6 +107,9 @@ namespace CryptoDataBase
 			FileExportWorker.DoWork += new DoWorkEventHandler(ExportFiles);
 			FileExportWorker.ProgressChanged += new ProgressChangedEventHandler(ExportProgress);
 			FileExportWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(FileExportCompleted);
+
+			search_text_box.KeyDown += SearchTextBox_KeyDown;
+			search_text_box.TextChanged += SearchTextBox_TextChanged;
 		}
 
 		private void ClipboardChange(object sender, ClipboardChangedEventArgs e)
@@ -660,14 +661,34 @@ namespace CryptoDataBase
 		{
 			listView.SelectedItem = null;
 			listView.Focus();
-			isFind = false;
+			search_text_box.Visibility = Visibility.Hidden;
+		}
+
+		private void SearchTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+		{
+			if (e.Key == Key.Escape)
+			{
+				search_text_box.Visibility = Visibility.Hidden;
+				listView.Focus();
+			}
+		}
+
+		private void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+		{
+			SetFilterElementByName(search_text_box.Text);
 		}
 
 		private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
 		{
-			if (!((e.Key >= Key.D0) && (e.Key <= Key.Z)) && !((e.Key >= Key.NumPad0) && (e.Key <= Key.NumPad9)))
+			if ((Keyboard.Modifiers == ModifierKeys.None) && (((e.Key >= Key.D0) && (e.Key <= Key.Z)) || ((e.Key >= Key.NumPad0) && (e.Key <= Key.NumPad9))))
 			{
-				isFind = false;
+				if (search_text_box.Visibility == Visibility.Hidden)
+				{
+					temp_search_list = null;
+					search_text_box.Clear();
+				}
+				search_text_box.Visibility = Visibility.Visible;
+				search_text_box.Focus();
 			}
 
 			if (e.Key == Key.F5)
@@ -675,20 +696,23 @@ namespace CryptoDataBase
 				ShowFiles(listView.Tag as DirElement);
 			}
 
-			if (e.Key == Key.Back)
+			if (search_text_box.Visibility == Visibility.Hidden)
 			{
-				if (LastParent != null)
+				if (e.Key == Key.Back)
 				{
-					var el = listView.Tag as Element;
-					ShowFiles(LastParent.Parent == null ? LastParent : LastParent.Parent);
-					SelectItem(el);
+					if (LastParent != null)
+					{
+						var el = listView.Tag as Element;
+						ShowFiles(LastParent.Parent == null ? LastParent : LastParent.Parent);
+						SelectItem(el);
+					}
 				}
-			}
 
-			if (e.Key == Key.Escape)
-			{
-				isFind = false;
-				ShowFiles(LastParent);
+				if (e.Key == Key.Escape)
+				{
+					search_text_box.Visibility = Visibility.Hidden;
+					ShowFiles(LastParent);
+				}
 			}
 
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.S))
@@ -745,16 +769,6 @@ namespace CryptoDataBase
 			{
 				CreateNewDir();
 				return;
-			}
-
-			if ((Keyboard.Modifiers == ModifierKeys.None) && (((e.Key >= Key.D0) && (e.Key <= Key.Z)) || ((e.Key >= Key.NumPad0) && (e.Key <= Key.NumPad9))))
-			{
-				isFind = FindedTimer.ElapsedMilliseconds > 3000 ? false : isFind;
-				FindedTimer.Restart();
-				FindText = isFind ? FindText : "";
-				isFind = true;
-				FindText += e.Key.ToString()[e.Key.ToString().Length - 1];
-				FindAndSelect(FindText);
 			}
 		}
 
@@ -834,6 +848,39 @@ namespace CryptoDataBase
 			{
 				listView.SelectedItems.Add(item);
 			}
+		}
+
+		private void SetFilterElementByName(string name)
+		{
+			DirElement parent = (listView.Tag as DirElement);
+
+			if (temp_search_list == null)
+			{
+				temp_search_list = (listView.ItemsSource as IEnumerable<Element>);
+			}
+
+			if ((xdb == null) || (parent == null))
+			{
+				if (listView.ItemsSource == null)
+				{
+					return;
+				}
+			}
+
+			List<Element> list;
+
+			if (parent != null)
+			{
+				list = parent.Elements.Where(x => x.Name.ToLower().IndexOf(name.ToLower()) >= 0).ToList();
+			}
+			else
+			{
+				list = temp_search_list.Where(x => x.Name.ToLower().IndexOf(name.ToLower()) >= 0).ToList();
+			}
+
+			listView.ItemsSource = OrderBy(list);
+
+			ShowInfo();
 		}
 
 		private void CutSelected()
