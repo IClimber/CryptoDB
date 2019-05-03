@@ -515,7 +515,37 @@ namespace CryptoDataBase
 			return new BindingList<Element>(result.OrderByDescending(x => x.Type).ToList());
 		}
 
-		private void ShowFiles(Element element, Element selected = null)
+		private void SetViewsElement(DirElement parent, IList<Element> elements, Element selected = null)
+		{
+			RefreshPathPanel(parent != null ? parent : LastParent);
+			listView.ItemsSource = OrderBy(elements);
+
+			if (parent != null)
+			{
+				listView.Focus();
+			}
+
+			if (selected != null)
+			{
+				SelectItem(selected);
+			}
+			//else if (elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
+			//{
+			//	Element first_element = elements.First();
+			//	if (first_element != null)
+			//	{
+			//		SelectItem(first_element, false);
+			//	}
+			//}
+
+			temp_search_list = elements;
+
+			LastParent = parent == null ? LastParent : parent;
+			listView.Tag = parent;
+			ShowInfo();
+		}
+
+		private void ShowFiles(Element element, Element selected = null, bool select_first = false)
 		{
 			if (element == null)
 			{
@@ -525,27 +555,8 @@ namespace CryptoDataBase
 			//Відкриваємо папку
 			if (element is DirElement)
 			{
-				RefreshPathPanel(element);
-				listView.ItemsSource = OrderBy((element as DirElement).Elements);// new BindingList<Element>(element.Elements.OrderByDescending(x => x.Type).ToList());
-				listView.Focus();
-
-				if (selected != null)
-				{
-					listView.ScrollIntoView(selected);
-					listView.SelectedItem = selected;
-				}
-				else if ((element as DirElement).Elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
-				{
-					Element first_element = (listView.ItemsSource as BindingList<Element>).First();
-					if (first_element != null)
-					{
-						SelectItem(first_element);
-					}
-				}
-
-				LastParent = element as DirElement;
-				listView.Tag = element;
-				ShowInfo();
+				Element select = select_first ? (element as DirElement).Elements.First() : selected;
+				SetViewsElement((element as DirElement), (element as DirElement).Elements, select);
 				return;
 			}
 
@@ -569,14 +580,7 @@ namespace CryptoDataBase
 
 		public void ShowList(List<Element> elements)
 		{
-			listView.ItemsSource = OrderBy(elements);// new BindingList<Element>(elements.OrderByDescending(x => x.Type).ToList());
-			if ((listView.ItemsSource as BindingList<Element>).Count > 0)
-			{
-				listView.ScrollIntoView((listView.ItemsSource as BindingList<Element>)[0]);
-			}
-			listView.Tag = null;
-
-			ShowInfo();
+			SetViewsElement(null, elements);
 		}
 
 		private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -689,7 +693,6 @@ namespace CryptoDataBase
 			{
 				if (search_text_box.Visibility == Visibility.Hidden)
 				{
-					temp_search_list = null;
 					search_text_box.Clear();
 				}
 				search_text_box.Visibility = Visibility.Visible;
@@ -708,8 +711,7 @@ namespace CryptoDataBase
 					if (LastParent != null)
 					{
 						var el = listView.Tag as Element;
-						ShowFiles(LastParent.Parent == null ? LastParent : LastParent.Parent);
-						SelectItem(el);
+						ShowFiles(LastParent.Parent == null ? LastParent : LastParent.Parent, el);
 					}
 				}
 
@@ -858,11 +860,6 @@ namespace CryptoDataBase
 		private void SetFilterElementByName(string name)
 		{
 			DirElement parent = (listView.Tag as DirElement);
-
-			if (temp_search_list == null)
-			{
-				temp_search_list = (listView.ItemsSource as IEnumerable<Element>);
-			}
 
 			if ((xdb == null) || (parent == null))
 			{
@@ -1140,8 +1137,7 @@ namespace CryptoDataBase
 					return;
 				}
 
-				ShowFiles(listView.Tag as Element);
-				SelectItem(newDir);
+				ShowFiles(listView.Tag as Element, newDir);
 			}
 		}
 
@@ -1173,8 +1169,7 @@ namespace CryptoDataBase
 						System.Windows.MessageBox.Show(ex.Message);
 					}
 					bmp?.Dispose();
-					ShowFiles(listView.Tag as Element);
-					SelectItem(newTextFile);
+					ShowFiles(listView.Tag as Element, newTextFile);
 				}
 			}
 		}
@@ -1248,7 +1243,7 @@ namespace CryptoDataBase
 		{
 			bool sortDirect = ((sender as System.Windows.Controls.RadioButton).Tag as bool?) == true;
 			(sender as System.Windows.Controls.RadioButton).Tag = !sortDirect;
-			listView.ItemsSource = OrderBy(listView.ItemsSource as IList<Element>);
+			SetViewsElement((listView.Tag as DirElement), listView.ItemsSource as IList<Element>);
 		}
 
 		private void Insert_Click(object sender, RoutedEventArgs e)
