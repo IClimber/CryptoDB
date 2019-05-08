@@ -554,12 +554,20 @@ namespace CryptoDataBase.CDB
 		{
 			byte[] pHash = GetPHash(image);
 			List<Element> result = new List<Element>();
-			_FindAllByIcon(result, pHash, sensative, FindInSubDirectories);
+			_FindAllByPHash(result, pHash, sensative, FindInSubDirectories);
 
 			return result;
 		}
 
-		private void _FindAllByIcon(List<Element> resultList, byte[] pHash, byte sensative, bool FindInSubDirectories)
+		public List<Element> FindAllByPHash(byte[] pHash, byte sensative = 0, bool FindInSubDirectories = true)
+		{
+			List<Element> result = new List<Element>();
+			_FindAllByPHash(result, pHash, sensative, FindInSubDirectories);
+
+			return result;
+		}
+
+		private void _FindAllByPHash(List<Element> resultList, byte[] pHash, byte sensative, bool FindInSubDirectories)
 		{
 			lock (_changeElementsLocker)
 			{
@@ -575,7 +583,7 @@ namespace CryptoDataBase.CDB
 
 					if ((element is DirElement) && (FindInSubDirectories))
 					{
-						(element as DirElement)._FindAllByIcon(resultList, pHash, sensative, FindInSubDirectories);
+						(element as DirElement)._FindAllByPHash(resultList, pHash, sensative, FindInSubDirectories);
 					}
 				}
 			}

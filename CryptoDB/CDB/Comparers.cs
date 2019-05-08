@@ -63,4 +63,21 @@ namespace CryptoDataBase.CDB
 			return x.Size < y.Size ? -1 : x.Size > y.Size ? 1 : 0;
 		}
 	}
+
+	public class PHashComparer : IComparer<Element>
+	{
+		private byte sensative = 0;
+
+		public PHashComparer(byte sensative = 0)
+		{
+			this.sensative = sensative;
+		}
+
+		int IComparer<Element>.Compare(Element x, Element y)
+		{
+			byte dist1 = Element.GetHammingDistance(BitConverter.ToUInt64(x.PHash, 0), 0);
+			byte dist2 = Element.GetHammingDistance(BitConverter.ToUInt64(y.PHash, 0), 0);
+			return dist1 < dist2 ? -1 : dist1 > dist2 ? 1 : 0;
+		}
+	}
 }

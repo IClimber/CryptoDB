@@ -515,10 +515,10 @@ namespace CryptoDataBase
 			return new BindingList<Element>(result.OrderByDescending(x => x.Type).ToList());
 		}
 
-		private void SetViewsElement(DirElement parent, IList<Element> elements, Element selected = null)
+		private void SetViewsElement(DirElement parent, IList<Element> elements, Element selected = null, bool with_orders = true)
 		{
 			RefreshPathPanel(parent != null ? parent : LastParent);
-			listView.ItemsSource = OrderBy(elements);
+			listView.ItemsSource = with_orders ? OrderBy(elements) : new BindingList<Element>(elements); ;
 
 			if (parent != null)
 			{
@@ -580,7 +580,7 @@ namespace CryptoDataBase
 
 		public void ShowList(List<Element> elements)
 		{
-			SetViewsElement(null, elements);
+			SetViewsElement(null, elements, null, false);
 		}
 
 		private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -742,7 +742,8 @@ namespace CryptoDataBase
 
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.F))
 			{
-				Finder f = new Finder(xdb, ShowList);
+				DirElement dir = (listView.Tag as DirElement) != null ? (listView.Tag as DirElement) : xdb;
+				Finder f = new Finder(dir, ShowList);
 				f.Owner = this;
 				f.Show();
 				return;
@@ -1107,7 +1108,8 @@ namespace CryptoDataBase
 				icon = (listView.SelectedItem as Element).Icon;
 			}
 
-			Finder f = new Finder(xdb, icon, ShowList);
+			DirElement dir = (listView.Tag as DirElement) != null ? (listView.Tag as DirElement) : xdb;
+			Finder f = new Finder(dir, icon, ShowList);
 			icon = null;
 			f.Owner = this;
 			f.Show();

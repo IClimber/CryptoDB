@@ -95,6 +95,11 @@ namespace CryptoDataBase.CDB
 			return result;
 		}
 
+		public Element GetRootDir()
+		{
+			return _Parent == null ? this : _Parent.GetRootDir();
+		}
+
 		//protected abstract void ChangeParent(DirElement NewParent);
 
 		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
@@ -256,7 +261,7 @@ namespace CryptoDataBase.CDB
 			return result;
 		}
 
-		private static byte GetHammingDistance(UInt64 PHash1, UInt64 PHash2)
+		public static byte GetHammingDistance(UInt64 PHash1, UInt64 PHash2)
 		{
 			byte dist = 0;
 			UInt64 val = PHash1 ^ PHash2;
@@ -270,7 +275,7 @@ namespace CryptoDataBase.CDB
 			return dist;
 		}
 
-		protected static bool ComparePHashes(byte[] PHash1, byte[] PHash2, byte sensative)
+		public static bool ComparePHashes(byte[] PHash1, byte[] PHash2, byte sensative)
 		{
 			byte dist = GetHammingDistance(BitConverter.ToUInt64(PHash1, 0), BitConverter.ToUInt64(PHash2, 0));
 			return (dist <= sensative) || (dist >= (64 - sensative));
