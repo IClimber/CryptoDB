@@ -313,5 +313,30 @@ namespace CryptoDataBase.CDB
 
 			return true;
 		}
+
+		public override bool Restore()
+		{
+			if (_Exists)
+			{
+				return true;
+			}
+
+			if ((_FileSize == 0 || dataFileStream.IsFreeSpace(_FileStartPos, _FileSize)) && (_IconSize == 0 || dataFileStream.IsFreeSpace(_IconStartPos, _IconSize)))
+			{
+				try
+				{
+					Parent = _Parent;
+					_Exists = true;
+				}
+				catch
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
 	}
 }

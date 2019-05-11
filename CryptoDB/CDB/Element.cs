@@ -282,5 +282,7 @@ namespace CryptoDataBase.CDB
 		}
 
 		public abstract bool Delete();
+
+		public abstract bool Restore();
 	}
 }

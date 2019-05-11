@@ -289,5 +289,10 @@ namespace CryptoDataBase.CDB
 		{
 			freeSpaceMap.FreeSpaceAnalyse((UInt64)Length);
 		}
+
+		public bool IsFreeSpace(ulong Start, ulong Size)
+		{
+			return freeSpaceMap.IsFreeSpace(Start, Size);
+		}
 	}
 }

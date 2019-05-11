@@ -662,5 +662,10 @@ namespace CryptoDataBase.CDB
 
 			return true;
 		}
+
+		public override bool Restore()
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

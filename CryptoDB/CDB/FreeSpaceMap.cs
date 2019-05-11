@@ -310,6 +310,24 @@ namespace CryptoDataBase.CDB
 			_freeSpaceMapSize.Insert(indexBySize, sPoint);
 		}
 
+		public bool IsFreeSpace(ulong Start, ulong Size)
+		{
+			int index = _GetIndexByPos(Start);
+			SPoint sPoint = index >= 0 ? _freeSpaceMapPos[index] : null;
+
+			if (sPoint == null)
+			{
+				return false;
+			}
+
+			if (sPoint.Start <= Start && (sPoint.Start + sPoint.Size) >= (Start + Size))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
 		public void FreeSpaceAnalyse(UInt64 fileSize)
 		{
 			if (_realTimeCalculating || _isAnalysed)

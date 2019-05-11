@@ -35,6 +35,8 @@ namespace CryptoDataBase
 		Stopwatch sw = new Stopwatch();
 		List<FileItem> addedFilesList = new List<FileItem>();
 		DirElement LastParent;
+		FileElement movedElementFrom = null;
+		FileElement movedElementTo = null;
 		private int AddedFilesCount;
 		public bool editable = true;
 		private IEnumerable<Element> temp_search_list = null;
@@ -641,6 +643,86 @@ namespace CryptoDataBase
 			{
 				OpenParentDir(listView.SelectedItem as Element);
 			}
+
+			if (e.Key == Key.C && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == (ModifierKeys.Control | ModifierKeys.Alt)
+				&& (listView.SelectedItem != null) && listView.SelectedItem is FileElement)
+			{
+				movedElementFrom = listView.SelectedItem as FileElement;
+			}
+
+			if (e.Key == Key.V && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == (ModifierKeys.Control | ModifierKeys.Alt)
+				&& (listView.SelectedItem != null) && (movedElementFrom != null) && listView.SelectedItem is FileElement)
+			{
+				movedElementTo = listView.SelectedItem as FileElement;
+				MoveElementWithChange();
+			}
+		}
+
+		private void MoveElementWithChange()
+		{
+			if (movedElementFrom == null || movedElementTo == null || movedElementFrom == movedElementTo)
+			{
+				return;
+			}
+
+			DirElement newParent = movedElementTo.Parent;
+			BindingList<Element> bindingList = (listView.ItemsSource as BindingList<Element>);
+			int index = 0;
+
+			if (movedElementTo.Delete())
+			{
+				index = bindingList.IndexOf(movedElementTo);
+				bindingList.Remove(movedElementTo);
+			}
+			else
+			{
+				System.Windows.MessageBox.Show("Не вдається перемістити елемент");
+				return;
+			}
+
+			if (!newParent.Exists)
+			{
+				movedElementTo.Restore();
+				bindingList.Insert(index, movedElementTo);
+				System.Windows.MessageBox.Show("Не вдається перемістити елемент");
+				return;
+			}
+
+			try
+			{
+				movedElementFrom.Parent = newParent;
+				movedElementFrom.Name = movedElementTo.Name;
+			}
+			catch
+			{
+				movedElementTo.Restore();
+				bindingList.Insert(index, movedElementTo);
+				System.Windows.MessageBox.Show("Не вдається перемістити елемент");
+				return;
+			}
+
+			int oldIndex = bindingList.IndexOf(movedElementFrom);
+			bindingList.Remove(movedElementFrom);
+			if (index > oldIndex)
+			{
+				index = (index - 1) >= 0 ? index - 1 : 0;
+			}
+			bindingList.Insert(index, movedElementFrom);
+
+			int i = 0;
+			while (i < bindingList.Count)
+			{
+				if (!bindingList[i].Exists)
+				{
+					bindingList.RemoveAt(i);
+					i--;
+				}
+
+				i++;
+			}
+
+			movedElementFrom = null;
+			movedElementTo = null;
 		}
 
 		private void listView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -1042,12 +1124,20 @@ namespace CryptoDataBase
 				DeleteElement(itemsToRemove[i]);
 			}
 
-			ShowInfo();
-
-			/*if (listView.SelectedItems.Count > 0)
+			var bindingList = (listView.ItemsSource as BindingList<Element>);
+			int j = 0;
+			while (j < bindingList.Count)
 			{
-				ShowFiles(listView.Tag as Element);
-			}*/
+				if (!bindingList[j].Exists)
+				{
+					bindingList.RemoveAt(j);
+					j--;
+				}
+
+				j++;
+			}
+
+			ShowInfo();
 		}
 
 		public bool DeleteElement(Element element)
