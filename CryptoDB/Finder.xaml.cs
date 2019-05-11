@@ -257,7 +257,7 @@ namespace CryptoDataBase
 		{
 			foreach (Element element in parent.Elements)
 			{
-				if (element.IconSize > 0)
+				if (element.IconSize > 0 && MainWindow.IsImage(element.Name))
 				{
 					resultList.Add(element);
 				}
