@@ -752,7 +752,6 @@ namespace CryptoDataBase
 		{
 			listView.SelectedItem = null;
 			listView.Focus();
-			search_text_box.Visibility = Visibility.Hidden;
 		}
 
 		private void SearchTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -1358,6 +1357,11 @@ namespace CryptoDataBase
 		private void MenuItem_Info(object sender, RoutedEventArgs e)
 		{
 
+		}
+
+		private void search_text_box_LostFocus(object sender, RoutedEventArgs e)
+		{
+			search_text_box.Visibility = Visibility.Hidden;
 		}
 	}
 

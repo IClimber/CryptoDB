@@ -2,6 +2,7 @@
 using ImageConverter;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -20,15 +21,33 @@ namespace CryptoDataBase
 
 		DirElement root;
 		DirElement current_root;
-		Bitmap bitmap;
+		Bitmap _bitmap;
+		private BackgroundWorker searchWorker = new BackgroundWorker();
 		private CallBackResult resultCallback;
+		private const int FIND_BY_NAME = 0;
+		private const int FIND_BY_ICON = 1;
+		private const int FIND_DUPLICATE_BY_ICON = 2;
 
-		public Finder()
+		private byte _sensative = 0;
+		private string _search_text = "";
+		private bool _find_as_tag = false;
+		private bool _all_tags = false;
+
+		List<Element> resultList;
+
+		private Finder()
 		{
 			InitializeComponent();
+
+			resultList = new List<Element>();
+			//searchWorker.WorkerReportsProgress = true;
+			searchWorker.WorkerSupportsCancellation = true;
+			searchWorker.DoWork += new DoWorkEventHandler(SearchWork);
+			//searchWorker.ProgressChanged += new ProgressChangedEventHandler(XDBProgress);
+			searchWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(SearchComplete);
 		}
 
-		public Finder(DirElement Root) : this()
+		private Finder(DirElement Root) : this()
 		{
 			current_root = Root;
 			root = Root.GetRootDir() as DirElement;
@@ -43,34 +62,73 @@ namespace CryptoDataBase
 		private void SetThumbnail(Bitmap thumbnail)
 		{
 			image.Source = ImgConverter.BitmapToImageSource(thumbnail);
-			bitmap?.Dispose();
-			bitmap = thumbnail;
+			_bitmap?.Dispose();
+			_bitmap = thumbnail;
 			slider.Focus();
 		}
 
 		public Finder(DirElement Root, CallBackResult Result) : this(Root)
 		{
 			image.Source = null;
-			bitmap?.Dispose();
+			_bitmap?.Dispose();
 			resultCallback = Result;
 			textBox.Focus();
 		}
 
+		private void _setSearchParams()
+		{
+			_sensative = (byte)slider.Value;
+			_search_text = textBox.Text;
+			_find_as_tag = findAsTag.IsChecked == true;
+			_all_tags = allTags.IsChecked == true;
+			Opacity = 0.4;
+		}
+
+		private void SearchWork(object sender, DoWorkEventArgs e)
+		{
+			switch (e.Argument)
+			{
+				case FIND_BY_ICON :
+					resultList = root.FindAllByIcon(_bitmap, _sensative);
+					break;
+				case FIND_DUPLICATE_BY_ICON:
+					resultList = FindAllDuplicateImage(_sensative);
+					break;
+				default:
+					resultList = root.FindByName(_search_text, _find_as_tag, _all_tags);
+					break;
+			}
+		}
+
+		private void SearchComplete(object sender, RunWorkerCompletedEventArgs e)
+		{
+			resultCallback(resultList);
+			Opacity = 1;
+		}
+
 		private void ButtonFind_Click(object sender, RoutedEventArgs e)
 		{
+			int findBy = FIND_BY_NAME;
+
 			if (image.Source != null)
 			{
-				resultCallback(root.FindAllByIcon(bitmap, (byte)slider.Value));
+				findBy = FIND_BY_ICON;
 			}
 			else
 			{
-				resultCallback(root.FindByName(textBox.Text, findAsTag.IsChecked == true, allTags.IsChecked == true));
+				findBy = FIND_BY_NAME;
+			}
+
+			if (!searchWorker.IsBusy)
+			{
+				_setSearchParams();
+				searchWorker.RunWorkerAsync(findBy);
 			}
 		}
 
 		private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
-			bitmap?.Dispose();
+			_bitmap?.Dispose();
 			image.Source = null;
 		}
 
@@ -113,9 +171,10 @@ namespace CryptoDataBase
 				}
 			}
 
-			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.D))
+			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.D) && !searchWorker.IsBusy)
 			{
-				resultCallback(FindAllDuplicateImage((byte)slider.Value));
+				_setSearchParams();
+				searchWorker.RunWorkerAsync(FIND_DUPLICATE_BY_ICON);
 			}
 		}
 

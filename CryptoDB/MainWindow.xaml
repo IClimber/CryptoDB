@@ -118,7 +118,7 @@
 
 		</ListView>
 
-		<TextBox Name="search_text_box" Grid.Row="2" Width="150" Height="Auto" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5,5,25,5" Foreground="#FFD2FFCE" Visibility="Hidden"/>
+		<TextBox Name="search_text_box" Grid.Row="2" Width="150" Height="Auto" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5,5,25,5" Foreground="#FFD2FFCE" Visibility="Hidden" LostFocus="search_text_box_LostFocus"/>
 
 		<StatusBar HorizontalAlignment="Stretch"  Margin="0,0,0,0" Grid.Row="3" VerticalAlignment="Stretch" Background="#FF222227">
 
