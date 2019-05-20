@@ -34,6 +34,7 @@ namespace CryptoDataBase
 		private BackgroundWorker FileExportWorker = new BackgroundWorker();
 		Stopwatch sw = new Stopwatch();
 		List<FileItem> addedFilesList = new List<FileItem>();
+		MultithreadImageResizer multithreadImageResizer;
 		DirElement LastParent;
 		FileElement movedElementFrom = null;
 		FileElement movedElementTo = null;
@@ -205,7 +206,8 @@ namespace CryptoDataBase
 			if (item.type == FileItemType.File)
 			{
 				AddedFilesCount++;
-				Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
+				Bitmap bmp = multithreadImageResizer.GetBitmap(item.name);
+				//Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
 				var duplicates = GetDuplicates(item.name, bmp);
 				if (duplicates.Count > 0)
 				{
@@ -243,10 +245,22 @@ namespace CryptoDataBase
 		{
 			sw = Stopwatch.StartNew();
 
+			if (multithreadImageResizer == null)
+			{
+				multithreadImageResizer = new MultithreadImageResizer(files, thumbnailSize);
+			}
+			else
+			{
+				multithreadImageResizer.UpdateFilesList(files);
+			}
+
 			for (int i = 0; i < files.Count; i++)
 			{
 				AddFile(files[i]);
 			}
+
+			multithreadImageResizer = null;
+			GC.Collect();
 		}
 
 		private void Files_Drop(object sender, System.Windows.DragEventArgs e)
@@ -293,6 +307,13 @@ namespace CryptoDataBase
 					TextBlockStatus3.Text = AddedFilesCount.ToString();
 					FileLoadWorker.RunWorkerAsync(parent);
 				}
+				else
+				{
+					if (multithreadImageResizer != null)
+					{
+						multithreadImageResizer.UpdateFilesList(addedFilesList);
+					}
+				}
 			}
 		}
 
@@ -324,7 +345,7 @@ namespace CryptoDataBase
 		private void FileLoadCompleted(object sender, RunWorkerCompletedEventArgs e)
 		{
 			editable = true;
-			//Title = sw.ElapsedMilliseconds.ToString();
+			Title = sw.ElapsedMilliseconds.ToString();
 			addedFilesList.Clear();
 			statusBlock3.Visibility = Visibility.Collapsed;
 			//TextBlockStatus1.Text = (AddedFilesCount++).ToString();
