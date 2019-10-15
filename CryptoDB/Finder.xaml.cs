@@ -247,7 +247,7 @@ namespace CryptoDataBase
 			}
 
 			sw.Stop();
-			MessageBox.Show(sw.ElapsedMilliseconds.ToString());
+			//MessageBox.Show(sw.ElapsedMilliseconds.ToString());
 
 			GC.Collect();
 			return resultList;
