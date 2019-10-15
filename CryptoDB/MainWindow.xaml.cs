@@ -241,13 +241,18 @@ namespace CryptoDataBase
 			}
 		}
 
+		private Bitmap GetIcon(string FileName)
+		{
+			return ImgConverter.GetIcon(FileName, thumbnailSize);
+		}
+
 		private void AddFiles(List<FileItem> files)
 		{
 			sw = Stopwatch.StartNew();
 
 			if (multithreadImageResizer == null)
 			{
-				multithreadImageResizer = new MultithreadImageResizer(files, thumbnailSize);
+				multithreadImageResizer = new MultithreadImageResizer(files, GetIcon);
 			}
 			else
 			{

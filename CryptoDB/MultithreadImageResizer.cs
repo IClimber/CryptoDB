@@ -1,26 +1,24 @@
-﻿using ImageConverter;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.ComponentModel;
 
 namespace CryptoDataBase
 {
-	class MultithreadImageResizer
+	class MultithreadImageResizer: IDisposable
 	{
+		public delegate Bitmap CallBackConvert(string FileName);
+		private CallBackConvert converter;
 		private List<FileItem> list = new List<FileItem>();
 		private Object addLock = new Object();
-		private int thumbnailSize;
-		int initCount = 0;
 		private IDictionary<string, Bitmap> images = new Dictionary<string, Bitmap>();
 		private int images_count = 0;
 		private BackgroundWorker ResizeWorker = new BackgroundWorker();
+        private static int threadsCount = (int)Math.Ceiling(Environment.ProcessorCount / 2.0);
 
-		private IEnumerable<bool> Infinite()
+        private IEnumerable<bool> Infinite()
 		{
 			while (true)
 			{
@@ -28,18 +26,13 @@ namespace CryptoDataBase
 			}
 		}
 
-		public MultithreadImageResizer(List<FileItem> list, int thumbnailSize)
+		public MultithreadImageResizer(List<FileItem> list, CallBackConvert callBackConverter)
 		{
+			converter = callBackConverter;
 			UpdateFilesList(list);
-			initCount = this.list.Count;
 
-			this.thumbnailSize = thumbnailSize;
 			ResizeWorker.DoWork += new DoWorkEventHandler(ConvertImage);
-
-			if (!ResizeWorker.IsBusy)
-			{
-				ResizeWorker.RunWorkerAsync();
-			}
+			ResizeWorker.RunWorkerAsync();
 		}
 
 		public void UpdateFilesList(List<FileItem> newList)
@@ -72,12 +65,11 @@ namespace CryptoDataBase
 
 		private void StartConvert()
 		{
-			byte cores_count = 4;
 			Object sleepLock = new Object();
 			Object incLock = new Object();
 			int i = 0;
 
-			Parallel.ForEach(Infinite(), new ParallelOptions { MaxDegreeOfParallelism = cores_count }, (k, loopState) =>
+			Parallel.ForEach(Infinite(), new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, (k, loopState) =>
 			{
 				int l;
 
@@ -93,17 +85,16 @@ namespace CryptoDataBase
 					return;
 				}
 
-				Bitmap bmp = ImgConverter.GetIcon(list[l].name, thumbnailSize);
+				Bitmap bmp = converter(list[l].name);
 				lock (addLock)
 				{
 					images.Add(list[l].name, bmp);
 					images_count = images.Count;
 				}
-				//bmp.Dispose();
 
 				lock (sleepLock)
 				{
-					while (images_count > cores_count)
+					while (images_count > threadsCount)
 					{
 						Thread.Sleep(1);
 					};
@@ -128,6 +119,12 @@ namespace CryptoDataBase
 			}
 
 			return bitmap;
+		}
+
+		public void Dispose()
+		{
+			list.Clear();
+			images.Clear();
 		}
 	}
 }

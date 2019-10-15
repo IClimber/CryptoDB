@@ -32,8 +32,9 @@ namespace CryptoDataBase
 		private string _search_text = "";
 		private bool _find_as_tag = false;
 		private bool _all_tags = false;
+        private static int threadsCount = Environment.ProcessorCount;
 
-		List<Element> resultList;
+        List<Element> resultList;
 
 		private Finder()
 		{
@@ -206,7 +207,6 @@ namespace CryptoDataBase
 			Element[] search_in_array = searchList.ToArray();
 
 			searchList = null;
-			byte cores_count = 4;
 			int count = 1000;
 			Object addLock = new Object();
 
@@ -214,7 +214,7 @@ namespace CryptoDataBase
 			{
 				bool addFirst = true;
 
-				Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = cores_count }, k =>
+				Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, k =>
 				{
 					int from = search_in_array.Length / count * k;
 					int to = search_in_array.Length / count * (k + 1);
@@ -247,7 +247,7 @@ namespace CryptoDataBase
 			}
 
 			sw.Stop();
-			//MessageBox.Show(sw.ElapsedMilliseconds.ToString());
+			MessageBox.Show(sw.ElapsedMilliseconds.ToString());
 
 			GC.Collect();
 			return resultList;
