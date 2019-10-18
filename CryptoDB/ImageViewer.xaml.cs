@@ -320,6 +320,11 @@ namespace CryptoDataBase
 
 		private void Rename_Click(object sender, RoutedEventArgs e) //провіряти чи MainWindow editable == true
 		{
+			if ((Owner as MainWindow).IsReadOnly)
+			{
+				return;
+			}
+
 			RenameWindow renamer = new RenameWindow(elements[currentIndex].Name, elements[currentIndex].Type) { Owner = this };
 			if (renamer.ShowDialog() == true)
 			{
@@ -339,6 +344,11 @@ namespace CryptoDataBase
 
 		private void Delete_Click(object sender, RoutedEventArgs e)
 		{
+			if ((Owner as MainWindow).IsReadOnly)
+			{
+				return;
+			}
+
 			if (System.Windows.MessageBox.Show(this, "Удалить елемент", "Удаление", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
 			{
 				return;

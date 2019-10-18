@@ -15,6 +15,7 @@ namespace CryptoDataBase.CDB
 		AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
 		FileStream _headersFileStream;
 		FileStream _dataFileStream;
+		public readonly bool IsReadOnly = true;
 
 		public XDB(string FileName, string Password, ProgressCallback Progress = null)
 		{
@@ -35,6 +36,7 @@ namespace CryptoDataBase.CDB
 				{
 					_headersFileStream.WriteByte(Version);
 				}
+				IsReadOnly = false;
 			}
 			catch
 			{
@@ -45,6 +47,7 @@ namespace CryptoDataBase.CDB
 
 				_headersFileStream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
 				_dataFileStream = new FileStream(DataFilename, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+				IsReadOnly = true;
 			}
 
 			header = new Header(new SafeStreamAccess(_headersFileStream), AES, ElementType.Dir);

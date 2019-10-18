@@ -53,6 +53,7 @@ namespace CryptoDataBase
 		}
 		public bool _ShowDuplicateMessage = true;
 		private bool _faildedOpen = false;
+		public bool IsReadOnly => xdb.IsReadOnly;
 
 		private void MoveTest()
 		{
@@ -271,7 +272,7 @@ namespace CryptoDataBase
 		private void Files_Drop(object sender, System.Windows.DragEventArgs e)
 		{
 			DirElement parent = (listView.Tag as DirElement);
-			if ((xdb == null) || (parent == null))
+			if ((xdb == null) || (parent == null) || IsReadOnly)
 			{
 				return;
 			}
@@ -325,10 +326,11 @@ namespace CryptoDataBase
 		#region AddFiles worker
 		private void FileLoad(object sender, DoWorkEventArgs e)
 		{
-			if (!editable)
+			if (IsReadOnly || !editable)
 			{
 				return;
 			}
+
 			editable = false;
 			AddFiles(addedFilesList);
 		}
@@ -470,7 +472,7 @@ namespace CryptoDataBase
 			}
 
 			sw.Stop();
-			Title = sw.ElapsedMilliseconds.ToString() + "ms";
+			Title = sw.ElapsedMilliseconds.ToString() + "ms" + (xdb.IsReadOnly ? " (readonly)" : "");
 			progressbar1.Value = 0;
 
 			ShowFiles(xdb);
@@ -686,6 +688,11 @@ namespace CryptoDataBase
 
 		private void MoveElementWithChange()
 		{
+			if (IsReadOnly)
+			{
+				return;
+			}
+
 			if (movedElementFrom == null || movedElementTo == null || movedElementFrom == movedElementTo)
 			{
 				return;
@@ -995,6 +1002,11 @@ namespace CryptoDataBase
 
 		private void CutSelected()
 		{
+			if (IsReadOnly)
+			{
+				return;
+			}
+
 			if (!editable)
 			{
 				//return;
@@ -1009,6 +1021,11 @@ namespace CryptoDataBase
 
 		private void InsertCut()
 		{
+			if (IsReadOnly)
+			{
+				return;
+			}
+
 			if (!editable)
 			{
 				//return;
@@ -1109,6 +1126,11 @@ namespace CryptoDataBase
 
 		public void Rename()
 		{
+			if (IsReadOnly)
+			{
+				return;
+			}
+
 			if (listView.SelectedItem == null)
 			{
 				return;
@@ -1133,6 +1155,11 @@ namespace CryptoDataBase
 
 		private void DeleteSelected()
 		{
+			if (IsReadOnly)
+			{
+				return;
+			}
+
 			if (!editable)
 			{
 				//return;
