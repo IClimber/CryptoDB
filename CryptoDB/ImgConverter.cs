@@ -16,7 +16,7 @@ namespace ImageConverter
 {
 	static class ImgConverter
 	{
-		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff"};
+		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff" };
 
 		[DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -131,7 +131,7 @@ namespace ImageConverter
 					bmp = new Bitmap(FileName);
 				}
 				else if (Path.GetExtension(FileName).ToLower() == ".ico")
-				{ 
+				{
 					bmp = new Icon(FileName, 256, 256).ToBitmap();
 				}
 				else
@@ -152,7 +152,7 @@ namespace ImageConverter
 		}
 	}
 
-	
+
 	public class BitmapToImageSourceConvert : IValueConverter
 	{
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

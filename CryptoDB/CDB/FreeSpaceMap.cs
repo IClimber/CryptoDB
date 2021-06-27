@@ -162,7 +162,7 @@ namespace CryptoDataBase.CDB
 				_InsertSPointToSizeMap(sPoint);
 
 				if (newSPoint != null)
-				{					
+				{
 					_InsertSPointToSizeMap(newSPoint);
 					_freeSpaceMapPos.Insert(indexByPos + 1, newSPoint);
 				}

@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Security.Cryptography;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace CryptoDataBase.CDB
 {
 	//Працює тільки з файлом заголовківю
 	//При шифрувані доповнення не використовується
-    public class Header
-    {
+	public class Header
+	{
 		public const byte Length = 33; //Розмір заголовку в байтах
 		private const PaddingMode GetPaddingMode = PaddingMode.None;
 		private const byte _ReservLength = 16;

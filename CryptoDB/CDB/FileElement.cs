@@ -1,9 +1,9 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using CryptoDataBase.CDB.Exceptions;
 
 namespace CryptoDataBase.CDB
 {
@@ -168,7 +168,7 @@ namespace CryptoDataBase.CDB
 			}
 
 		}
-		
+
 		public override void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
 		{
 			Directory.CreateDirectory(Path.GetDirectoryName(FullName));
@@ -233,7 +233,7 @@ namespace CryptoDataBase.CDB
 				{
 					throw new DataWasNotWrittenException("Файл не записався.");
 				}
-			
+
 				try
 				{
 					_FileStartPos = fileStartPos;

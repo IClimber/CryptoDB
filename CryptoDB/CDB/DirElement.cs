@@ -1,11 +1,11 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using CryptoDataBase.CDB.Exceptions;
 
 namespace CryptoDataBase.CDB
 {
@@ -18,7 +18,7 @@ namespace CryptoDataBase.CDB
 		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
 		public UInt64 ID { get { return _ID; } }
 		private List<Element> _Elements;
-		private const int DirInfLength = 38;	
+		private const int DirInfLength = 38;
 		protected UInt64 _ID;
 		public override DirElement Parent { get { return _Parent; } set { ChangeParent(value); } }
 
@@ -99,7 +99,7 @@ namespace CryptoDataBase.CDB
 					result += element.Size;
 				}
 			}
-			
+
 			return result;
 		}
 
@@ -522,7 +522,7 @@ namespace CryptoDataBase.CDB
 		public DirElement CreateDir(string Name, Bitmap Icon)
 		{
 			int index;
-			
+
 			lock (_changeElementsLocker)
 			{
 				if (FindByName(_Elements, Name, out index) != null)

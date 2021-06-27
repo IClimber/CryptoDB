@@ -9,7 +9,6 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using WpfAnimatedGif;
 
 namespace CryptoDataBase
 {
@@ -128,14 +127,15 @@ namespace CryptoDataBase
 
 			MemoryStream ms = new MemoryStream();
 			(elements[currentIndex] as FileElement).SaveTo(ms);
-			//image.SnapsToDevicePixels = false;
+			image.SnapsToDevicePixels = true;
+			image.UseLayoutRounding = true;
 			image.RenderTransform = new ScaleTransform();
 			Zoom = 1;
 			//image.Source = img;
 			//BitmapFrame bmp = null;
 
 			bmp = null;
-			
+
 			try
 			{
 				ms.Position = 0;

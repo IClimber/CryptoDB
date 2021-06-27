@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
+﻿using Microsoft.Win32;
 using System.Windows;
-using Microsoft.Win32;
 
 namespace CryptoDataBase
 {
-    /// <summary>
-    /// Логика взаимодействия для App.xaml
-    /// </summary>
-    public partial class App : Application
+	/// <summary>
+	/// Логика взаимодействия для App.xaml
+	/// </summary>
+	public partial class App : Application
 	{
 		const string FILE_EXTENSION = ".CDB";
 

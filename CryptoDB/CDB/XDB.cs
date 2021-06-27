@@ -1,9 +1,9 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Security.Cryptography;
-using CryptoDataBase.CDB.Exceptions;
+using System.Text;
 
 namespace CryptoDataBase.CDB
 {
@@ -16,6 +16,7 @@ namespace CryptoDataBase.CDB
 		FileStream _headersFileStream;
 		FileStream _dataFileStream;
 		public readonly bool IsReadOnly = true;
+		private uint _deletedFiles = 0;
 
 		public XDB(string FileName, string Password, ProgressCallback Progress = null)
 		{
@@ -58,7 +59,7 @@ namespace CryptoDataBase.CDB
 			{
 				ReadFileStruct(Progress);
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				throw new ReadingDataException("Помилка читання даних. Можливо невірний пароль.");
 			}
@@ -82,8 +83,9 @@ namespace CryptoDataBase.CDB
 			byte[] buf = new byte[1048576];
 			double percent = 0;
 
+			//Читаємо список файлів з диску в пам’ять
 			MemoryStream headers = new MemoryStream();
-			while (_headersFileStream.Position < _headersFileStream.Length) //Читаємо список файлів з диску в пам’ять
+			while (_headersFileStream.Position < _headersFileStream.Length)
 			{
 				int count = _headersFileStream.Read(buf, 0, buf.Length);
 				headers.Write(buf, 0, count);
@@ -93,9 +95,9 @@ namespace CryptoDataBase.CDB
 			//headers.Position = 1;
 			ReadVersion(headers);
 
+			//Читаємо список файлів з пам’яті
 			int lastProgress = 0;
-
-			while (headers.Position < headers.Length) //Читаємо список файлів з пам’яті
+			while (headers.Position < headers.Length)
 			{
 				Element element = GetNextElementFromStream(headers);
 				if (element != null)
@@ -123,7 +125,7 @@ namespace CryptoDataBase.CDB
 
 		private Element GetNextElementFromStream(Stream stream)
 		{
-			Header header = new Header(stream, (UInt64)stream.Position, this.header.headersFileStream, AES);
+			Header header = new Header(stream, (ulong)stream.Position, this.header.headersFileStream, AES);
 
 			if (header.Exists)
 			{
@@ -138,6 +140,7 @@ namespace CryptoDataBase.CDB
 			}
 			else
 			{
+				_deletedFiles++;
 				stream.Position += header.InfSize;
 			}
 

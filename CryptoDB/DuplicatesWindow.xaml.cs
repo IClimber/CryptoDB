@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using CryptoDataBase.CDB;
+using ImageConverter;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Drawing;
-using ImageConverter;
-using System.ComponentModel;
-using CryptoDataBase.CDB;
 
 namespace CryptoDataBase
 {

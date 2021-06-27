@@ -16,11 +16,11 @@ namespace CryptoDataBase.CDB
 		public long Length { get { return Math.Max(_stream.Length, _Length); } }
 		private long _Length;
 		private FreeSpaceMap freeSpaceMap;
-        private static int threadsCount = Environment.ProcessorCount;
-        //private byte[] ecnryptBuffer = new byte[1048576];
-        //private byte[] decryptBuffer = new byte[1048576];
+		private static int threadsCount = Environment.ProcessorCount;
+		//private byte[] ecnryptBuffer = new byte[1048576];
+		//private byte[] decryptBuffer = new byte[1048576];
 
-        public SafeStreamAccess(Stream stream)
+		public SafeStreamAccess(Stream stream)
 		{
 			_stream = stream;
 			freeSpaceMap = new FreeSpaceMap(stream.Length, false);
@@ -225,7 +225,8 @@ namespace CryptoDataBase.CDB
 			byte[] result = null;
 			Object AESLock = new Object();
 
-			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i => {
+			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
+			{
 				byte[] myIV = new byte[lastIV.Length];
 				ICryptoTransform transform;
 

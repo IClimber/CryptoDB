@@ -10,6 +10,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -432,7 +433,7 @@ namespace CryptoDataBase
 		#region XDB worker
 		private void XDBLoad(object sender, DoWorkEventArgs e)
 		{
-			sw.Start();
+			sw.Restart();
 			if (databaseFile == "")
 			{
 				return;
@@ -440,8 +441,11 @@ namespace CryptoDataBase
 
 			try
 			{
+				xdb?.Dispose();
+				GC.Collect();
+
 				xdb = new XDB(databaseFile, e.Argument.ToString(), PerortProgress);
-			} 
+			}
 			catch (ReadingDataException ex)
 			{
 				_faildedOpen = true;
@@ -559,14 +563,6 @@ namespace CryptoDataBase
 			{
 				SelectItem(selected);
 			}
-			//else if (elements.Count > 0) //Якщо в папці є елементи, то прокручуємо на початок
-			//{
-			//	Element first_element = elements.First();
-			//	if (first_element != null)
-			//	{
-			//		SelectItem(first_element, false);
-			//	}
-			//}
 
 			temp_search_list = elements;
 
@@ -585,8 +581,9 @@ namespace CryptoDataBase
 			//Відкриваємо папку
 			if (element is DirElement)
 			{
-				Element select = select_first ? (element as DirElement).Elements.First() : selected;
+				Element select = select_first ? (element as DirElement).Elements.FirstOrDefault() : selected;
 				SetViewsElement((element as DirElement), (element as DirElement).Elements, select);
+
 				return;
 			}
 
@@ -652,7 +649,7 @@ namespace CryptoDataBase
 				e.Handled = true;
 				if (listView.SelectedItem != null)
 				{
-					ShowFiles(listView.SelectedItem as Element);
+					ShowFiles(listView.SelectedItem as Element, null, true);
 				}
 			}
 
@@ -762,7 +759,7 @@ namespace CryptoDataBase
 		{
 			e.Handled = true;
 			var el = ((System.Windows.Controls.ListViewItem)sender).Content as Element;
-			ShowFiles(el);
+			ShowFiles(el, null, true);
 		}
 
 		private void OpenImage(Element file)
@@ -902,44 +899,57 @@ namespace CryptoDataBase
 			}
 
 			Element newFile = null;
-			Bitmap tmp = ImgConverter.BitmapFromSource(System.Windows.Clipboard.GetImage());
-			using (MemoryStream stream = new MemoryStream())
+			ushort maxTries = 3;
+
+			do
 			{
-				//tmp1 через який баг в GDI, не хоче працювати з tmp
-				Bitmap tmp1 = new Bitmap(tmp);
-				tmp1.Save(stream, ImageFormat.Jpeg);
-				tmp1?.Dispose();
-				Bitmap icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
-				string FileName = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss.fff") + ".jpg";
-
-				if (isCompareImage)
-				{
-					var duplicates = GetDuplicates(FileName, icon);
-					if (duplicates.Count > 0)
-					{
-						ShowDuplicateFilesList(duplicates, FileName, icon);
-						icon?.Dispose();
-						tmp?.Dispose();
-						return;
-					}
-				}
-
-				stream.Position = 0;
 				try
 				{
-					newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
+					Bitmap tmp = ImgConverter.BitmapFromSource(System.Windows.Clipboard.GetImage());
+					using (MemoryStream stream = new MemoryStream())
+					{
+						//tmp1 через який баг в GDI, не хоче працювати з tmp
+						Bitmap tmp1 = new Bitmap(tmp);
+						tmp1.Save(stream, ImageFormat.Jpeg);
+						tmp1?.Dispose();
+						Bitmap icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
+						string FileName = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss.fff") + ".jpg";
+
+						if (isCompareImage)
+						{
+							var duplicates = GetDuplicates(FileName, icon);
+							if (duplicates.Count > 0)
+							{
+								ShowDuplicateFilesList(duplicates, FileName, icon);
+								icon?.Dispose();
+								tmp?.Dispose();
+								return;
+							}
+						}
+
+						stream.Position = 0;
+						try
+						{
+							newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
+						}
+						catch (Exception e)
+						{
+							Refresh = false;
+							System.Windows.MessageBox.Show(e.Message);
+
+						}
+						icon?.Dispose();
+						maxTries = 0;
+					}
+					tmp?.Dispose();
 				}
-				catch (Exception e)
+				catch (ExternalException ex)
 				{
-					Refresh = false;
-					System.Windows.MessageBox.Show(e.Message);
-
+					maxTries--;
 				}
-				icon?.Dispose();
-			}
-			tmp?.Dispose();
+			} while (maxTries > 0);
 
-			if (Refresh)
+			if (Refresh && newFile != null)
 			{
 				ShowFiles(listView.Tag as Element, newFile);
 			}

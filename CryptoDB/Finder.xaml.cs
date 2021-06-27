@@ -19,8 +19,7 @@ namespace CryptoDataBase
 	{
 		public delegate void CallBackResult(List<Element> result);
 
-		DirElement root;
-		DirElement current_root;
+		DirElement search_dir;
 		Bitmap _bitmap;
 		private BackgroundWorker searchWorker = new BackgroundWorker();
 		private CallBackResult resultCallback;
@@ -30,11 +29,12 @@ namespace CryptoDataBase
 
 		private byte _sensative = 0;
 		private string _search_text = "";
+		private bool _find_in_all_dirs = true;
 		private bool _find_as_tag = false;
 		private bool _all_tags = false;
-        private static int threadsCount = Environment.ProcessorCount;
+		private static int threadsCount = Environment.ProcessorCount;
 
-        List<Element> resultList;
+		List<Element> resultList;
 
 		private Finder()
 		{
@@ -50,8 +50,7 @@ namespace CryptoDataBase
 
 		private Finder(DirElement Root) : this()
 		{
-			current_root = Root;
-			root = Root.GetRootDir() as DirElement;
+			search_dir = Root;
 		}
 
 		public Finder(DirElement Root, Bitmap thumbnail, CallBackResult Result) : this(Root)
@@ -80,23 +79,30 @@ namespace CryptoDataBase
 		{
 			_sensative = (byte)slider.Value;
 			_search_text = textBox.Text;
+			_find_in_all_dirs = findInAllDirs.IsChecked == true;
 			_find_as_tag = findAsTag.IsChecked == true;
 			_all_tags = allTags.IsChecked == true;
 			Opacity = 0.4;
+		}
+
+		private DirElement getSearchableDir()
+		{
+			var dir = _find_in_all_dirs ? search_dir.GetRootDir() as DirElement : search_dir;
+			return _find_in_all_dirs ? search_dir.GetRootDir() as DirElement : search_dir;
 		}
 
 		private void SearchWork(object sender, DoWorkEventArgs e)
 		{
 			switch (e.Argument)
 			{
-				case FIND_BY_ICON :
-					resultList = root.FindAllByIcon(_bitmap, _sensative);
+				case FIND_BY_ICON:
+					resultList = getSearchableDir().FindAllByIcon(_bitmap, _sensative);
 					break;
 				case FIND_DUPLICATE_BY_ICON:
 					resultList = FindAllDuplicateImage(_sensative);
 					break;
 				default:
-					resultList = root.FindByName(_search_text, _find_as_tag, _all_tags);
+					resultList = getSearchableDir().FindByName(_search_text, _find_as_tag, _all_tags);
 					break;
 			}
 		}
@@ -199,11 +205,11 @@ namespace CryptoDataBase
 			Stopwatch sw = Stopwatch.StartNew();
 			List<Element> resultList = new List<Element>();
 			IList<Element> searchList = new List<Element>();
-			_GetAllElementsWithIcon(current_root, searchList);
+			_GetAllElementsWithIcon(search_dir, searchList);
 			Element[] search_array = searchList.ToArray();
 
 			searchList.Clear();
-			_GetAllElementsWithIcon(root, searchList);
+			_GetAllElementsWithIcon(getSearchableDir(), searchList);
 			Element[] search_in_array = searchList.ToArray();
 
 			searchList = null;
@@ -275,7 +281,7 @@ namespace CryptoDataBase
 			{
 				if (element.IconSize > 0)
 				{
-					var result = root.FindAllByPHash(element.PHash, (byte)slider.Value);
+					var result = getSearchableDir().FindAllByPHash(element.PHash, (byte)slider.Value);
 					if (result.Count > 1)
 					{
 						resultList.AddRange(result);

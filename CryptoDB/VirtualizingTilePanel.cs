@@ -1,13 +1,12 @@
-﻿using System.Windows.Controls.Primitives;
-using System.Windows.Controls;
-using System.Windows;
-using System.Windows.Media;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Collections.Generic;
+using System.Windows.Media;
 
 namespace CryptoDataBase
 {

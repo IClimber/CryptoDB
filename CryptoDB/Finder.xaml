@@ -12,26 +12,28 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="220"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
-		
-		<Label x:Name="label" Content="Имя для поиска" HorizontalAlignment="Left" Margin="10,0,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE"/>
-		<TextBox x:Name="textBox" HorizontalAlignment="Stretch" Height="23" Margin="10,0,10,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Background="#FF333337" Foreground="#FFD2FFCE"/>
 
-		<CheckBox x:Name="findAsTag" Content="Искать как теги" HorizontalAlignment="Left" Margin="10,5,10,0" Grid.Row="2" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="False"/>
-		<CheckBox x:Name="allTags" Content="По всем тегам" HorizontalAlignment="Right" Margin="10,5,10,0" Grid.Row="2" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="False" IsEnabled="{Binding ElementName=findAsTag, Path=IsChecked}"/>
+		<Label x:Name="label" Content="Имя для поиска" HorizontalAlignment="Left" Margin="10,5,10,0" VerticalAlignment="Top" Foreground="#FFD2FFCE"/>
+		<TextBox x:Name="textBox" HorizontalAlignment="Stretch" Height="23" Margin="10,5,10,0" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" Background="#FF333337" Foreground="#FFD2FFCE"/>
 
-		<Image x:Name="image" HorizontalAlignment="Stretch" Margin="10,10,10,0" Grid.Row="3" VerticalAlignment="Stretch" />
+		<CheckBox x:Name="findInAllDirs" Content="Искать во всех папках" HorizontalAlignment="Left" Margin="10,5,10,0" Grid.Row="2" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="True"/>
+		<CheckBox x:Name="findAsTag" Content="Искать как теги" HorizontalAlignment="Left" Margin="10,5,10,0" Grid.Row="3" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="False"/>
+		<CheckBox x:Name="allTags" Content="По всем тегам" HorizontalAlignment="Right" Margin="10,5,10,0" Grid.Row="3" VerticalAlignment="Top" Foreground="#FFD2FFCE" IsChecked="False" IsEnabled="{Binding ElementName=findAsTag, Path=IsChecked}"/>
+
+		<Image x:Name="image" HorizontalAlignment="Stretch" Margin="10,10,10,0" Grid.Row="4" VerticalAlignment="Stretch" />
 		
-		<DockPanel HorizontalAlignment="Stretch" Height="Auto" LastChildFill="True" Margin="0,0,0,0" Grid.Row="4" VerticalAlignment="Stretch">
+		<DockPanel HorizontalAlignment="Stretch" Height="Auto" LastChildFill="True" Margin="0,0,0,0" Grid.Row="5" VerticalAlignment="Stretch">
 			<Label Content="Отличие:" Foreground="#FFD2FFCE" Margin="5,0,0,0"/>
 			<Label Content="{Binding ElementName=slider, Path=Value}" Width="30" Margin="5,0,0,0" Foreground="#FFD2FFCE"/>
 			<Slider x:Name="slider" Height="17" Margin="0,0,10,0" IsSnapToTickEnabled="True" Maximum="32" />
 		</DockPanel>
 		
-		<Grid Grid.Row="5" Height="40">
+		<Grid Grid.Row="6" Height="40">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition/>
 				<ColumnDefinition/>

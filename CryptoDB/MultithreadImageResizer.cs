@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Threading.Tasks;
-using System.Threading;
 using System.ComponentModel;
+using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CryptoDataBase
 {
-	class MultithreadImageResizer: IDisposable
+	class MultithreadImageResizer : IDisposable
 	{
 		public delegate Bitmap CallBackConvert(string FileName);
 		private CallBackConvert converter;
@@ -16,9 +16,9 @@ namespace CryptoDataBase
 		private IDictionary<string, Bitmap> images = new Dictionary<string, Bitmap>();
 		private int images_count = 0;
 		private BackgroundWorker ResizeWorker = new BackgroundWorker();
-        private static int threadsCount = (int)Math.Ceiling(Environment.ProcessorCount / 2.0);
+		private static int threadsCount = (int)Math.Ceiling(Environment.ProcessorCount / 2.0);
 
-        private IEnumerable<bool> Infinite()
+		private IEnumerable<bool> Infinite()
 		{
 			while (true)
 			{
