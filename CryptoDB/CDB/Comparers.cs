@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
-	public class IDComparer : IComparer<Element>
+	public class IDComparer : IComparer<DirElement>
 	{
-		int IComparer<Element>.Compare(Element x, Element y)
+		int IComparer<DirElement>.Compare(DirElement x, DirElement y)
 		{
 			return x.ID == y.ID ? 0 : x.ID < y.ID ? -1 : 1;
 		}
@@ -16,9 +15,12 @@ namespace CryptoDataBase
 
 	public class NameComparer : IComparer<Element>
 	{
+		[DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+		static extern int StrCmpLogicalW(string s1, string s2);
+
 		int IComparer<Element>.Compare(Element x, Element y)
 		{
-			return String.Compare(x.Name, y.Name, true);
+			return StrCmpLogicalW(x.Name, y.Name);//String.Compare(x.Name, y.Name, true);
 		}
 	}
 
@@ -59,6 +61,23 @@ namespace CryptoDataBase
 		int IComparer<SPoint>.Compare(SPoint x, SPoint y)
 		{
 			return x.Size < y.Size ? -1 : x.Size > y.Size ? 1 : 0;
+		}
+	}
+
+	public class PHashComparer : IComparer<Element>
+	{
+		private byte sensative = 0;
+
+		public PHashComparer(byte sensative = 0)
+		{
+			this.sensative = sensative;
+		}
+
+		int IComparer<Element>.Compare(Element x, Element y)
+		{
+			byte dist1 = Element.GetHammingDistance(BitConverter.ToUInt64(x.PHash, 0), 0);
+			byte dist2 = Element.GetHammingDistance(BitConverter.ToUInt64(y.PHash, 0), 0);
+			return dist1 < dist2 ? -1 : dist1 > dist2 ? 1 : 0;
 		}
 	}
 }

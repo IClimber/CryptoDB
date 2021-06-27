@@ -1,18 +1,14 @@
-﻿using System;
+﻿using CryptoDataBase.CDB;
+using ImageConverter;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Forms;
-using System.IO;
-using ImageConverter;
 
 namespace CryptoDataBase
 {
@@ -27,6 +23,7 @@ namespace CryptoDataBase
 		private Point start;   // Original Position of the mouse
 		private double Zoom = 1;
 		private System.Windows.Controls.ListView parentListView;
+		BitmapImage bmp = null;
 
 		public ImageViewer()
 		{
@@ -42,7 +39,7 @@ namespace CryptoDataBase
 			nextImg.Visibility = Visibility.Hidden;
 		}
 
-		public ImageViewer(List<Element> elementList, Element current, System.Windows.Controls.ListView ParentListView) : this()
+		public ImageViewer(List<Element> elementList, FileElement current, System.Windows.Controls.ListView ParentListView) : this()
 		{
 			parentListView = ParentListView;
 			elements = elementList;
@@ -129,34 +126,54 @@ namespace CryptoDataBase
 			Title = elements[currentIndex].Name;
 
 			MemoryStream ms = new MemoryStream();
-			elements[currentIndex].SaveTo(ms);
-			BitmapImage img = ImgConverter.StreamToBitmapImage(ms);
-			//image.SnapsToDevicePixels = false;
+			(elements[currentIndex] as FileElement).SaveTo(ms);
+			image.SnapsToDevicePixels = true;
+			image.UseLayoutRounding = true;
 			image.RenderTransform = new ScaleTransform();
 			Zoom = 1;
-			image.Source = img;
+			//image.Source = img;
+			//BitmapFrame bmp = null;
+
+			bmp = null;
+
+			try
+			{
+				ms.Position = 0;
+				bmp = ImgConverter.StreamToBitmapImage(ms);
+				image.Source = bmp;
+				//bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+				//ImageBehavior.SetAnimatedSource(image, bmp);
+				//bmp = null;
+			}
+			catch
+			{
+
+			}
+
 			ms.Dispose();
 
 			TextBlockStatus1.Text = "Image size: " + FormatingSize(elements[currentIndex].Size);
-			TextBlockStatus2.Text = "Image resolution: " + img?.PixelWidth + " x " + img?.PixelHeight;
-			TextBlockStatus3.Text = "DPI: X=" + (int?)img?.DpiX + "  Y=" + (int?)img?.DpiY;
+			TextBlockStatus2.Text = "Image resolution: " + bmp?.PixelWidth + " x " + bmp?.PixelHeight;
+			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();
 
 
 			try
 			{
-				if (((img.Width * (img.DpiX / 96)) > border.RenderSize.Width) || ((img.Height * (img.DpiY / 96)) > border.RenderSize.Height) || (border.Width == 0) || (img.DpiX == 0) || (img.DpiY == 0))
+				if (((bmp.Width * (bmp.DpiX / 96)) > border.RenderSize.Width) || ((bmp.Height * (bmp.DpiY / 96)) > border.RenderSize.Height) || (border.Width == 0) || (bmp.DpiX == 0) || (bmp.DpiY == 0))
 				{
 					image.Stretch = Stretch.Uniform;
 				}
 				else
 				{
 					image.Stretch = Stretch.None;
-					image.RenderTransform = new ScaleTransform(img.DpiX / 96, img.DpiY / 96, img.Width / 2, img.Height / 2);
+					image.RenderTransform = new ScaleTransform(bmp.DpiX / 96, bmp.DpiY / 96, bmp.Width / 2, bmp.Height / 2);
 				}
 			}
 			catch
 			{ }
+
+			GC.Collect();
 		}
 
 		private void image_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -303,16 +320,35 @@ namespace CryptoDataBase
 
 		private void Rename_Click(object sender, RoutedEventArgs e) //провіряти чи MainWindow editable == true
 		{
+			if ((Owner as MainWindow).IsReadOnly)
+			{
+				return;
+			}
+
 			RenameWindow renamer = new RenameWindow(elements[currentIndex].Name, elements[currentIndex].Type) { Owner = this };
 			if (renamer.ShowDialog() == true)
 			{
-				elements[currentIndex].Name = renamer.textBox.Text;
+				try
+				{
+					elements[currentIndex].Name = renamer.textBox.Text;
+				}
+				catch (Exception ex)
+				{
+					System.Windows.MessageBox.Show(ex.Message);
+					return;
+				}
+
 				Title = elements[currentIndex].Name;
 			}
 		}
 
 		private void Delete_Click(object sender, RoutedEventArgs e)
 		{
+			if ((Owner as MainWindow).IsReadOnly)
+			{
+				return;
+			}
+
 			if (System.Windows.MessageBox.Show(this, "Удалить елемент", "Удаление", MessageBoxButton.OKCancel) != MessageBoxResult.OK)
 			{
 				return;
@@ -340,6 +376,13 @@ namespace CryptoDataBase
 			m.RotateAt(270, m.OffsetX + image.RenderSize.Width / 2, m.OffsetY + image.RenderSize.Height / 2);
 			Title = image.RenderSize.Width.ToString();
 			image.RenderTransform = new MatrixTransform(m);*/
+		}
+
+		private void Window_Closed(object sender, EventArgs e)
+		{
+			bmp = null;
+
+			GC.Collect();
 		}
 	}
 }

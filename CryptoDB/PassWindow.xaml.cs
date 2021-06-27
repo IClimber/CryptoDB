@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using CryptoDataBase.CDB;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
-using System.Text;
 
 namespace CryptoDataBase
 {

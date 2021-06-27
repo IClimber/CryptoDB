@@ -1,17 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Security.Cryptography;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	static class CryptoRandom
 	{
 		static public void GetBytes(byte[] buffer)
 		{
-			RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
-			rngCsp.GetBytes(buffer);
+			using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+			{
+				rngCsp.GetBytes(buffer);
+			}
+		}
+
+		static public void GetBytes(byte[] buffer, int offset, int count)
+		{
+			using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+			{
+				rngCsp.GetBytes(buffer, offset, count);
+			}
 		}
 
 		static public UInt64 Random(UInt64 max)

@@ -1,26 +1,29 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace CryptoDataBase
+namespace CryptoDataBase.CDB
 {
 	public class SafeStreamAccess
 	{
 		public delegate void ProgressCallback(double percent);
+		public readonly Object writeLock = new Object();
 		private Object _ReadWriteLock = new Object();
 		private Object _WriteLock = new Object();
 		private Stream _stream;
 		public Stream BaseStream { get { return _stream; } }
 		public long Length { get { return Math.Max(_stream.Length, _Length); } }
 		private long _Length;
+		private FreeSpaceMap freeSpaceMap;
+		private static int threadsCount = Environment.ProcessorCount;
 		//private byte[] ecnryptBuffer = new byte[1048576];
 		//private byte[] decryptBuffer = new byte[1048576];
 
 		public SafeStreamAccess(Stream stream)
 		{
 			_stream = stream;
+			freeSpaceMap = new FreeSpaceMap(stream.Length, false);
 		}
 
 		//Кодує файли, перед викликом не забути присвоїти потрібний IV
@@ -28,7 +31,19 @@ namespace CryptoDataBase
 		{
 			lock (_WriteLock)
 			{
-				_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+				if (streamOffset > _stream.Length)
+				{
+					throw new Exception("");
+				}
+
+				if (AES.Padding == PaddingMode.None)
+				{
+					_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+				}
+				else
+				{
+					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)(inputStream.Length - inputStream.Position));
+				}
 
 				byte[] buffer = new byte[1048576];
 				CryptoStream cs = new CryptoStream(_stream, AES.CreateEncryptor(), CryptoStreamMode.Write);
@@ -67,12 +82,19 @@ namespace CryptoDataBase
 			}
 		}
 
-		//Кодує файли, перед викликом не забути присвоїти потрібний IV
+		//Кодує і записує масив байт, перед викликом не забути присвоїти потрібний IV
 		public void WriteEncrypt(long streamOffset, byte[] inputData, AesCryptoServiceProvider AES)
 		{
 			lock (_WriteLock)
 			{
-				_Length = streamOffset + inputData.Length;
+				if (AES.Padding == PaddingMode.None)
+				{
+					_Length = streamOffset + inputData.Length;
+				}
+				else
+				{
+					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)inputData.Length);
+				}
 
 				lock (_ReadWriteLock)
 				{
@@ -147,9 +169,11 @@ namespace CryptoDataBase
 		{
 			lock (_ReadWriteLock)
 			{
-				CryptoStream cs = new CryptoStream(_stream, AES.CreateDecryptor(), CryptoStreamMode.Read);
-				_stream.Position = streamOffset;
-				cs.Read(outputData, 0, dataSize);
+				using (CryptoStream cs = new CryptoStream(_stream, AES.CreateDecryptor(), CryptoStreamMode.Read))
+				{
+					_stream.Position = streamOffset;
+					cs.Read(outputData, 0, dataSize);
+				}
 			}
 		}
 
@@ -172,7 +196,7 @@ namespace CryptoDataBase
 			byte[] buffer = new byte[1048576];
 			byte[] outputBuffer = new byte[buffer.Length];
 			byte[] IV = AES.IV;
-			long max = (long)Element.GetMod16((ulong)dataSize);
+			long max = (long)Crypto.GetMod16((ulong)dataSize);
 			long position = streamOffset;
 
 			while (max > 0)
@@ -201,7 +225,8 @@ namespace CryptoDataBase
 			byte[] result = null;
 			Object AESLock = new Object();
 
-			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i => {
+			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
+			{
 				byte[] myIV = new byte[lastIV.Length];
 				ICryptoTransform transform;
 
@@ -245,6 +270,31 @@ namespace CryptoDataBase
 			}
 
 			Buffer.BlockCopy(inputBuffer, lenght - 16, lastIV, 0, 16);
+		}
+
+		public UInt64 GetFreeSpaceStartPos(UInt64 size, bool withWrite = true)
+		{
+			return freeSpaceMap.GetFreeSpacePos(size, Length, withWrite);
+		}
+
+		public void RemoveFreeSpace(ulong start, ulong length)
+		{
+			freeSpaceMap.RemoveFreeSpace(start, length);
+		}
+
+		public void AddFreeSpace(ulong start, ulong length)
+		{
+			freeSpaceMap.AddFreeSpace(start, length);
+		}
+
+		public void FreeSpaceAnalyse()
+		{
+			freeSpaceMap.FreeSpaceAnalyse((UInt64)Length);
+		}
+
+		public bool IsFreeSpace(ulong Start, ulong Size)
+		{
+			return freeSpaceMap.IsFreeSpace(Start, Size);
 		}
 	}
 }

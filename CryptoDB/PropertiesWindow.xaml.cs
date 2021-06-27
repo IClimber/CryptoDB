@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+﻿using CryptoDataBase.CDB;
 using ImageConverter;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace CryptoDataBase
 {
@@ -37,11 +30,16 @@ namespace CryptoDataBase
 				Title += (i < (Math.Min(elements.Count, 3) - 1)) ? elements[i].Name + ", " : elements.Count > 3 ? elements[i].Name + "..." : elements[i].Name;
 			}
 
-			ulong data_size = GetSize(elements);
+			ulong data_size;
+			ulong fullSize;
+			ulong fullEncryptSize;
+			GetSize(elements, out data_size, out fullSize, out fullEncryptSize);
 			ParentLabel.Text = GetPath(elements);
 			FilesCountLabel.Text = GetFilesCount(elements).ToString("#,0");
 			DirsCountLabel.Text = GetDirsCount(elements).ToString("#,0");
 			SizeLabel.Text = SizeToStr(data_size) + " (" + data_size.ToString("#,0") + " байт)";
+			FullSizeLabel.Text = SizeToStr(fullSize) + " (" + fullSize.ToString("#,0") + " байт)";
+			FullEncryptSizeLabel.Text = SizeToStr(fullEncryptSize) + " (" + fullEncryptSize.ToString("#,0") + " байт)";
 
 			if (elements.Count == 1)
 			{
@@ -66,10 +64,10 @@ namespace CryptoDataBase
 
 		private string GetPath(List<Element> elements)
 		{
-			string path = elements[0].GetPath;
+			string path = elements[0].FullPath;
 			for (int i = 1; i < elements.Count; i++)
 			{
-				if (string.Compare(path, elements[i].GetPath, true) != 0)
+				if (string.Compare(path, elements[i].FullPath, true) != 0)
 				{
 					path = "разное";
 					break;
@@ -83,7 +81,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.File).Count();
 
-			foreach (var item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
 			{
 				result += GetFilesCount(item.Elements.ToList());
 			}
@@ -95,7 +93,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.Dir).Count();
 
-			foreach (var item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
 			{
 				result += GetDirsCount(item.Elements.ToList());
 			}
@@ -103,15 +101,17 @@ namespace CryptoDataBase
 			return result;
 		}
 
-		private UInt64 GetSize(List<Element> elements)
+		private void GetSize(List<Element> elements, out UInt64 size, out UInt64 fullSize, out UInt64 fullEncryptSize)
 		{
-			UInt64 size = 0;
+			size = 0;
+			fullSize = 0;
+			fullEncryptSize = 0;
 			for (int i = 0; i < elements.Count; i++)
 			{
 				size += elements[i].Size;
+				fullSize += elements[i].FullSize;
+				fullEncryptSize += elements[i].FullEncryptSize;
 			}
-
-			return size;
 		}
 
 		private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

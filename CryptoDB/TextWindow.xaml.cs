@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using CryptoDataBase.CDB;
+using System;
 using System.IO;
-using System.Windows.Controls;
-using System.Windows.Data;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
 namespace CryptoDataBase
@@ -26,7 +18,7 @@ namespace CryptoDataBase
 					  WS_MAXIMIZEBOX = 0x10000,
 					  WS_MINIMIZEBOX = 0x20000;
 		private IntPtr _windowHandle;
-		Element element;
+		FileElement element;
 		byte[] textHash;
 
 		[DllImport("user32.dll")]
@@ -77,7 +69,7 @@ namespace CryptoDataBase
 			Owner.Activate();
 		}
 
-		public TextWindow(Element element) : this()
+		public TextWindow(FileElement element) : this()
 		{
 			this.element = element;
 			MemoryStream ms = new MemoryStream();
@@ -118,7 +110,14 @@ namespace CryptoDataBase
 			}
 
 			ms.Position = 0;
-			element.ChangeContent(ms);
+			try
+			{
+				element.ChangeContent(ms);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message);
+			}
 			ms.Dispose();
 			textHash = newHash;
 		}

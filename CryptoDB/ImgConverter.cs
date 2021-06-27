@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using CryptoDataBase.CDB;
+using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Data;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Drawing.Drawing2D;
-using System.Windows.Interop;
-using System.Runtime.InteropServices;
-using System.Windows.Data;
-using CryptoDataBase;
 
 namespace ImageConverter
 {
 	static class ImgConverter
 	{
-		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff"};
+		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff" };
 
 		[DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -133,7 +131,7 @@ namespace ImageConverter
 					bmp = new Bitmap(FileName);
 				}
 				else if (Path.GetExtension(FileName).ToLower() == ".ico")
-				{ 
+				{
 					bmp = new Icon(FileName, 256, 256).ToBitmap();
 				}
 				else
@@ -154,14 +152,14 @@ namespace ImageConverter
 		}
 	}
 
-	
+
 	public class BitmapToImageSourceConvert : IValueConverter
 	{
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
 		{
 			using (Bitmap bmp = (value as Element).Icon)
 			{
-				if ((bmp == null) && (((Element)value).Type == ElementType.Dir))
+				if ((bmp == null) && (value is DirElement))
 				{
 					return ImgConverter.BitmapToImageSource(CryptoDataBase.Properties.Resources.DirIcon);
 				}

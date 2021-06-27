@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using CryptoDataBase.CDB;
+using System.Windows;
 using System.Windows.Input;
 
 namespace CryptoDataBase
