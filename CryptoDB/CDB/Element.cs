@@ -187,13 +187,13 @@ namespace CryptoDataBase.CDB
 			{
 				using (MemoryStream ms = new MemoryStream())
 				{
-					if (Icon.PixelFormat == PixelFormat.Format32bppArgb)
+					if (Icon?.PixelFormat == PixelFormat.Format32bppArgb)
 					{
 						Icon.Save(ms, ImageFormat.Png);
 					}
 					else
 					{
-						Icon.Save(ms, ImageFormat.Jpeg);
+						Icon?.Save(ms, ImageFormat.Jpeg);
 					}
 					ms.Position = 0;
 
