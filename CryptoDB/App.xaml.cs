@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Windows;
 
 namespace CryptoDataBase
@@ -19,18 +20,33 @@ namespace CryptoDataBase
 
 		public static void Associate()
 		{
-			try
+			if (!IsDebugRelease)
 			{
-				Registry.ClassesRoot.CreateSubKey(FILE_EXTENSION).SetValue("", "CDBfile");
-
-				using (RegistryKey key = Registry.ClassesRoot.CreateSubKey("CDBfile"))
+				try
 				{
-					key.CreateSubKey("DefaultIcon").SetValue("", System.Reflection.Assembly.GetExecutingAssembly().Location + ",0");
-					key.CreateSubKey(@"Shell\Open\Command").SetValue("", System.Reflection.Assembly.GetExecutingAssembly().Location + " \"%1\"");
+					Registry.ClassesRoot.CreateSubKey(FILE_EXTENSION).SetValue("", "CDBfile");
+
+					using (RegistryKey key = Registry.ClassesRoot.CreateSubKey("CDBfile"))
+					{
+						key.CreateSubKey("DefaultIcon").SetValue("", System.Reflection.Assembly.GetExecutingAssembly().Location + ",0");
+						key.CreateSubKey(@"Shell\Open\Command").SetValue("", System.Reflection.Assembly.GetExecutingAssembly().Location + " \"%1\"");
+					}
 				}
+				catch
+				{ }
 			}
-			catch
-			{ }
+		}
+
+		public static bool IsDebugRelease
+		{
+			get
+			{
+				#if DEBUG
+				return true;
+				#else
+				return false;
+				#endif
+			}
 		}
 	}
 }
