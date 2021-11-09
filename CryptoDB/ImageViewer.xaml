@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:gif="clr-namespace:WpfAnimatedGif"
 		mc:Ignorable="d"
-        Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip" Closed="Window_Closed">
+		Name="imageViewer"
+        Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip" Closed="Window_Closed" Loaded="imageViewer_Loaded" SnapsToDevicePixels="false">
     <Grid Name="grid" Background="#FF222227" MouseMove="grid_MouseMove">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50" Name="prevImgColumn"/>
@@ -19,8 +20,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Name="border" ClipToBounds="True">
-			<Image x:Name="image" Stretch="None"/>
+        <Border Grid.Row="0" Grid.RowSpan="2" Grid.ColumnSpan="3" Name="border" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+			<Image x:Name="image" Stretch="Uniform"/>
         </Border>
 
         <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Name="prevImg" Background="#FF111117" Opacity="0.5" Tag="0" MouseDown="Image_MouseDown">
@@ -41,9 +42,10 @@
             <Button Content="Сохранить как" Width="100" Click="SaveAs_Click" />
             <Button Content="Переименовать" Width="100" Click="Rename_Click" />
             <Button Content="Удалить" Width="100" Click="Delete_Click" />
-            <Button Content="Поворот 270" Width="100" Click="Rotate_Click" />
-            <Button Content="Поворот 90" Width="100" />
-        </ToolBar>
+            <Button Content="Поворот 270" Width="100" Tag="270" Click="Rotate_Click" />
+			<Button Content="Поворот 90" Width="100" Tag="90" Click="Rotate_Click"/>
+			<CheckBox Content="На все окно" Height="18" Name="IsStretchCheckBox" VerticalAlignment="Center" IsChecked="{Binding ElementName=imageViewer, Path=IsStretch, Mode=TwoWay}" Click="IsStretchCheckBox_Click"/>
+		</ToolBar>
 
         <StatusBar HorizontalAlignment="Stretch" Margin="0,0,0,0" Grid.Row="2" Grid.ColumnSpan="3" VerticalAlignment="Stretch" Background="#FF222227">
             <StatusBarItem HorizontalContentAlignment="Left">
