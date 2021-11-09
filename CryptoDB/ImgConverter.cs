@@ -16,7 +16,7 @@ namespace ImageConverter
 {
 	static class ImgConverter
 	{
-		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff" };
+		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif" };
 
 		[DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
 		[return: MarshalAs(UnmanagedType.Bool)]
