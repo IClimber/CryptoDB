@@ -23,7 +23,7 @@ namespace CryptoDataBase
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico" };
+		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
 		private List<Element> CutList = new List<Element>();
 		XDB xdb;
@@ -119,7 +119,7 @@ namespace CryptoDataBase
 
 		private void ClipboardChange(object sender, ClipboardChangedEventArgs e)
 		{
-			InsertImageFromClipboard(false);
+			InsertImageFromClipboard(true);
 		}
 
 		public static bool IsImage(string FileName)
