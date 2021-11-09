@@ -154,6 +154,7 @@ namespace CryptoDataBase
 
 		private void Window_KeyDown(object sender, KeyEventArgs e)
 		{
+			//Enter
 			if (e.Key == Key.Enter)
 			{
 				if (sender == buttonClear)
@@ -166,6 +167,7 @@ namespace CryptoDataBase
 				}
 			}
 
+			//Escape
 			if (e.Key == Key.Escape)
 			{
 				if (textBox.Text == "")
@@ -178,6 +180,7 @@ namespace CryptoDataBase
 				}
 			}
 
+			//Ctrl+D
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.D) && !searchWorker.IsBusy)
 			{
 				_setSearchParams();
