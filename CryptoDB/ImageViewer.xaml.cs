@@ -17,17 +17,25 @@ namespace CryptoDataBase
 	/// </summary>
 	public partial class ImageViewer : Window
 	{
+		public const int STANDART_DPI = 96;
+
 		int currentIndex;
 		List<Element> elements;
 		private Point origin;  // Original Offset of image
 		private Point start;   // Original Position of the mouse
 		private double Zoom = 1;
+		private double ZoomStep = 1.1;
+		private Transform originalTransform;
+		private readonly int Dpi = STANDART_DPI;
+		public bool IsStretch { get; set; } = false;
+
 		private System.Windows.Controls.ListView parentListView;
 		BitmapImage bmp = null;
 
 		public ImageViewer()
 		{
 			InitializeComponent();
+			Dpi = (int)(STANDART_DPI * (Screen.PrimaryScreen.Bounds.Width / SystemParameters.PrimaryScreenWidth));
 
 			MouseWheel += MainWindow_MouseWheel;
 			image.MouseLeftButtonDown += image_MouseLeftButtonDown;
@@ -44,7 +52,6 @@ namespace CryptoDataBase
 			parentListView = ParentListView;
 			elements = elementList;
 			currentIndex = elementList.IndexOf(current);
-			ShowImage();
 		}
 
 		private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -121,15 +128,17 @@ namespace CryptoDataBase
 				return;
 			}
 
-			parentListView.SelectedItem = elements[currentIndex];
+			FileElement currentElement = elements[currentIndex] as FileElement;
+			parentListView.SelectedItem = currentElement;
 			parentListView.ScrollIntoView(parentListView.SelectedItem);
-			Title = elements[currentIndex].Name;
+			Title = currentElement.Name;
 
 			MemoryStream ms = new MemoryStream();
-			(elements[currentIndex] as FileElement).SaveTo(ms);
-			image.SnapsToDevicePixels = true;
-			image.UseLayoutRounding = true;
+			currentElement.SaveTo(ms);
+			image.Width = 0;
+			image.Height = 0;
 			image.RenderTransform = new ScaleTransform();
+			image.Stretch = Stretch.None;
 			Zoom = 1;
 			//image.Source = img;
 			//BitmapFrame bmp = null;
@@ -152,28 +161,58 @@ namespace CryptoDataBase
 
 			ms.Dispose();
 
-			TextBlockStatus1.Text = "Image size: " + FormatingSize(elements[currentIndex].Size);
+			TextBlockStatus1.Text = "Image size: " + FormatingSize(currentElement.Size);
 			TextBlockStatus2.Text = "Image resolution: " + bmp?.PixelWidth + " x " + bmp?.PixelHeight;
 			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();
 
+			InitImageSize();
 
+			image.Stretch = Stretch.Uniform;
+			originalTransform = image.RenderTransform;
+
+			//GC.Collect();
+		}
+
+		private void InitImageSize()
+		{
 			try
 			{
-				if (((bmp.Width * (bmp.DpiX / 96)) > border.RenderSize.Width) || ((bmp.Height * (bmp.DpiY / 96)) > border.RenderSize.Height) || (border.Width == 0) || (bmp.DpiX == 0) || (bmp.DpiY == 0))
+				double imgWidth = CalculateImageWidth();
+				double imgHeight = CalculateImageHeight();
+				if (IsStretch || (imgWidth > border.RenderSize.Width) || (imgHeight > border.RenderSize.Height))
 				{
-					image.Stretch = Stretch.Uniform;
+					image.Width = border.RenderSize.Width;
+					image.Height = border.RenderSize.Height;
 				}
 				else
 				{
-					image.Stretch = Stretch.None;
-					image.RenderTransform = new ScaleTransform(bmp.DpiX / 96, bmp.DpiY / 96, bmp.Width / 2, bmp.Height / 2);
+					image.Width = imgWidth;
+					image.Height = imgHeight;
 				}
 			}
 			catch
 			{ }
+		}
 
-			GC.Collect();
+		private double getOriginalDpiX()
+		{
+			return bmp.DpiX > 0 ? bmp.DpiX : STANDART_DPI;
+		}
+
+		private double getOriginalDpiY()
+		{
+			return bmp.DpiY > 0 ? bmp.DpiY : STANDART_DPI;
+		}
+
+		private double CalculateImageWidth()
+		{
+			return bmp.Width * getOriginalDpiX() / Dpi;
+		}
+
+		private double CalculateImageHeight()
+		{
+			return bmp.Height * getOriginalDpiY() / Dpi;
 		}
 
 		private void image_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -197,37 +236,54 @@ namespace CryptoDataBase
 
 		private void SetOffset(ref double OffsetX, ref double OffsetY)
 		{
-			double minOffsetX = OffsetX;
-			double maxOffsetX = OffsetX;
-
-			if ((image.RenderSize.Width * Zoom) > border.RenderSize.Width)
+			double imageWidth = image.Width;
+			double imageHeight = image.Height;
+			double borderWidth = border.RenderSize.Width;
+			double borderHeight = border.RenderSize.Height;
+			double a = image.Width / CalculateImageWidth();
+			double b = image.Height / CalculateImageHeight();
+			if (a < b)
 			{
-				minOffsetX = -((image.RenderSize.Width * Zoom - border.RenderSize.Width) + (border.RenderSize.Width - image.RenderSize.Width) / 2);
-				maxOffsetX = -((border.RenderSize.Width - image.RenderSize.Width) / 2);
+				imageHeight = CalculateImageHeight() * a;
 			}
 			else
 			{
-				minOffsetX = -(image.RenderSize.Width * Zoom - image.RenderSize.Width) / 2;
-				maxOffsetX = -(image.RenderSize.Width * Zoom - image.RenderSize.Width) / 2;
+				imageWidth = CalculateImageWidth() * b;
 			}
-			OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
-			OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
 
-			double minOffsetY = OffsetY;
-			double maxOffsetY = OffsetY;
-			if ((image.RenderSize.Height * Zoom) > border.RenderSize.Height)
+			double minOffsetX;
+			double maxOffsetX;
+			if ((imageWidth * Zoom) > border.RenderSize.Width)
 			{
-				minOffsetY = -((image.RenderSize.Height * Zoom - border.RenderSize.Height) + (border.RenderSize.Height - image.RenderSize.Height) / 2);
-				maxOffsetY = -((border.RenderSize.Height - image.RenderSize.Height) / 2);
+				minOffsetX = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
+				maxOffsetX = -((borderWidth - imageWidth) / 2);
+
+				OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
+				OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
 			}
 			else
 			{
-				minOffsetY = -(image.RenderSize.Height * Zoom - image.RenderSize.Height) / 2;
-				maxOffsetY = -(image.RenderSize.Height * Zoom - image.RenderSize.Height) / 2;
+				minOffsetX = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
+				OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
+				OffsetX = OffsetX > minOffsetX ? minOffsetX : OffsetX;
 			}
 
-			OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
-			OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
+			double minOffsetY;
+			double maxOffsetY;
+			if ((imageHeight * Zoom) > borderHeight)
+			{
+				minOffsetY = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
+				maxOffsetY = -((borderHeight - imageHeight) / 2);
+
+				OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
+				OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
+			}
+			else
+			{
+				minOffsetY = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
+				OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
+				OffsetY = OffsetY > minOffsetY ? minOffsetY : OffsetY;
+			}
 		}
 
 		private void image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -255,23 +311,23 @@ namespace CryptoDataBase
 			Matrix m = image.RenderTransform.Value;
 			if (e.Delta > 0)
 			{
-				if ((Zoom * 1.1) <= 10)
+				if ((Zoom * ZoomStep) <= 10)
 				{
-					Zoom *= 1.1;
-					m.ScaleAtPrepend(1.1, 1.1, p.X, p.Y);
+					Zoom *= ZoomStep;
+					m.ScaleAtPrepend(ZoomStep, ZoomStep, p.X, p.Y);
 				}
 			}
 			else
 			{
-				if ((Zoom / 1.1) >= 1)
+				if ((Zoom / ZoomStep) >= 1)
 				{
-					Zoom /= 1.1;
-					m.ScaleAtPrepend(1 / 1.1, 1 / 1.1, p.X, p.Y);
+					Zoom /= ZoomStep;
+					m.ScaleAtPrepend(1 / ZoomStep, 1 / ZoomStep, p.X, p.Y);
 				}
 				else
 				{
 					Zoom = 1;
-					image.RenderTransform = new ScaleTransform();
+					image.RenderTransform = originalTransform;
 					return;
 				}
 			}
@@ -282,7 +338,15 @@ namespace CryptoDataBase
 			m.OffsetY = newOffsetY;
 
 			image.RenderTransform = new MatrixTransform(m);
-			//Title = m.OffsetX.ToString() + "   " + m.OffsetY.ToString();
+		}
+
+		private void Rotate_Click(object sender, RoutedEventArgs e)
+		{
+			double angle = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
+			Matrix m = image.RenderTransform.Value;
+			m.RotateAt(angle, image.Width / 2, image.Height / 2);
+			Title = image.RenderSize.Width.ToString();
+			image.RenderTransform = new MatrixTransform(m);
 		}
 
 		private void grid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -370,19 +434,21 @@ namespace CryptoDataBase
 			}
 		}
 
-		private void Rotate_Click(object sender, RoutedEventArgs e)
-		{
-			/*Matrix m = image.RenderTransform.Value;
-			m.RotateAt(270, m.OffsetX + image.RenderSize.Width / 2, m.OffsetY + image.RenderSize.Height / 2);
-			Title = image.RenderSize.Width.ToString();
-			image.RenderTransform = new MatrixTransform(m);*/
-		}
-
 		private void Window_Closed(object sender, EventArgs e)
 		{
 			bmp = null;
 
 			GC.Collect();
+		}
+
+		private void IsStretchCheckBox_Click(object sender, RoutedEventArgs e)
+		{
+			InitImageSize();
+		}
+
+		private void imageViewer_Loaded(object sender, RoutedEventArgs e)
+		{
+			ShowImage();
 		}
 	}
 }
