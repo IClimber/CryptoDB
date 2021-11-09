@@ -344,7 +344,7 @@ namespace CryptoDataBase
 		{
 			double angle = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
 			Matrix m = image.RenderTransform.Value;
-			m.RotateAt(angle, image.Width / 2, image.Height / 2);
+			m.RotateAt(angle, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
 			Title = image.RenderSize.Width.ToString();
 			image.RenderTransform = new MatrixTransform(m);
 		}
@@ -359,7 +359,7 @@ namespace CryptoDataBase
 
 		private void Image_MouseDown(object sender, MouseButtonEventArgs e)
 		{
-			byte direct = ((sender is Border) ? Convert.ToByte((sender as Border).Tag) : Convert.ToByte((sender as Image).Tag));
+			byte direct = (sender is Border) ? Convert.ToByte((sender as Border).Tag) : Convert.ToByte((sender as Image).Tag);
 
 			switch (direct)
 			{
