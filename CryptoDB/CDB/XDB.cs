@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CDB.Exceptions;
+using CryptoDataBase.CDB.Repositories;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,16 +10,16 @@ namespace CryptoDataBase.CDB
 {
 	class XDB : DirElement, IDisposable
 	{
-		public delegate void ProgressCallback(double percent, string message);
+		const byte CURRENT_VERSION = 4;
 
-		byte Version = 3;
+		public delegate void ProgressCallback(double percent, string message);
 		AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
+		HeaderRepository headerRepository;
 		FileStream _headersFileStream;
 		FileStream _dataFileStream;
 		public readonly bool IsReadOnly = true;
-		private uint _deletedFiles = 0;
 
-		public XDB(string FileName, string Password, ProgressCallback Progress = null)
+		public XDB(string FileName, string Password, HeaderRepository.ProgressCallback Progress = null)
 		{
 			Progress?.Invoke(0, "Creating AES key");
 			InitKey(Password);
@@ -35,7 +36,7 @@ namespace CryptoDataBase.CDB
 				_dataFileStream = new FileStream(DataFilename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 				if (writeVersion)
 				{
-					_headersFileStream.WriteByte(Version);
+					_headersFileStream.WriteByte(CURRENT_VERSION);
 				}
 				IsReadOnly = false;
 			}
@@ -51,7 +52,10 @@ namespace CryptoDataBase.CDB
 				IsReadOnly = true;
 			}
 
-			header = new Header(new SafeStreamAccess(_headersFileStream), AES, ElementType.Dir);
+			byte version = ReadVersion(_headersFileStream);
+
+			headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, AES);
+			header = new Header(headerRepository, AES, ElementType.Dir);
 
 			dataFileStream = new SafeStreamAccess(_dataFileStream);
 
@@ -65,90 +69,68 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private void ReadVersion(Stream stream)
+		public void ExportStructToFile(string FileName)
+		{
+			var stream = new FileStream(FileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
+			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CURRENT_VERSION, stream, AES);
+			repository.ExportStructToFile(Elements);
+			stream.Close();
+		}
+
+		private byte ReadVersion(Stream stream)
 		{
 			stream.Position = 0;
 			byte[] buf = new byte[1];
 			stream.Read(buf, 0, 1);
-			Version = buf[0];
+
+			return buf[0];
 		}
 
-		private void ReadFileStruct(ProgressCallback Progress)
+		private void ReadFileStruct(HeaderRepository.ProgressCallback Progress)
 		{
 			List<DirElement> dirs = new List<DirElement>(); //Потім зробити приватним
 			List<Element> elements = new List<Element>();
 			dirs.Add(this);
 
-			_headersFileStream.Position = 0;
-			byte[] buf = new byte[1048576];
+			List<Header> headers = headerRepository.ReadFileStruct(Progress);
+			int index = 0;
+			int count = headers.Count;
 			double percent = 0;
-
-			//Читаємо список файлів з диску в пам’ять
-			MemoryStream headers = new MemoryStream();
-			while (_headersFileStream.Position < _headersFileStream.Length)
-			{
-				int count = _headersFileStream.Read(buf, 0, buf.Length);
-				headers.Write(buf, 0, count);
-
-				Progress?.Invoke(_headersFileStream.Position / (double)_headersFileStream.Length * 100.0, "Read file list");
-			}
-			//headers.Position = 1;
-			ReadVersion(headers);
-
-			//Читаємо список файлів з пам’яті
 			int lastProgress = 0;
-			while (headers.Position < headers.Length)
+			foreach (Header header in headers)
 			{
-				Element element = GetNextElementFromStream(headers);
-				if (element != null)
-				{
-					AddElement(dirs, elements, element);
-				}
+				AddElementByHeader(dirs, elements, header);
+				index++;
 
-				percent = headers.Position / (double)headers.Length * 100.0;
+				percent = index / (double)count * 100.0;
 				if ((Progress != null) && (lastProgress != (int)percent))
 				{
-					Progress(percent, "Parse elements");
+					Progress(percent, "Parsing elements");
 					lastProgress = (int)percent;
 				}
 			}
 
 			dataFileStream.FreeSpaceAnalyse();
-			headers.Dispose();
 
-			FillParents(dirs, elements);
+			FillParents(dirs, elements, Progress);
 			elements.Clear();
 			elements = null;
 			dirs.Clear();
 			dirs = null;
 		}
 
-		private Element GetNextElementFromStream(Stream stream)
+		private void AddElementByHeader(List<DirElement> DirsList, List<Element> elementList, Header header)
 		{
-			Header header = new Header(stream, (ulong)stream.Position, this.header.headersFileStream, AES);
-
-			if (header.Exists)
+			Element element = null;
+			if (header.ElType == ElementType.File)
 			{
-				if (header.ElType == ElementType.File)
-				{
-					return new FileElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
-				}
-				else if (header.ElType == ElementType.Dir)
-				{
-					return new DirElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
-				}
+				element = new FileElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
 			}
-			else
+			else if (header.ElType == ElementType.Dir)
 			{
-				_deletedFiles++;
-				stream.Position += header.InfSize;
+				element = new DirElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
 			}
 
-			return null;
-		}
-
-		private void AddElement(List<DirElement> DirsList, List<Element> elementList, Element element)
-		{
 			elementList.Add(element);
 			if (element is DirElement)
 			{
@@ -166,9 +148,13 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private void FillParents(List<DirElement> dirsList, List<Element> elementList)
+		private void FillParents(List<DirElement> dirsList, List<Element> elementList, HeaderRepository.ProgressCallback Progress)
 		{
 			dirsList.Sort(new IDComparer());
+			int index = 0;
+			int count = elementList.Count;
+			double percent = 0;
+			int lastProgress = 0;
 			foreach (var element in elementList)
 			{
 				DirElement parent = FindParentByID(dirsList, element.ParentID);
@@ -179,6 +165,14 @@ namespace CryptoDataBase.CDB
 				catch
 				{
 
+				}
+				index++;
+
+				percent = index / (double)count * 100.0;
+				if ((Progress != null) && (lastProgress != (int)percent))
+				{
+					Progress(percent, "Creating elements structure");
+					lastProgress = (int)percent;
 				}
 			}
 		}
@@ -212,7 +206,7 @@ namespace CryptoDataBase.CDB
 		public void Dispose()
 		{
 			dataFileStream?.Close();
-			header?.headersFileStream.Close();
+			header?.repository.Dispose();
 		}
 	}
 }

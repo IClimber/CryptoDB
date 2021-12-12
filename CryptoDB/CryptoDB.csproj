@@ -104,6 +104,10 @@
     <Compile Include="CDB\Exceptions\ReadingDataException.cs" />
     <Compile Include="CDB\Exceptions\RecursiveFolderAttachmentException.cs" />
     <Compile Include="CDB\Exceptions\HeaderWasNotWrittenException.cs" />
+    <Compile Include="CDB\Repositories\HeaderRepositoryFactory.cs" />
+    <Compile Include="CDB\Repositories\HeaderStreamRepositoryV4.cs" />
+    <Compile Include="CDB\Repositories\HeaderStreamRepositoryV3.cs" />
+    <Compile Include="CDB\Repositories\HeaderRepository.cs" />
     <Compile Include="ClipboardChange.cs">
       <SubType>Component</SubType>
     </Compile>

@@ -23,6 +23,7 @@
 			<Menu DockPanel.Dock="Top" Background="#FF222227">
 				<MenuItem Header="База данных" >
 					<MenuItem Header="Открыть / Создать" Click="button1_Click"/>
+					<MenuItem Header="Экспорт структуры" Click="ExportButton_Click"/>
 				</MenuItem>
 				<MenuItem Header="Вид" >
 					<MenuItem Header="Сортировать">

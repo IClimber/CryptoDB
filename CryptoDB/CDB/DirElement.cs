@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CDB.Exceptions;
+using CryptoDataBase.CDB.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -18,7 +19,7 @@ namespace CryptoDataBase.CDB
 		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
 		public UInt64 ID { get { return _ID; } }
 		private List<Element> _Elements;
-		private const int DirInfLength = 38;
+		private const int RawInfLength = 38;
 		protected UInt64 _ID;
 		public override DirElement Parent { get { return _Parent; } set { ChangeParent(value); } }
 
@@ -61,7 +62,7 @@ namespace CryptoDataBase.CDB
 			{
 				lock (dataFileStream.writeLock)
 				{
-					header = new Header(parent.header.headersFileStream, parent.header.AES, ElementType.Dir);
+					header = new Header(parent.header.repository, parent.header.AES, ElementType.Dir);
 					this.dataFileStream = dataFileStream;
 
 					byte[] icon = GetIconBytes(Icon);
@@ -146,10 +147,18 @@ namespace CryptoDataBase.CDB
 			_Name = Encoding.UTF8.GetString(buf, 38, lengthName);
 		}
 
-		protected override void SaveInf()
+		public override ushort GetRawInfoLength()
 		{
 			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
-			int realLength = DirInfLength + UTF8Name.Length;
+			int realLength = RawInfLength + UTF8Name.Length;
+
+			return Header.GetNewInfSizeByBufLength(realLength);
+		}
+
+		public override byte[] GetRawInfo()
+		{
+			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
+			int realLength = RawInfLength + UTF8Name.Length;
 			ushort newInfSize = Header.GetNewInfSizeByBufLength(realLength);
 
 			byte[] buf = new byte[newInfSize];
@@ -161,7 +170,19 @@ namespace CryptoDataBase.CDB
 			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)UTF8Name.Length), 0, buf, 36, 2);
 			Buffer.BlockCopy(UTF8Name, 0, buf, 38, UTF8Name.Length);
 
-			header.SaveInfo(buf, realLength);
+			CryptoRandom.GetBytes(buf, realLength, buf.Length - realLength);
+
+			return buf;
+		}
+
+		protected override void SaveInf()
+		{
+			header.SaveInfo(GetRawInfo());
+		}
+
+		public override void ExportInfTo(HeaderRepository repository, ulong position)
+		{
+			header.ExportInfoTo(repository, position, GetRawInfo());
 		}
 
 		public override void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)

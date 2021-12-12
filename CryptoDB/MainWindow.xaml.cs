@@ -943,7 +943,7 @@ namespace CryptoDataBase
 					}
 					tmp?.Dispose();
 				}
-				catch (ExternalException ex)
+				catch (ExternalException)
 				{
 					maxTries--;
 				}
@@ -1425,6 +1425,25 @@ namespace CryptoDataBase
 		private void search_text_box_LostFocus(object sender, RoutedEventArgs e)
 		{
 			search_text_box.Visibility = Visibility.Hidden;
+		}
+
+		private void ExportButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (xdb == null)
+			{
+				return;
+			}
+
+			OpenFileDialog op = new OpenFileDialog();
+			op.DefaultExt = ".cdb";
+			op.Filter = "Crypto database (*.CDB)|*.cdb";
+			op.CheckFileExists = false;
+			if (op.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+			{
+				return;
+			}
+
+			xdb.ExportStructToFile(op.FileName);
 		}
 	}
 
