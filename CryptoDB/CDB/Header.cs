@@ -49,7 +49,6 @@ namespace CryptoDataBase.CDB
 			//Зчитуємо незакодовані дані, IV (16 байт) і Exists (1 байт)
 			byte[] buf = new byte[17];
 			_StartPos = startPos;
-			memoryStream.Position = (int)startPos;
 			memoryStream.Read(buf, 0, buf.Length);
 
 			//Записуємо зчитані дані в відповідні параметри
@@ -59,7 +58,9 @@ namespace CryptoDataBase.CDB
 
 			_AES = AES;
 			SetAESValue();
-			Crypto.AES_Decrypt(memoryStream, buf, 16, this.AES);
+			ICryptoTransform transform = AES.CreateDecryptor(AES.Key, _IV);
+			memoryStream.Read(buf, 0, 16);
+			buf = Crypto.AES_Decrypt_Buf(buf, 16, transform);
 
 			_InfSize = BitConverter.ToUInt16(buf, 13);
 			_ElType = (ElementType)(buf[15] / 128);
@@ -71,12 +72,10 @@ namespace CryptoDataBase.CDB
 			if (_Exists)
 			{
 				infDdata = new byte[_InfSize];
-
-				SetAESValue();
-
-				//memoryData.Position = (int)_StartPos + Length;
-				Crypto.AES_Decrypt(memoryStream, infDdata, infDdata.Length, AES);
+				memoryStream.Read(infDdata, 0, infDdata.Length);
+				infDdata = Crypto.AES_Decrypt_Buf(infDdata, infDdata.Length, transform);
 			}
+			transform.Dispose();
 		}
 
 		//Перші 17 байт (нешифровані)

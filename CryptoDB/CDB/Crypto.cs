@@ -59,6 +59,11 @@ namespace CryptoDataBase.CDB
 			cs.Read(outputData, 0, DataSize);
 		}
 
+		public static byte[] AES_Decrypt_Buf(byte[] inputData, int size, ICryptoTransform transform)
+		{
+			return transform.TransformFinalBlock(inputData, 0, size);
+		}
+
 		public static UInt16 GetMod16(UInt16 length)
 		{
 			return (UInt16)GetMod16((UInt64)length);
