@@ -52,29 +52,30 @@ namespace CryptoDataBase.CDB.Repositories
 		public override List<Header> ReadFileStruct(ProgressCallback Progress)
 		{
 			List<Header> headers = new List<Header>();
-			byte[] buf = new byte[1048576];
 			double percent = 0;
 			int lastProgress = 0;
 			long length = _stream.Length;
 			object locker = new object();
 			object addLocker = new object();
 
-			int blockCount = (int)Math.Ceiling(_stream.Length / (double)buf.Length);
+			int blockCount = (int)Math.Ceiling(_stream.Length / (double)BLOCK_SIZE);
 			Parallel.For(0, blockCount, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
 			{
 				MemoryStream headerStream = new MemoryStream();
+				byte[] buf = new byte[BLOCK_SIZE];
+				int count;
 				lock (locker)
 				{
-					_stream.Position = i * buf.Length;
-					int count = _stream.Read(buf, 0, buf.Length);
-					headerStream.Write(buf, 0, count);
+					_stream.Position = i * BLOCK_SIZE;
+					count = _stream.Read(buf, 0, buf.Length);
 				}
 
+				headerStream.Write(buf, 0, count);
 				headerStream.Position = i == 0 ? 1 : 0;
 				while (headerStream.Position < headerStream.Length)
 				{
 					long lastPos = headerStream.Position;
-					Header header = GetNextElementFromStream(headerStream, (ulong)(i * buf.Length));
+					Header header = GetNextElementFromStream(headerStream, (ulong)(i * BLOCK_SIZE));
 					if (header != null)
 					{
 						lock (addLocker)
@@ -107,7 +108,7 @@ namespace CryptoDataBase.CDB.Repositories
 			try
 			{
 				header = new Header(stream, position + offset, this, _aes);
-				if (header.InfSize + (ulong)Header.RAW_LENGTH + position > BLOCK_SIZE)
+				if (header.InfSize + (ulong)Header.RAW_LENGTH + position > (ulong)stream.Length)
 				{
 					return null;
 				}
