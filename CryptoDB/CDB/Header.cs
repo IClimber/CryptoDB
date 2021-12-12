@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Repositories;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -8,12 +9,12 @@ namespace CryptoDataBase.CDB
 	//При шифрувані доповнення не використовується
 	public class Header
 	{
-		public const byte Length = 33; //Розмір заголовку в байтах
+		public const byte RAW_LENGTH = 33; //Розмір заголовку в байтах
 		private const PaddingMode GetPaddingMode = PaddingMode.None;
 		private const byte _ReservLength = 16;
 
-		public SafeStreamAccess headersFileStream { get { return _headersFileStream; } }
-		private SafeStreamAccess _headersFileStream;
+		public HeaderRepository repository { get { return _repository; } }
+		private HeaderRepository _repository;
 		public UInt64 StartPos { get { return _StartPos; } }
 		private UInt64 _StartPos { get; set; } //Стартова позиція заголовку в файлі
 		public AesCryptoServiceProvider AES { get { return _AES; } }
@@ -26,27 +27,25 @@ namespace CryptoDataBase.CDB
 		private ElementType _ElType;
 		public UInt16 InfSize { get { return _InfSize; } }
 		private UInt16 _InfSize;
-		private bool writedInFile = false;
+		private bool wasWroteInFile = false;
 		private byte[] infDdata;
-		private Stream memoryData;
 
-		public Header(SafeStreamAccess headersStream, AesCryptoServiceProvider AES, ElementType blockType)
+		public Header(HeaderRepository repository, AesCryptoServiceProvider AES, ElementType blockType)
 		{
 			_IV = new byte[16];
 			CryptoRandom.GetBytes(_IV);
 
 			_AES = AES;
-			_StartPos = (UInt64)headersStream.Length;
+			_StartPos = repository.GetEndPosition();
 			_Exists = true;
 			_ElType = blockType;
-			_headersFileStream = headersStream;
+			_repository = repository;
 			_InfSize = 0;
 		}
 
 		//Створення при зчитувані з файлу
-		public Header(Stream memoryStream, UInt64 startPos, SafeStreamAccess headersStream, AesCryptoServiceProvider AES)
+		public Header(Stream memoryStream, ulong startPos, HeaderRepository repository, AesCryptoServiceProvider AES)
 		{
-			memoryData = memoryStream;
 			//Зчитуємо незакодовані дані, IV (16 байт) і Exists (1 байт)
 			byte[] buf = new byte[17];
 			_StartPos = startPos;
@@ -65,9 +64,9 @@ namespace CryptoDataBase.CDB
 			_InfSize = BitConverter.ToUInt16(buf, 13);
 			_ElType = (ElementType)(buf[15] / 128);
 
-			writedInFile = true;
+			wasWroteInFile = true;
 
-			_headersFileStream = headersStream;
+			_repository = repository;
 
 			if (_Exists)
 			{
@@ -76,24 +75,9 @@ namespace CryptoDataBase.CDB
 				SetAESValue();
 
 				//memoryData.Position = (int)_StartPos + Length;
-				Crypto.AES_Decrypt(memoryData, infDdata, infDdata.Length, AES);
+				Crypto.AES_Decrypt(memoryStream, infDdata, infDdata.Length, AES);
 			}
 		}
-
-		//public byte[] ToBuffer()
-		//{
-		//	byte[] result = new byte[Length]; //не забути про доповнення кратне 16
-		//	byte[] trash = new byte[13];
-		//	CryptoRandom.GetBytes(trash);
-		//	Buffer.BlockCopy(_IV, 0, result, 0, _IV.Length);
-		//	byte BlockStatus = (byte)(Convert.ToByte(!Exists) * 128 + (int)CryptoRandom.Random(128));
-		//	Buffer.BlockCopy(BitConverter.GetBytes(BlockStatus), 0, result, 16, 1);
-		//	Buffer.BlockCopy(trash, 0, result, 17, trash.Length);
-		//	Buffer.BlockCopy(BitConverter.GetBytes(_InfSize), 0, result, 30, 2);
-		//	Buffer.BlockCopy(BitConverter.GetBytes((byte)ElType * 128 + (int)CryptoRandom.Random(128)), 0, result, 32, 1);
-
-		//	return result;
-		//}
 
 		//Перші 17 байт (нешифровані)
 		public byte[] ToBufferFirstBlock()
@@ -121,41 +105,57 @@ namespace CryptoDataBase.CDB
 			AES.Padding = GetPaddingMode;
 		}
 
-		public bool Save()
+		public bool Save(HeaderRepository repository)
 		{
-			lock (_headersFileStream.writeLock)
+			lock (repository.writeLock)
 			{
 				SetAESValue();
 
 				byte[] buf = ToBufferFirstBlock();
-				_headersFileStream.Write((long)(_StartPos), buf, 0, buf.Length);
-				_headersFileStream.WriteEncrypt((long)(_StartPos) + buf.Length, ToBufferEncryptBlock(), AES);
+				repository.Write((long)_StartPos, buf, 0, buf.Length);
+				repository.WriteEncrypt((long)_StartPos + buf.Length, ToBufferEncryptBlock(), AES);
 			}
 
-			writedInFile = true;
+			wasWroteInFile = true;
 
 			return true;
 		}
 
-		public bool SaveInfo(byte[] info, int realLength)
+		public bool SaveInfo(byte[] info)
 		{
-			CryptoRandom.GetBytes(info, realLength, info.Length - realLength);
-
-			lock (_headersFileStream.writeLock)
+			lock (_repository.writeLock)
 			{
+				SetAESValue();
 				if (info.Length > _InfSize)
 				{
 					Delete();
 					_Exists = true;
-					_StartPos = (UInt64)_headersFileStream.Length;
 					_InfSize = (ushort)info.Length;
+					_StartPos = _repository.GetStartPosBySize(_repository.GetEndPosition(), (ushort)(RAW_LENGTH + _InfSize));
 
-					Save();
+					byte[] nonEncryptedFirstBlock = ToBufferFirstBlock();
+					repository.Write((long)_StartPos, nonEncryptedFirstBlock, 0, nonEncryptedFirstBlock.Length);
+					repository.WriteEncrypt((long)_StartPos + nonEncryptedFirstBlock.Length, ToBufferEncryptBlock(), AES);
+					wasWroteInFile = true;
 				}
 
-				SetAESValue();
+				_repository.WriteEncrypt((long)(_StartPos + RAW_LENGTH), info, AES);
+			}
 
-				_headersFileStream.WriteEncrypt((long)(_StartPos + Length), info, AES);
+			return true;
+		}
+
+		public bool ExportInfoTo(HeaderRepository repository, ulong startPos, byte[] info)
+		{
+			lock (repository.writeLock)
+			{
+				_StartPos = startPos;
+				_InfSize = (ushort)info.Length;
+
+				Save(repository);
+
+				SetAESValue();
+				repository.WriteEncrypt((long)(_StartPos + RAW_LENGTH), info, AES);
 			}
 
 			return true;
@@ -168,13 +168,6 @@ namespace CryptoDataBase.CDB
 
 		public byte[] GetInfoBuf()
 		{
-			//byte[] buf = new byte[InfSize];
-
-			//SetAESValue();
-
-			//memoryData.Position = (int)_StartPos + Length;
-			//Crypto.AES_Decrypt(memoryData, buf, buf.Length, AES);
-
 			return infDdata;
 		}
 
@@ -182,9 +175,9 @@ namespace CryptoDataBase.CDB
 		{
 			_Exists = false;
 
-			if (writedInFile)
+			if (wasWroteInFile)
 			{
-				_headersFileStream.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
+				_repository.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
 			}
 		}
 
@@ -192,9 +185,9 @@ namespace CryptoDataBase.CDB
 		{
 			_Exists = true;
 
-			if (writedInFile)
+			if (wasWroteInFile)
 			{
-				_headersFileStream.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
+				_repository.WriteByte((long)_StartPos + 16, (byte)(Convert.ToByte(!_Exists) * 128 + (int)CryptoRandom.Random(128)));
 			}
 		}
 	}

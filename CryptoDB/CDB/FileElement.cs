@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CDB.Exceptions;
+using CryptoDataBase.CDB.Repositories;
 using System;
 using System.Drawing;
 using System.IO;
@@ -9,7 +10,7 @@ namespace CryptoDataBase.CDB
 {
 	public class FileElement : Element
 	{
-		public const int FileInfLength = 63;
+		public const int RawInfLength = 63;
 		public override ElementType Type { get { return ElementType.File; } }
 		public override UInt64 Size { get { return GetSize(); } }
 		public override UInt64 FullSize { get { return GetFullSize(); } }
@@ -53,7 +54,7 @@ namespace CryptoDataBase.CDB
 
 				lock (dataFileStream.writeLock)
 				{
-					header = new Header(parentHeader.headersFileStream, parentHeader.AES, ElementType.File);
+					header = new Header(parentHeader.repository, parentHeader.AES, ElementType.File);
 					this.dataFileStream = dataFileStream;
 
 					_Name = Name;
@@ -108,10 +109,18 @@ namespace CryptoDataBase.CDB
 			_Name = Encoding.UTF8.GetString(buf, 63, lengthName);
 		}
 
-		protected override void SaveInf()
+		public override ushort GetRawInfoLength()
 		{
 			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
-			int realLength = FileInfLength + UTF8Name.Length;
+			int realLength = RawInfLength + UTF8Name.Length;
+
+			return Header.GetNewInfSizeByBufLength(realLength);
+		}
+
+		public override byte[] GetRawInfo()
+		{
+			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
+			int realLength = RawInfLength + UTF8Name.Length;
 			ushort newInfSize = Header.GetNewInfSizeByBufLength(realLength);
 
 			byte[] buf = new byte[newInfSize];
@@ -127,7 +136,19 @@ namespace CryptoDataBase.CDB
 			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)UTF8Name.Length), 0, buf, 61, 2);
 			Buffer.BlockCopy(UTF8Name, 0, buf, 63, UTF8Name.Length);
 
-			header.SaveInfo(buf, realLength);
+			CryptoRandom.GetBytes(buf, realLength, buf.Length - realLength);
+
+			return buf;
+		}
+
+		protected override void SaveInf()
+		{
+			header.SaveInfo(GetRawInfo());
+		}
+
+		public override void ExportInfTo(HeaderRepository repository, ulong position)
+		{
+			header.ExportInfoTo(repository, position, GetRawInfo());
 		}
 
 		private UInt64 GetSize()

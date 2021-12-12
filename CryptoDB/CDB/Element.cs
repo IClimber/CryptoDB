@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Repositories;
+using System;
 using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
@@ -13,7 +14,7 @@ namespace CryptoDataBase.CDB
 		protected Object _addElementLocker;
 		protected Object _changeElementsLocker;
 		public event PropertyChangedEventHandler PropertyChanged;
-		protected Header header;
+		public Header header;
 		public abstract ElementType Type { get; }
 		public abstract UInt64 Size { get; }
 		public abstract UInt64 FullSize { get; }
@@ -38,7 +39,7 @@ namespace CryptoDataBase.CDB
 		protected string _Name;
 		public long TimeIndex { get { return (long)header.StartPos; } }
 		public string FullPath { get { return _GetPath(); } }
-		protected SafeStreamAccess dataFileStream;
+		public SafeStreamAccess dataFileStream;
 
 		private void NotifyPropertyChanged(String propertyName = "")
 		{
@@ -64,7 +65,13 @@ namespace CryptoDataBase.CDB
 			_changeElementsLocker = changeElementsLocker;
 		}
 
+		public abstract byte[] GetRawInfo();
+
+		public abstract ushort GetRawInfoLength();
+
 		protected abstract void SaveInf();
+
+		public abstract void ExportInfTo(HeaderRepository stream, ulong position);
 
 		protected UInt64 GenID()
 		{
