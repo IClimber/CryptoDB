@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace CryptoDataBase.CDB.Repositories
 {
@@ -9,6 +10,7 @@ namespace CryptoDataBase.CDB.Repositories
 	{
 		const uint BLOCK_SIZE = 1048576;
 		public const byte CURRENT_VERSION = 4;
+		private static int threadsCount = Environment.ProcessorCount;
 
 		public HeaderStreamRepositoryV4(Stream stream, AesCryptoServiceProvider aes) : base(stream, aes)
 		{
@@ -37,8 +39,7 @@ namespace CryptoDataBase.CDB.Repositories
 			foreach (Element element in elements)
 			{
 				ushort rawSize = (ushort)(element.GetRawInfoLength() + Header.RAW_LENGTH);
-				ulong position = (ulong)_stream.Position;
-				position = (position % BLOCK_SIZE + rawSize) <= BLOCK_SIZE ? position : (ulong)Math.Ceiling((double)position / BLOCK_SIZE) * BLOCK_SIZE;
+				ulong position = GetStartPosBySize((ulong)_stream.Position, rawSize);
 				element.ExportInfTo(this, position);
 
 				if (element is DirElement)
@@ -51,61 +52,67 @@ namespace CryptoDataBase.CDB.Repositories
 		public override List<Header> ReadFileStruct(ProgressCallback Progress)
 		{
 			List<Header> headers = new List<Header>();
-			_stream.Position = 0;
 			byte[] buf = new byte[1048576];
 			double percent = 0;
-
-			//Читаємо список файлів з диску в пам’ять
-			MemoryStream headersStream = new MemoryStream();
-			while (_stream.Position < _stream.Length)
-			{
-				int count = _stream.Read(buf, 0, buf.Length);
-				headersStream.Write(buf, 0, count);
-
-				Progress?.Invoke(_stream.Position / (double)_stream.Length * 100.0, "Reading file list to memory");
-			}
-
-			headersStream.Position = 1;
-			//Читаємо список файлів з пам’яті
 			int lastProgress = 0;
-			while (headersStream.Position < headersStream.Length)
+			long length = _stream.Length;
+			object locker = new object();
+			object addLocker = new object();
+
+			int blockCount = (int)Math.Ceiling(_stream.Length / (double)buf.Length);
+			Parallel.For(0, blockCount, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
 			{
-				Header header = GetNextElementFromStream(headersStream);
-				if (header != null)
+				MemoryStream headerStream = new MemoryStream();
+				lock (locker)
 				{
-					headers.Add(header);
+					_stream.Position = i * buf.Length;
+					int count = _stream.Read(buf, 0, buf.Length);
+					headerStream.Write(buf, 0, count);
 				}
 
-				percent = headersStream.Position / (double)headersStream.Length * 100.0;
-				if ((Progress != null) && (lastProgress != (int)percent))
+				headerStream.Position = i == 0 ? 1 : 0;
+				while (headerStream.Position < headerStream.Length)
 				{
-					Progress(percent, "Reading elements from file");
-					lastProgress = (int)percent;
-				}
-			}
+					long lastPos = headerStream.Position;
+					Header header = GetNextElementFromStream(headerStream, (ulong)(i * buf.Length));
+					if (header != null)
+					{
+						lock (addLocker)
+						{
+							headers.Add(header);
+						}
+					}
 
-			headersStream.Dispose();
+					//percents
+					percent += headerStream.Position - lastPos;
+					double percent1 = percent / (double)length * 100.0;
+					if ((Progress != null) && (lastProgress != (int)percent1))
+					{
+						Progress(percent1, "Reading elements from file");
+						lastProgress = (int)percent1;
+					}
+				}
+
+				headerStream.Dispose();
+			});
 
 			return headers;
 		}
 
-		private Header GetNextElementFromStream(Stream stream)
+		private Header GetNextElementFromStream(Stream stream, ulong offset)
 		{
 			Header header = null;
 			ulong position = (ulong)stream.Position;
+
 			try
 			{
-				header = new Header(stream, position, this, _aes);
-			}
-			catch (Exception)
+				header = new Header(stream, position + offset, this, _aes);
+				if (header.InfSize + (ulong)Header.RAW_LENGTH + position > BLOCK_SIZE)
+				{
+					return null;
+				}
+			} catch (Exception)
 			{ }
-
-			ulong newPos = (ulong)stream.Position;
-			if (position / BLOCK_SIZE < newPos / BLOCK_SIZE)
-			{
-				position = (ulong)Math.Ceiling(position / (double)BLOCK_SIZE) * BLOCK_SIZE;
-				header = new Header(stream, position, this, _aes);
-			}
 
 			if (header != null)
 			{
