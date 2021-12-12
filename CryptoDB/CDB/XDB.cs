@@ -94,7 +94,6 @@ namespace CryptoDataBase.CDB
 
 			List<Header> headers = headerRepository.ReadFileStruct(Progress);
 			int index = 0;
-			int count = headers.Count;
 			double percent = 0;
 			int lastProgress = 0;
 			foreach (Header header in headers)
@@ -102,7 +101,7 @@ namespace CryptoDataBase.CDB
 				AddElementByHeader(dirs, elements, header);
 				index++;
 
-				percent = index / (double)count * 100.0;
+				percent = index / (double)headers.Count * 100.0;
 				if ((Progress != null) && (lastProgress != (int)percent))
 				{
 					Progress(percent, "Parsing elements");
@@ -114,9 +113,7 @@ namespace CryptoDataBase.CDB
 
 			FillParents(dirs, elements, Progress);
 			elements.Clear();
-			elements = null;
 			dirs.Clear();
-			dirs = null;
 		}
 
 		private void AddElementByHeader(List<DirElement> DirsList, List<Element> elementList, Header header)
@@ -163,9 +160,7 @@ namespace CryptoDataBase.CDB
 					element.Parent = parent != null ? parent : this;
 				}
 				catch
-				{
-
-				}
+				{ }
 				index++;
 
 				percent = index / (double)count * 100.0;
