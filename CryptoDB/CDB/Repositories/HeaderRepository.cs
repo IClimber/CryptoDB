@@ -63,7 +63,7 @@ namespace CryptoDataBase.CDB.Repositories
 			{
 				transform.Dispose();
 
-				return null;
+				return new Header(this, StartPos, IV, Exists, ElType, InfSize);
 			}
 
 			infDdata = new byte[InfSize];
