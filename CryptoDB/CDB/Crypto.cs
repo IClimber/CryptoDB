@@ -59,7 +59,7 @@ namespace CryptoDataBase.CDB
 			cs.Read(outputData, 0, DataSize);
 		}
 
-		public static byte[] AES_Decrypt_Buf(byte[] inputData, int size, ICryptoTransform transform)
+		public static byte[] AesConvertBuf(byte[] inputData, int size, ICryptoTransform transform)
 		{
 			return transform.TransformFinalBlock(inputData, 0, size);
 		}

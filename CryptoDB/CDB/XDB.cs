@@ -55,9 +55,8 @@ namespace CryptoDataBase.CDB
 			byte version = ReadVersion(_headersFileStream);
 
 			headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, AES);
-			header = new Header(headerRepository, AES, ElementType.Dir);
-
-			dataFileStream = new SafeStreamAccess(_dataFileStream);
+			dataRepository = new DataRepository(_dataFileStream, AES);
+			header = new Header(headerRepository, ElementType.Dir);
 
 			try
 			{
@@ -109,7 +108,7 @@ namespace CryptoDataBase.CDB
 				}
 			}
 
-			dataFileStream.FreeSpaceAnalyse();
+			dataRepository.FreeSpaceAnalyse();
 
 			FillParents(dirs, elements, Progress);
 			elements.Clear();
@@ -121,11 +120,11 @@ namespace CryptoDataBase.CDB
 			Element element = null;
 			if (header.ElType == ElementType.File)
 			{
-				element = new FileElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
+				element = new FileElement(header, dataRepository, _addElementLocker, _changeElementsLocker);
 			}
 			else if (header.ElType == ElementType.Dir)
 			{
-				element = new DirElement(header, dataFileStream, _addElementLocker, _changeElementsLocker);
+				element = new DirElement(header, dataRepository, _addElementLocker, _changeElementsLocker);
 			}
 
 			elementList.Add(element);
@@ -136,12 +135,12 @@ namespace CryptoDataBase.CDB
 
 			if ((element is FileElement) && ((element as FileElement).Size > 0))
 			{
-				dataFileStream.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
+				dataRepository.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
 			}
 
 			if (element.IconSize > 0)
 			{
-				dataFileStream.RemoveFreeSpace(element.IconStartPos, Crypto.GetMod16(element.IconSize));
+				dataRepository.RemoveFreeSpace(element.IconStartPos, Crypto.GetMod16(element.IconSize));
 			}
 		}
 
@@ -157,7 +156,7 @@ namespace CryptoDataBase.CDB
 				DirElement parent = FindParentByID(dirsList, element.ParentID);
 				try
 				{
-					element.Parent = parent != null ? parent : this;
+					element.SetVirtualParent(parent != null ? parent : this);
 				}
 				catch
 				{ }
@@ -200,8 +199,8 @@ namespace CryptoDataBase.CDB
 
 		public void Dispose()
 		{
-			dataFileStream?.Close();
-			header?.repository.Dispose();
+			dataRepository.Dispose();
+			headerRepository.Dispose();
 		}
 	}
 }
