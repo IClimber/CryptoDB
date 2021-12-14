@@ -39,14 +39,6 @@ namespace CryptoDataBase.CDB.Repositories
 			return aes;
 		}
 
-		public void ReadDecrypt(long streamOffset, Stream outputStream, long dataSize, byte[] IV, SafeStreamAccess.ProgressCallback Progress)
-		{
-			using (var aes = GetAesCryptoProvider(IV))
-			{
-				_safeStream.ReadDecrypt(streamOffset, outputStream, dataSize, aes, Progress);
-			}
-		}
-
 		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, byte[] IV, SafeStreamAccess.ProgressCallback Progress)
 		{
 			using (var aes = GetAesCryptoProvider(IV))
