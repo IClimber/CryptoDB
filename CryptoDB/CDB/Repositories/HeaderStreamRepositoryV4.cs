@@ -31,21 +31,11 @@ namespace CryptoDataBase.CDB.Repositories
 		{
 			_stream.WriteByte(CURRENT_VERSION);
 
-			WriteToStream(elements);
-		}
-
-		private void WriteToStream(IList<Element> elements)
-		{
 			foreach (Element element in elements)
 			{
 				ushort rawSize = (ushort)(element.GetRawInfoLength() + Header.RAW_LENGTH);
 				ulong position = GetStartPosBySize((ulong)_stream.Position, rawSize);
 				element.ExportInfTo(this, position);
-
-				if (element is DirElement)
-				{
-					WriteToStream(((DirElement)element).Elements);
-				}
 			}
 		}
 
