@@ -72,8 +72,25 @@ namespace CryptoDataBase.CDB
 		{
 			var stream = new FileStream(FileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
 			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CURRENT_VERSION, stream, AES);
-			repository.ExportStructToFile(Elements);
+			List<Element> allElements = new List<Element>();
+			AddElementsToList(Elements, allElements);
+			allElements.Sort(new TimeComparer());
+			repository.ExportStructToFile(allElements);
+			allElements.Clear();
 			stream.Close();
+		}
+
+		private void AddElementsToList(IList<Element> inputElementsList, List<Element> outputElementsList)
+		{
+			outputElementsList.AddRange(inputElementsList);
+
+			foreach (Element element in inputElementsList)
+			{
+				if (element is DirElement)
+				{
+					AddElementsToList((element as DirElement).Elements, outputElementsList);
+				}
+			}
 		}
 
 		private byte ReadVersion(Stream stream)
