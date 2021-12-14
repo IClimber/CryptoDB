@@ -82,7 +82,7 @@ namespace CryptoDataBase.CDB.Repositories
 
 		private Header GetNextElementFromStream(Stream stream)
 		{
-			Header header = new Header(stream, (ulong)stream.Position, this, _aes);
+			Header header = ReadHeader(stream, (ulong)stream.Position);
 
 			if (header.Exists)
 			{

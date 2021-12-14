@@ -44,7 +44,7 @@ namespace CryptoDataBase.CDB
 		}
 
 		//Створення папки при читані з файлу
-		public DirElement(Header header, SafeStreamAccess dataFileStream, Object addElementLocker, Object changeElementsLocker) : base(header, dataFileStream, addElementLocker, changeElementsLocker)
+		public DirElement(Header header, DataRepository datarRepository, Object addElementLocker, Object changeElementsLocker) : base(header, datarRepository, addElementLocker, changeElementsLocker)
 		{
 			_Elements = new List<Element>();
 			byte[] buf = header.GetInfoBuf();
@@ -55,25 +55,23 @@ namespace CryptoDataBase.CDB
 		}
 
 		//Створення папки вручну
-		protected DirElement(DirElement parent, SafeStreamAccess dataFileStream, string Name, Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null,
+		protected DirElement(DirElement parent, DataRepository dataRepository, string Name, Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null,
 			SafeStreamAccess.ProgressCallback Progress = null) : this(addElementLocker, changeElementsLocker)
 		{
 			lock (_addElementLocker)
 			{
-				lock (dataFileStream.writeLock)
+				lock (dataRepository.writeLock)
 				{
-					header = new Header(parent.header.repository, parent.header.AES, ElementType.Dir);
-					this.dataFileStream = dataFileStream;
+					header = new Header(parent.header.repository, ElementType.Dir);
+					this.dataRepository = dataRepository;
 
 					byte[] icon = GetIconBytes(Icon);
 					UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
-					UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
-
-					AesCryptoServiceProvider AES = GetFileAES(_IconIV);
+					UInt64 iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
 
 					if ((icon != null) && (iconSize > 0))
 					{
-						dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+						dataRepository.WriteEncrypt((long)iconStartPos, icon, _IconIV);
 					}
 
 					_Name = Name;
@@ -155,7 +153,7 @@ namespace CryptoDataBase.CDB
 			return Header.GetNewInfSizeByBufLength(realLength);
 		}
 
-		public override byte[] GetRawInfo()
+		protected override byte[] GetRawInfo()
 		{
 			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
 			int realLength = RawInfLength + UTF8Name.Length;
@@ -252,7 +250,7 @@ namespace CryptoDataBase.CDB
 
 			try
 			{
-				file = new FileElement(this, header, dataFileStream, destFileName, stream, compressFile, _addElementLocker, _changeElementsLocker, Icon, Progress);
+				file = new FileElement(this, header, dataRepository, destFileName, stream, compressFile, _addElementLocker, _changeElementsLocker, Icon, Progress);
 			}
 			catch
 			{
@@ -280,6 +278,50 @@ namespace CryptoDataBase.CDB
 			{
 				return null;
 			}
+		}
+
+		public override bool SetVirtualParent(DirElement NewParent)
+		{
+			if ((NewParent == null) || (NewParent == this))
+			{
+				return false;
+			}
+
+			lock (_changeElementsLocker)
+			{
+				if (FindByName(NewParent._Elements, _Name) != null)
+				{
+					return false;
+				}
+
+				if (FindSubDirByID(NewParent.ID) != null)
+				{
+					throw new RecursiveFolderAttachmentException("Невірна вкладеність папок");
+				}
+
+				int index;
+				if (_Parent != null)
+				{
+					if (FindByName(_Parent._Elements, _Name, out index) != null)
+					{
+						_Parent._Elements.RemoveAt(index);
+					}
+				}
+
+				_Parent = NewParent;
+				_ParentID = NewParent.ID;
+
+				if (FindByName(_Parent._Elements, _Name, out index) == null)
+				{
+					_Parent._Elements.Insert(index, this);
+				}
+				else
+				{
+					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
+				}
+			}
+
+			return true;
 		}
 
 		private void ChangeParent(DirElement NewParent)
@@ -355,7 +397,7 @@ namespace CryptoDataBase.CDB
 					return;
 				}
 
-				lock (dataFileStream.writeLock)
+				lock (dataRepository.writeLock)
 				{
 					_Name = newName;
 					(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
@@ -556,7 +598,7 @@ namespace CryptoDataBase.CDB
 
 			try
 			{
-				dir = new DirElement(this, dataFileStream, Name, _addElementLocker, _changeElementsLocker, Icon);
+				dir = new DirElement(this, dataRepository, Name, _addElementLocker, _changeElementsLocker, Icon);
 			}
 			catch
 			{
@@ -660,7 +702,7 @@ namespace CryptoDataBase.CDB
 			try
 			{
 				header.Delete();
-				dataFileStream.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
+				dataRepository.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
 
 				foreach (var element in _Elements)
 				{
