@@ -28,7 +28,7 @@ namespace CryptoDataBase.CDB
 		private UInt64 _FileStartPos;
 
 		//Створення файлу при читані з файлу
-		public FileElement(Header header, SafeStreamAccess dataFileStream, Object addElementLocker, Object changeElementsLocker) : base(header, dataFileStream, addElementLocker, changeElementsLocker)
+		public FileElement(Header header, DataRepository dataRepository, Object addElementLocker, Object changeElementsLocker) : base(header, dataRepository, addElementLocker, changeElementsLocker)
 		{
 			byte[] buf = header.GetInfoBuf();
 
@@ -38,7 +38,7 @@ namespace CryptoDataBase.CDB
 		}
 
 		//Створення файлу вручну
-		public FileElement(DirElement parent, Header parentHeader, SafeStreamAccess dataFileStream, string Name, Stream fileStream, bool isCompressed,
+		public FileElement(DirElement parent, Header parentHeader, DataRepository dataRepository, string Name, Stream fileStream, bool isCompressed,
 			Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null) : base(addElementLocker, changeElementsLocker)
 		{
 			lock (_addElementLocker)
@@ -48,14 +48,14 @@ namespace CryptoDataBase.CDB
 				byte[] icon = GetIconBytes(Icon);
 				UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
 
-				UInt64 fileStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
-				UInt64 iconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+				UInt64 fileStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
+				UInt64 iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
 				iconStartPos = (iconStartPos == fileStartPos) ? iconStartPos += Crypto.GetMod16(fileSize) : iconStartPos;
 
-				lock (dataFileStream.writeLock)
+				lock (dataRepository.writeLock)
 				{
-					header = new Header(parentHeader.repository, parentHeader.AES, ElementType.File);
-					this.dataFileStream = dataFileStream;
+					header = new Header(parentHeader.repository, ElementType.File);
+					this.dataRepository = dataRepository;
 
 					_Name = Name;
 					_ParentID = parent.ID;
@@ -72,17 +72,14 @@ namespace CryptoDataBase.CDB
 					_Exists = false;
 				}
 
-				AesCryptoServiceProvider AES = GetFileAES(_FileIV);
-
 				if (fileSize > 0)
 				{
-					dataFileStream.WriteEncrypt((long)fileStartPos, fileStream, AES, out _Hash, Progress);
+					dataRepository.WriteEncrypt((long)fileStartPos, fileStream, _FileIV, out _Hash, Progress);
 				}
 
 				if ((icon != null) && (iconSize > 0))
 				{
-					AES.IV = _IconIV;
-					dataFileStream.WriteEncrypt((long)iconStartPos, icon, AES);
+					dataRepository.WriteEncrypt((long)iconStartPos, icon, _IconIV);
 				}
 
 				//Закидаємо файл в потрібну папку і записуємо зміни
@@ -117,7 +114,7 @@ namespace CryptoDataBase.CDB
 			return Header.GetNewInfSizeByBufLength(realLength);
 		}
 
-		public override byte[] GetRawInfo()
+		protected override byte[] GetRawInfo()
 		{
 			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
 			int realLength = RawInfLength + UTF8Name.Length;
@@ -173,11 +170,7 @@ namespace CryptoDataBase.CDB
 				return;
 			}
 
-			AesCryptoServiceProvider AES = GetFileAES(_FileIV);
-
-			//dataFileStream.ReadDecrypt((long)_FileStartPos, stream, (long)_FileSize, AES, Progress);
-			dataFileStream.MultithreadDecrypt((long)_FileStartPos, stream, (long)_FileSize, AES, Progress);
-			AES.Dispose();
+			dataRepository.MultithreadDecrypt((long)_FileStartPos, stream, (long)_FileSize, _FileIV, Progress);
 		}
 
 		public override void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
@@ -211,7 +204,7 @@ namespace CryptoDataBase.CDB
 				throw new DuplicatesFileNameException("Файл з таким ім'ям вже є");
 			}
 
-			lock (dataFileStream.writeLock)
+			lock (dataRepository.writeLock)
 			{
 				lock (_changeElementsLocker)
 				{
@@ -232,7 +225,7 @@ namespace CryptoDataBase.CDB
 				UInt64 fileStartPos = _FileStartPos;
 				if (fileSize >= Crypto.GetMod16(_FileSize))
 				{
-					fileStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
+					fileStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
 				}
 
 				byte[] tempHash;
@@ -241,8 +234,7 @@ namespace CryptoDataBase.CDB
 				{
 					if (fileSize > 0)
 					{
-						AesCryptoServiceProvider AES = GetFileAES(_FileIV);
-						dataFileStream.WriteEncrypt((long)fileStartPos, NewData, AES, out tempHash, Progress);
+						dataRepository.WriteEncrypt((long)fileStartPos, NewData, _FileIV, out tempHash, Progress);
 					}
 					else
 					{
@@ -267,6 +259,34 @@ namespace CryptoDataBase.CDB
 					throw new HeaderWasNotWrittenException("Інформація про зміни не записалась!");
 				}
 			}
+		}
+
+		public override bool SetVirtualParent(DirElement NewParent)
+		{
+			if (NewParent == null)
+			{
+				return false;
+			}
+
+			lock (_changeElementsLocker)
+			{
+				if (NewParent.FileExists(_Name))
+				{
+					return false;
+				}
+
+				if (_Parent != null)
+				{
+					_Parent.RemoveElementFromElementsList(this);
+				}
+
+				_Parent = NewParent;
+				_ParentID = NewParent.ID;
+
+				_Parent.InsertElementToElementsList(this);
+			}
+
+			return true;
 		}
 
 		private void ChangeParent(DirElement NewParent, bool withWrite = false)
@@ -324,8 +344,8 @@ namespace CryptoDataBase.CDB
 			try
 			{
 				header.Delete();
-				dataFileStream.AddFreeSpace(_FileStartPos, Crypto.GetMod16(_FileSize));
-				dataFileStream.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
+				dataRepository.AddFreeSpace(_FileStartPos, Crypto.GetMod16(_FileSize));
+				dataRepository.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
 			}
 			catch
 			{
@@ -342,7 +362,7 @@ namespace CryptoDataBase.CDB
 				return true;
 			}
 
-			if ((_FileSize == 0 || dataFileStream.IsFreeSpace(_FileStartPos, _FileSize)) && (_IconSize == 0 || dataFileStream.IsFreeSpace(_IconStartPos, _IconSize)))
+			if ((_FileSize == 0 || dataRepository.IsFreeSpace(_FileStartPos, _FileSize)) && (_IconSize == 0 || dataRepository.IsFreeSpace(_IconStartPos, _IconSize)))
 			{
 				try
 				{

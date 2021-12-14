@@ -107,12 +107,13 @@ namespace CryptoDataBase.CDB.Repositories
 
 			try
 			{
-				header = new Header(stream, position + offset, this, _aes);
+				header = ReadHeader(stream, position + offset);
 				if (header.InfSize + (ulong)Header.RAW_LENGTH + position > (ulong)stream.Length)
 				{
 					return null;
 				}
-			} catch (Exception)
+			}
+			catch (Exception)
 			{ }
 
 			if (header != null)

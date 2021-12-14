@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Security.Cryptography;
 
 namespace CryptoDataBase.CDB
 {
@@ -14,7 +13,7 @@ namespace CryptoDataBase.CDB
 		protected Object _addElementLocker;
 		protected Object _changeElementsLocker;
 		public event PropertyChangedEventHandler PropertyChanged;
-		public Header header;
+		protected Header header;
 		public abstract ElementType Type { get; }
 		public abstract UInt64 Size { get; }
 		public abstract UInt64 FullSize { get; }
@@ -34,27 +33,21 @@ namespace CryptoDataBase.CDB
 		protected UInt64 _ParentID;
 		public abstract DirElement Parent { get; set; }
 		protected DirElement _Parent;
-
 		public string Name { get { return _Name; } set { Rename(value); } }
 		protected string _Name;
 		public long TimeIndex { get { return (long)header.StartPos; } }
 		public string FullPath { get { return _GetPath(); } }
-		public SafeStreamAccess dataFileStream;
-
-		private void NotifyPropertyChanged(String propertyName = "")
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
+		protected DataRepository dataRepository;
 
 		protected Element()
 		{
 
 		}
 
-		protected Element(Header header, SafeStreamAccess dataFileStream, Object addElementLocker, Object changeElementsLocker)
+		protected Element(Header header, DataRepository dataRepository, Object addElementLocker, Object changeElementsLocker)
 		{
 			this.header = header;
-			this.dataFileStream = dataFileStream;
+			this.dataRepository = dataRepository;
 			_addElementLocker = addElementLocker;
 			_changeElementsLocker = changeElementsLocker;
 		}
@@ -65,30 +58,32 @@ namespace CryptoDataBase.CDB
 			_changeElementsLocker = changeElementsLocker;
 		}
 
-		public abstract byte[] GetRawInfo();
-
 		public abstract ushort GetRawInfoLength();
 
-		protected abstract void SaveInf();
-
 		public abstract void ExportInfTo(HeaderRepository stream, ulong position);
+
+		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
+
+		public abstract void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null);
+
+		public abstract bool SetVirtualParent(DirElement NewParent);
+
+		public abstract bool Delete();
+
+		public abstract bool Restore();
+
+		protected abstract byte[] GetRawInfo();
+
+		protected abstract void SaveInf();
 
 		protected UInt64 GenID()
 		{
 			return CryptoRandom.Random(UInt64.MaxValue - 2) + 2;
 		}
 
-		protected AesCryptoServiceProvider GetFileAES(byte[] IV)
+		private void NotifyPropertyChanged(String propertyName = "")
 		{
-			AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
-			AES.KeySize = header.AES.KeySize;
-			AES.BlockSize = header.AES.BlockSize;
-			AES.Key = header.AES.Key;
-			AES.Mode = header.AES.Mode;
-			AES.IV = IV;
-			AES.Padding = PaddingMode.ISO10126;
-
-			return AES;
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 
 		protected virtual void Rename(string NewName)
@@ -107,12 +102,6 @@ namespace CryptoDataBase.CDB
 			return _Parent == null ? this : _Parent.GetRootDir();
 		}
 
-		//protected abstract void ChangeParent(DirElement NewParent);
-
-		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
-
-		public abstract void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null);
-
 		private Bitmap GetIcon()
 		{
 			if (IconSize == 0)
@@ -126,17 +115,7 @@ namespace CryptoDataBase.CDB
 			}
 
 			MemoryStream stream = new MemoryStream();
-
-			AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
-			AES.KeySize = header.AES.KeySize;
-			AES.BlockSize = header.AES.BlockSize;
-			AES.Key = header.AES.Key;
-			AES.Mode = header.AES.Mode;
-			AES.IV = _IconIV;
-			AES.Padding = PaddingMode.ISO10126;
-
-			dataFileStream.ReadDecrypt((long)_IconStartPos, stream, _IconSize, AES, null);
-			AES.Dispose();
+			dataRepository.ReadDecrypt((long)_IconStartPos, stream, _IconSize, _IconIV, null);
 
 			try
 			{
@@ -174,10 +153,8 @@ namespace CryptoDataBase.CDB
 					else
 					{
 
-						_IconStartPos = dataFileStream.GetFreeSpaceStartPos(Crypto.GetMod16(_IconSize));
-
-						AesCryptoServiceProvider AES = GetFileAES(_IconIV);
-						dataFileStream.WriteEncrypt((long)_IconStartPos, buf, AES);
+						_IconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(_IconSize));
+						dataRepository.WriteEncrypt((long)_IconStartPos, buf, _IconIV);
 					}
 				}
 
@@ -287,9 +264,5 @@ namespace CryptoDataBase.CDB
 			byte dist = GetHammingDistance(BitConverter.ToUInt64(PHash1, 0), BitConverter.ToUInt64(PHash2, 0));
 			return (dist <= sensative) || (dist >= (64 - sensative));
 		}
-
-		public abstract bool Delete();
-
-		public abstract bool Restore();
 	}
 }
