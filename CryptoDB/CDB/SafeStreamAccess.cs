@@ -205,6 +205,8 @@ namespace CryptoDataBase.CDB
 					}
 					transform.TransformBlock(inputBuffer, i * blockSize, blockSize, outBuffer, i * blockSize);
 				}
+
+				transform.Dispose();
 			});
 
 
