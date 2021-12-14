@@ -136,61 +136,6 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		//Розкодувує файли, перед викликом не забути присвоїти потрібний IV
-		//streamOffset	- _stream.Position
-		//outputStream	- куди зберігати розшифровані дані
-		//dataSize		- read count
-		public void ReadDecrypt(long streamOffset, Stream outputStream, long dataSize, AesCryptoServiceProvider AES, ProgressCallback Progress)
-		{
-			byte[] buffer = new byte[1048576];
-			CryptoStream cs = new CryptoStream(_stream, AES.CreateDecryptor(), CryptoStreamMode.Read);
-			long max = dataSize;
-			long position = streamOffset;
-			while (max > 0)
-			{
-				lock (_ReadWriteLock)
-				{
-					_stream.Position = position;
-					int count = cs.Read(buffer, 0, (int)Math.Min(buffer.Length, max));
-					outputStream.Write(buffer, 0, count);
-					position = _stream.Position;
-					max -= count;
-				}
-
-				Progress?.Invoke((dataSize - max) / (double)dataSize * 100.0);
-			}
-		}
-
-		//Розкодувує файли, перед викликом не забути присвоїти потрібний IV
-		//streamOffset	- _stream.Position
-		//outputData	- куди зберігати розшифровані дані
-		//dataSize		- read count
-		public void ReadDecrypt(long streamOffset, byte[] outputData, int dataSize, AesCryptoServiceProvider AES)
-		{
-			lock (_ReadWriteLock)
-			{
-				using (CryptoStream cs = new CryptoStream(_stream, AES.CreateDecryptor(), CryptoStreamMode.Read))
-				{
-					_stream.Position = streamOffset;
-					cs.Read(outputData, 0, dataSize);
-				}
-			}
-		}
-
-		public void Read(long streamOffset, byte[] buffer, int offset, int count)
-		{
-			lock (_ReadWriteLock)
-			{
-				_stream.Position = streamOffset;
-				_stream.Read(buffer, offset, count);
-			}
-		}
-
-		public void Close()
-		{
-			_stream.Close();
-		}
-
 		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, AesCryptoServiceProvider AES, ProgressCallback Progress)
 		{
 			byte[] buffer = new byte[1048576];
@@ -270,6 +215,11 @@ namespace CryptoDataBase.CDB
 			}
 
 			Buffer.BlockCopy(inputBuffer, lenght - 16, lastIV, 0, 16);
+		}
+
+		public void Close()
+		{
+			_stream.Close();
 		}
 
 		public UInt64 GetFreeSpaceStartPos(UInt64 size, bool withWrite = true)

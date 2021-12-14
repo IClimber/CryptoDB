@@ -115,7 +115,7 @@ namespace CryptoDataBase.CDB
 			}
 
 			MemoryStream stream = new MemoryStream();
-			dataRepository.ReadDecrypt((long)_IconStartPos, stream, _IconSize, _IconIV, null);
+			dataRepository.MultithreadDecrypt((long)_IconStartPos, stream, _IconSize, _IconIV, null);
 
 			try
 			{

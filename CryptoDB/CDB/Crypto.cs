@@ -53,12 +53,6 @@ namespace CryptoDataBase.CDB
 			return true;
 		}
 
-		public static void AES_Decrypt(Stream inputStream, byte[] outputData, int DataSize, AesCryptoServiceProvider AES) //Розкодувує файли, перед викликом не забути присвоїти потрібний IV
-		{
-			CryptoStream cs = new CryptoStream(inputStream, AES.CreateDecryptor(), CryptoStreamMode.Read);
-			cs.Read(outputData, 0, DataSize);
-		}
-
 		public static byte[] AesConvertBuf(byte[] inputData, int size, ICryptoTransform transform)
 		{
 			return transform.TransformFinalBlock(inputData, 0, size);
