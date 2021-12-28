@@ -5,7 +5,7 @@
 		xmlns:virt="clr-namespace:CryptoDataBase"
         x:Class="CryptoDataBase.MainWindow"
         Title="CryptoDB" Height="600" Width="1130" MinHeight="335" MinWidth="650" Name="mainWindow"
-		Drop="Files_Drop" AllowDrop="true" WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" Loaded="Window_Loaded" Closed="Window_Closed" Icon="MainIcon.ico">
+		Drop="Files_Drop" AllowDrop="true" WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" Loaded="Window_Loaded" Closed="Window_Closed" Icon="MainIcon.ico" PreviewMouseDown="mainWindow_PreviewMouseDown">
 
 	<Window.Resources>
 		<local:BitmapToImageSourceConvert x:Key="Convert" />
