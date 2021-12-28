@@ -1445,6 +1445,19 @@ namespace CryptoDataBase
 
 			xdb.ExportStructToFile(op.FileName);
 		}
+
+		private void mainWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.ChangedButton == MouseButton.XButton1)
+			{
+				if (LastParent != null)
+				{
+					var selectedElement = listView.Tag as Element;
+					var parent = LastParent.Parent == null ? LastParent : LastParent.Parent;
+					ShowFiles(parent, selectedElement);
+				}
+			}
+		}
 	}
 
 	class ExportInfo
