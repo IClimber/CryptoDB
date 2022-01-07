@@ -485,6 +485,18 @@ namespace CryptoDataBase.CDB
 		}
 
 		//Шукає в сортованому по Name списку
+		public Element FindByName(string Name)
+		{
+			lock (_changeElementsLocker)
+			{
+				int index = _Elements.BinarySearch(new DirElement(Name), new NameComparer());
+				Element result = index >= 0 ? _Elements[index] : null;
+
+				return result;
+			}
+		}
+
+		//Шукає в сортованому по Name списку
 		private Element FindByName(List<Element> elements, string Name)
 		{
 			lock (_changeElementsLocker)

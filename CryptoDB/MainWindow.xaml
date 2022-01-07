@@ -45,6 +45,7 @@
 					</MenuItem>
 					<CheckBox Content="Предупреждать о дубликатах" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
 					<Separator/>
+					<CheckBox Content="Разархивировать архивы при добавлении" IsChecked="{Binding ElementName=mainWindow, Path=ExtractArchiveWhenAdd, Mode=TwoWay}"/>
 					<CheckBox Content="Сохранять реальные имена файлов" Click="SaveRealFileName_Click"/>
 				</MenuItem>
 				<MenuItem Header="Буффер обмена">
