@@ -63,10 +63,10 @@ namespace ImageConverter
 			var bitmap = new BitmapImage();
 			try
 			{
-				stream.Position = 0;
 				bitmap.BeginInit();
-				bitmap.StreamSource = stream;
+				bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile;
 				bitmap.CacheOption = BitmapCacheOption.OnLoad;
+				bitmap.StreamSource = stream;
 				bitmap.EndInit();
 				bitmap.Freeze();
 			}
@@ -144,6 +144,35 @@ namespace ImageConverter
 				return result;
 
 				//Icon.ExtractAssociatedIcon(FileName).ToBitmap();
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		public static Bitmap GetIcon(string FileName, Stream sourceStream, int RectSize)
+		{
+			try
+			{
+				Bitmap bmp;
+				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
+				{
+					bmp = new Bitmap(sourceStream);
+				}
+				else if (Path.GetExtension(FileName).ToLower() == ".ico")
+				{
+					bmp = new Icon(sourceStream, 256, 256).ToBitmap();
+				}
+				else
+				{
+					bmp = IconConverter.GetImage(FileName);
+				}
+
+				Bitmap result = ResizeImage(bmp, RectSize);
+				bmp.Dispose();
+
+				return result;
 			}
 			catch
 			{

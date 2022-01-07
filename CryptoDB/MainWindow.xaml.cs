@@ -2,6 +2,7 @@
 using CryptoDataBase.CDB;
 using CryptoDataBase.CDB.Exceptions;
 using ImageConverter;
+using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,6 +26,7 @@ namespace CryptoDataBase
 	{
 		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
+		private static string[] ArchiveExtensions = new string[] { ".zip", ".rar", ".7z", ".001", ".tar", ".gzip" };
 		private List<Element> CutList = new List<Element>();
 		XDB xdb;
 		string password;
@@ -47,6 +49,12 @@ namespace CryptoDataBase
 		bool isCompareImage = false;
 		bool save_real_file_name = false;
 		byte imgDuplicateSensative = 0;
+		public bool ExtractArchiveWhenAdd
+		{
+			get { return _ExtractArchiveWhenAdd; }
+			set { _ExtractArchiveWhenAdd = value; }
+		}
+		public bool _ExtractArchiveWhenAdd = false;
 		public bool ShowDuplicateMessage
 		{
 			get { return _ShowDuplicateMessage; }
@@ -198,28 +206,123 @@ namespace CryptoDataBase
 			Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
 		}
 
+		private DirElement ForceDirectories(DirElement parent, string path)
+		{
+			var dirs = path.Split(Path.DirectorySeparatorChar);
+			DirElement currentParent = parent;
+
+			foreach (var dir in dirs)
+			{
+				if (dir == "")
+				{
+					break;
+				}
+
+				Element element = currentParent.FindByName(dir);
+
+				if (element == null)
+				{
+					currentParent = currentParent.CreateDir(dir);
+				}
+				else if (element is DirElement)
+				{
+					currentParent = (DirElement)element;
+				}
+				else
+				{
+					return null;
+				}
+			}
+
+			return currentParent;
+		}
+
+		private void AddArchive(FileItem item)
+		{
+			// Toggle between the x86 and x64 bit dll
+			string path = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
+			SevenZipBase.SetLibraryPath(path);
+
+			var extractor = new SevenZipExtractor(item.name);
+			try
+			{
+				var data = extractor.ArchiveFileData;
+			} catch (Exception)
+			{
+				try
+				{
+					PassWindow passwordWindow = null;
+					Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this });
+					Dispatcher.Invoke(() => passwordWindow.ShowDialog());
+
+					extractor = new SevenZipExtractor(item.name, passwordWindow.Password);
+					var data = extractor.ArchiveFileData;
+				} catch (Exception exception)
+				{
+					System.Windows.MessageBox.Show(exception.Message);
+				}
+			}
+			foreach (var file in extractor.ArchiveFileData)
+			{
+				if (file.IsDirectory)
+				{
+					try
+					{
+						ForceDirectories(item.parentElement, file.FileName);
+					}
+					catch (Exception e)
+					{
+						System.Windows.MessageBox.Show(e.Message);
+						return;
+					}
+				}
+				else
+				{
+					using (MemoryStream outMemStream = new MemoryStream())
+					{
+						extractor.ExtractFile(file.Index, outMemStream);
+						outMemStream.Position = 0;
+						Bitmap icon = ImgConverter.GetIcon(file.FileName, outMemStream, thumbnailSize);
+
+						var parentDirectory = Path.GetDirectoryName(file.FileName);
+						var parent = ForceDirectories(item.parentElement, parentDirectory);
+						outMemStream.Position = 0;
+						parent.AddFile(outMemStream, Path.GetFileName(file.FileName), false, icon, ReportProgress);
+					}
+				}
+			}
+		}
+
 		private void AddFile(FileItem item)
 		{
-			if (item.parentElement.FileExists(Path.GetFileName(item.name)))
+			/*if (item.parentElement.FileExists(Path.GetFileName(item.name)))
 			{
 				return;
-			}
+			}*/
 
 			if (item.type == FileItemType.File)
 			{
 				AddedFilesCount++;
-				Bitmap bmp = multithreadImageResizer.GetBitmap(item.name);
-				//Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
-				var duplicates = GetDuplicates(item.name, bmp);
-				if (duplicates.Count > 0)
-				{
-					ShowDuplicateFilesList(duplicates, item.name, bmp);
-					bmp?.Dispose();
-					return;
-				}
 
-				item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
-				bmp?.Dispose();
+				if (ExtractArchiveWhenAdd && ArchiveExtensions.Contains(Path.GetExtension(item.name).ToLower()))
+				{
+					AddArchive(item);
+				}
+				else
+				{
+					Bitmap bmp = multithreadImageResizer.GetBitmap(item.name);
+					//Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
+					var duplicates = GetDuplicates(item.name, bmp);
+					if (duplicates.Count > 0)
+					{
+						ShowDuplicateFilesList(duplicates, item.name, bmp);
+						bmp?.Dispose();
+						return;
+					}
+
+					item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
+					bmp?.Dispose();
+				}
 			}
 			else
 			{
