@@ -271,7 +271,9 @@ namespace CryptoDataBase
 					var data = extractor.ArchiveFileData;
 				} catch (Exception exception)
 				{
+					extractor.Dispose();
 					System.Windows.MessageBox.Show(exception.Message);
+					return;
 				}
 			}
 
@@ -285,6 +287,7 @@ namespace CryptoDataBase
 					}
 					catch (Exception e)
 					{
+						extractor.Dispose();
 						System.Windows.MessageBox.Show(e.Message);
 						return;
 					}
@@ -307,11 +310,14 @@ namespace CryptoDataBase
 					}
 					catch (Exception exception)
 					{
+						extractor.Dispose();
 						System.Windows.MessageBox.Show(exception.Message);
 						throw exception;
 					}
 				}
 			}
+
+			extractor.Dispose();
 		}
 
 		private void AddFile(FileItem item)
