@@ -206,6 +206,15 @@ namespace CryptoDataBase
 			Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
 		}
 
+		private string GetUserPassword()
+		{
+			PassWindow passwordWindow = null;
+			Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this });
+			Dispatcher.Invoke(() => passwordWindow.ShowDialog());
+
+			return passwordWindow.Password;
+		}
+
 		private DirElement ForceDirectories(DirElement parent, string path)
 		{
 			var dirs = path.Split(Path.DirectorySeparatorChar);
@@ -246,22 +255,26 @@ namespace CryptoDataBase
 			var extractor = new SevenZipExtractor(item.name);
 			try
 			{
-				var data = extractor.ArchiveFileData;
+				foreach (var file in extractor.ArchiveFileData)
+				{
+					if (file.Encrypted)
+					{
+						extractor = new SevenZipExtractor(item.name, GetUserPassword());
+						break;
+					}
+				}
 			} catch (Exception)
 			{
 				try
 				{
-					PassWindow passwordWindow = null;
-					Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this });
-					Dispatcher.Invoke(() => passwordWindow.ShowDialog());
-
-					extractor = new SevenZipExtractor(item.name, passwordWindow.Password);
+					extractor = new SevenZipExtractor(item.name, GetUserPassword());
 					var data = extractor.ArchiveFileData;
 				} catch (Exception exception)
 				{
 					System.Windows.MessageBox.Show(exception.Message);
 				}
 			}
+
 			foreach (var file in extractor.ArchiveFileData)
 			{
 				if (file.IsDirectory)
@@ -278,16 +291,24 @@ namespace CryptoDataBase
 				}
 				else
 				{
-					using (MemoryStream outMemStream = new MemoryStream())
+					try
 					{
-						extractor.ExtractFile(file.Index, outMemStream);
-						outMemStream.Position = 0;
-						Bitmap icon = ImgConverter.GetIcon(file.FileName, outMemStream, thumbnailSize);
+						using (MemoryStream outMemStream = new MemoryStream())
+						{
+							extractor.ExtractFile(file.Index, outMemStream);
+							outMemStream.Position = 0;
+							Bitmap icon = ImgConverter.GetIcon(file.FileName, outMemStream, thumbnailSize);
 
-						var parentDirectory = Path.GetDirectoryName(file.FileName);
-						var parent = ForceDirectories(item.parentElement, parentDirectory);
-						outMemStream.Position = 0;
-						parent.AddFile(outMemStream, Path.GetFileName(file.FileName), false, icon, ReportProgress);
+							var parentDirectory = Path.GetDirectoryName(file.FileName);
+							var parent = ForceDirectories(item.parentElement, parentDirectory);
+							outMemStream.Position = 0;
+							parent.AddFile(outMemStream, Path.GetFileName(file.FileName), false, icon, ReportProgress);
+						}
+					}
+					catch (Exception exception)
+					{
+						System.Windows.MessageBox.Show(exception.Message);
+						throw exception;
 					}
 				}
 			}
