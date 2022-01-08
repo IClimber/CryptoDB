@@ -132,7 +132,7 @@ namespace CryptoDataBase
 			OpenFileDialog op = new OpenFileDialog();
 			if (op.ShowDialog() == System.Windows.Forms.DialogResult.OK)
 			{
-				Bitmap bmp = ImgConverter.GetIcon(op.FileName, MainWindow.thumbnailSize);
+				Bitmap bmp = ImgConverter.GetIcon(op.FileName, MainWindow.THUMBNAIL_SIZE);
 				element.Icon = bmp;
 				Thumbnail.Source = ImgConverter.BitmapToImageSource(bmp);
 				bmp?.Dispose();

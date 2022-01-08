@@ -32,7 +32,7 @@ namespace CryptoDataBase
 		XDB xdb;
 		string password;
 		string databaseFile;
-		public const int thumbnailSize = 200;
+		public const int THUMBNAIL_SIZE = 200;
 		private BackgroundWorker xdbLoadWorker = new BackgroundWorker();
 		private BackgroundWorker FileLoadWorker = new BackgroundWorker();
 		private BackgroundWorker FileExportWorker = new BackgroundWorker();
@@ -64,38 +64,6 @@ namespace CryptoDataBase
 		public bool _ShowDuplicateMessage = true;
 		private bool _faildedOpen = false;
 		public bool IsReadOnly => xdb.IsReadOnly;
-
-		private void MoveTest()
-		{
-			//Random r = new Random();
-			//List<DirElement> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
-			//foreach (var dir in dirs)
-			//{
-			//	for (int i = 0; i < dir.Elements.Count; i++)
-			//	{
-			//		if (dir.Elements[i].Type == ElementType.File)
-			//		{
-			//			dir.Elements[i].Parent = dirs[r.Next(dirs.Count)];
-			//		}
-			//	}
-			//}
-		}
-
-		private void RenameTest()
-		{
-			//Random r = new Random();
-			//List<Element> dirs = (xdb.Elements as IEnumerable<Element>).Where(x => x.Type == ElementType.Dir).ToList();
-			//foreach (var dir in dirs)
-			//{
-			//	for (int i = 0; i < dir.Elements.Count; i++)
-			//	{
-			//		if (dir.Elements[i].Type == ElementType.File)
-			//		{
-			//			dir.Elements[i].Name = CryptoRandom.Random(UInt64.MaxValue - 2).ToString();
-			//		}
-			//	}
-			//}
-		}
 
 		public MainWindow(string DatabaseFile)
 		{
@@ -259,11 +227,10 @@ namespace CryptoDataBase
 					{
 						ForceDirectories(item.parentElement, file.FileName);
 					}
-					catch (Exception e)
+					catch (Exception exception)
 					{
 						extractor.Dispose();
-						System.Windows.MessageBox.Show(e.Message);
-						return;
+						throw exception;
 					}
 				}
 				else
@@ -274,7 +241,7 @@ namespace CryptoDataBase
 						{
 							extractor.ExtractFile(file.Index, outMemStream);
 							outMemStream.Position = 0;
-							Bitmap icon = ImgConverter.GetIcon(file.FileName, outMemStream, thumbnailSize);
+							Bitmap icon = ImgConverter.GetIcon(file.FileName, outMemStream, THUMBNAIL_SIZE);
 
 							var parentDirectory = Path.GetDirectoryName(file.FileName);
 							var parent = ForceDirectories(item.parentElement, parentDirectory);
@@ -285,7 +252,6 @@ namespace CryptoDataBase
 					catch (Exception exception)
 					{
 						extractor.Dispose();
-						System.Windows.MessageBox.Show(exception.Message);
 						throw exception;
 					}
 				}
@@ -311,18 +277,19 @@ namespace CryptoDataBase
 				}
 				else
 				{
-					Bitmap bmp = multithreadImageResizer.GetBitmap(item.name);
-					//Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
-					var duplicates = GetDuplicates(item.name, bmp);
-					if (duplicates.Count > 0)
+					using (Bitmap bmp = multithreadImageResizer.GetBitmap(item.name))
 					{
-						ShowDuplicateFilesList(duplicates, item.name, bmp);
-						bmp?.Dispose();
-						return;
-					}
+						//Bitmap bmp = ImgConverter.GetIcon(item.name, thumbnailSize);
+						var duplicates = GetDuplicates(item.name, bmp);
+						if (duplicates.Count > 0)
+						{
+							ShowDuplicateFilesList(duplicates, item.name, bmp);
+							bmp?.Dispose();
+							return;
+						}
 
-					item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
-					bmp?.Dispose();
+						item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
+					}
 				}
 			}
 			else
@@ -349,7 +316,7 @@ namespace CryptoDataBase
 
 		private Bitmap GetIcon(string FileName)
 		{
-			return ImgConverter.GetIcon(FileName, thumbnailSize);
+			return ImgConverter.GetIcon(FileName, THUMBNAIL_SIZE);
 		}
 
 		private void AddFiles(List<FileItem> files)
@@ -367,7 +334,14 @@ namespace CryptoDataBase
 
 			for (int i = 0; i < files.Count; i++)
 			{
-				AddFile(files[i]);
+				try
+				{
+					AddFile(files[i]);
+				}
+				catch (Exception exception)
+				{
+					System.Windows.MessageBox.Show(exception.Message);
+				}
 			}
 
 			multithreadImageResizer = null;
@@ -974,7 +948,7 @@ namespace CryptoDataBase
 					(listView.SelectedItem as FileElement).SaveTo(ms);
 					ms.Position = 0;
 					Bitmap tmp = new Bitmap(ms);
-					icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
+					icon = ImgConverter.ResizeImage(tmp, THUMBNAIL_SIZE);
 					tmp?.Dispose();
 					ms.Dispose();
 				}
@@ -1016,7 +990,7 @@ namespace CryptoDataBase
 						Bitmap tmp1 = new Bitmap(tmp);
 						tmp1.Save(stream, ImageFormat.Jpeg);
 						tmp1?.Dispose();
-						Bitmap icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
+						Bitmap icon = ImgConverter.ResizeImage(tmp, THUMBNAIL_SIZE);
 						string FileName = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss.fff") + ".jpg";
 
 						if (isCompareImage)
@@ -1355,7 +1329,7 @@ namespace CryptoDataBase
 				(listView.SelectedItem as FileElement).SaveTo(ms);
 				ms.Position = 0;
 				Bitmap tmp = new Bitmap(ms);
-				icon = ImgConverter.ResizeImage(tmp, thumbnailSize);
+				icon = ImgConverter.ResizeImage(tmp, THUMBNAIL_SIZE);
 				tmp?.Dispose();
 				ms.Dispose();
 			}
@@ -1416,7 +1390,7 @@ namespace CryptoDataBase
 				if ((newDoc.ShowDialog() == true) && (newDoc.textBox.Text != ""))
 				{
 					Stream ms = Stream.Null;
-					Bitmap bmp = ImgConverter.GetIcon(".txt", thumbnailSize);
+					Bitmap bmp = ImgConverter.GetIcon(".txt", THUMBNAIL_SIZE);
 					FileElement newTextFile = null;
 					try
 					{
