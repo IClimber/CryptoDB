@@ -1,6 +1,7 @@
 ﻿using ClipboardAssist;
 using CryptoDataBase.CDB;
 using CryptoDataBase.CDB.Exceptions;
+using CryptoDataBase.Services;
 using ImageConverter;
 using SevenZip;
 using System;
@@ -206,10 +207,10 @@ namespace CryptoDataBase
 			Dispatcher.Invoke(() => duplicateWindow.ShowDialog());
 		}
 
-		private string GetUserPassword()
+		private string GetUserPassword(string title)
 		{
 			PassWindow passwordWindow = null;
-			Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this });
+			Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this, Title = title });
 			Dispatcher.Invoke(() => passwordWindow.ShowDialog());
 
 			return passwordWindow.Password;
@@ -248,34 +249,7 @@ namespace CryptoDataBase
 
 		private void AddArchive(FileItem item)
 		{
-			// Toggle between the x86 and x64 bit dll
-			string path = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, Environment.Is64BitProcess ? "x64" : "x86", "7z.dll");
-			SevenZipBase.SetLibraryPath(path);
-
-			var extractor = new SevenZipExtractor(item.name);
-			try
-			{
-				foreach (var file in extractor.ArchiveFileData)
-				{
-					if (file.Encrypted)
-					{
-						extractor = new SevenZipExtractor(item.name, GetUserPassword());
-						break;
-					}
-				}
-			} catch (Exception)
-			{
-				try
-				{
-					extractor = new SevenZipExtractor(item.name, GetUserPassword());
-					var data = extractor.ArchiveFileData;
-				} catch (Exception exception)
-				{
-					extractor.Dispose();
-					System.Windows.MessageBox.Show(exception.Message);
-					return;
-				}
-			}
+			SevenZipExtractor extractor = Archive.OpenArchive(item.name, GetUserPassword);
 
 			foreach (var file in extractor.ArchiveFileData)
 			{
