@@ -37,7 +37,6 @@ namespace CryptoDataBase.Services
 				catch (Exception exception)
 				{
 					extractor.Dispose();
-					System.Windows.MessageBox.Show(exception.Message);
 					throw exception;
 				}
 			}

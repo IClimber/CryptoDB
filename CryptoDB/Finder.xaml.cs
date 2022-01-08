@@ -146,7 +146,7 @@ namespace CryptoDataBase
 				if (Clipboard.ContainsImage())
 				{
 					Bitmap tmp = ImgConverter.BitmapFromSource(Clipboard.GetImage());
-					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.thumbnailSize));
+					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.THUMBNAIL_SIZE));
 					tmp?.Dispose();
 				}
 			}
@@ -197,7 +197,7 @@ namespace CryptoDataBase
 				if ((files.Length > 0) && (MainWindow.IsImage(files[0])))
 				{
 					Bitmap tmp = new Bitmap(files[0]);
-					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.thumbnailSize));
+					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.THUMBNAIL_SIZE));
 					tmp?.Dispose();
 				}
 			}
