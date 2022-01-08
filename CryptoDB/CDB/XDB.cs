@@ -12,7 +12,6 @@ namespace CryptoDataBase.CDB
 	{
 		const byte CURRENT_VERSION = 4;
 
-		public delegate void ProgressCallback(double percent, string message);
 		AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
 		HeaderRepository headerRepository;
 		FileStream _headersFileStream;
