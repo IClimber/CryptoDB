@@ -267,16 +267,9 @@ namespace CryptoDataBase.CDB
 
 		public Element AddFile(string sourceFileName, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null)
 		{
-			try
+			using (FileStream f = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
 			{
-				using (FileStream f = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-				{
-					return AddFile(f, destFileName, compressFile, Icon, Progress, true);
-				}
-			}
-			catch
-			{
-				return null;
+				return AddFile(f, destFileName, compressFile, Icon, Progress, true);
 			}
 		}
 
