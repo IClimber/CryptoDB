@@ -23,7 +23,7 @@ namespace CryptoDataBase
 	/// <summary>
 	/// Логика взаимодействия для MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow : Window
+	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
 		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
@@ -62,7 +62,21 @@ namespace CryptoDataBase
 			set { _ShowDuplicateMessage = value; }
 		}
 		public bool _ShowDuplicateMessage = true;
+
+		public Visibility CanChangePassword
+		{
+			get { return _CanChangePassword; }
+			set
+			{
+				_CanChangePassword = value;
+				PropertyChanged(this, new PropertyChangedEventArgs("CanChangePassword"));
+			}
+		}
+		public Visibility _CanChangePassword = Visibility.Collapsed;
 		private bool _faildedOpen = false;
+
+		public event PropertyChangedEventHandler PropertyChanged;
+
 		public bool IsReadOnly => xdb.IsReadOnly;
 
 		public MainWindow(string DatabaseFile)
@@ -180,6 +194,10 @@ namespace CryptoDataBase
 			PassWindow passwordWindow = null;
 			Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this, Title = title });
 			Dispatcher.Invoke(() => passwordWindow.ShowDialog());
+			if (passwordWindow.DialogResult != true)
+			{
+				return null;
+			}
 
 			return passwordWindow.Password;
 		}
@@ -519,14 +537,26 @@ namespace CryptoDataBase
 
 			try
 			{
+				_faildedOpen = true;
 				xdb?.Dispose();
+				xdb = null;
 				GC.Collect();
 
+				CanChangePassword = Visibility.Collapsed;
 				xdb = new XDB(databaseFile, e.Argument.ToString(), PerortProgress);
+				CanChangePassword = xdb.CanChangePassword() && !IsReadOnly ? Visibility.Visible : Visibility.Collapsed;
+				_faildedOpen = false;
 			}
 			catch (ReadingDataException ex)
 			{
-				_faildedOpen = true;
+				System.Windows.MessageBox.Show(ex.Message);
+			}
+			catch (UnsupportedVersionException)
+			{
+				System.Windows.MessageBox.Show("Unsupported version");
+			}
+			catch (Exception ex)
+			{
 				System.Windows.MessageBox.Show(ex.Message);
 			}
 		}
@@ -1521,7 +1551,12 @@ namespace CryptoDataBase
 				return;
 			}
 
-			xdb.ExportStructToFile(op.FileName);
+			string password = GetUserPassword("Введите новый пароль");
+
+			if (password != null)
+			{
+				xdb.ExportStructToFile(op.FileName, password);
+			}
 		}
 
 		private void mainWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -1534,6 +1569,26 @@ namespace CryptoDataBase
 					var parent = LastParent.Parent == null ? LastParent : LastParent.Parent;
 					ShowFiles(parent, selectedElement);
 				}
+			}
+		}
+
+		private void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				string password = GetUserPassword("Введите новый пароль");
+				if (password != null)
+				{
+					xdb.ChangePassword(password);
+				}
+			}
+			catch (UnsupportedMethodException)
+			{
+				System.Windows.MessageBox.Show("You can't change the password. Unsupported method");
+			}
+			catch (Exception exception)
+			{
+				System.Windows.MessageBox.Show(exception.Message);
 			}
 		}
 	}

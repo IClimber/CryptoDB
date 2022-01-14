@@ -1,6 +1,5 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
 using System.IO;
-using System.Security.Cryptography;
 
 namespace CryptoDataBase.CDB.Repositories
 {
@@ -8,18 +7,21 @@ namespace CryptoDataBase.CDB.Repositories
 	{
 		private const byte VERSION_3 = 3;
 		private const byte VERSION_4 = 4;
+		private const byte VERSION_5 = 5;
 
-		public static HeaderRepository GetRepositoryByVersion(byte version, Stream stream, AesCryptoServiceProvider aes)
+		public static HeaderRepository GetRepositoryByVersion(byte version, Stream stream, string password, byte[] aesKey = null)
 		{
 			switch (version)
 			{
 				case VERSION_3:
-					return new HeaderStreamRepositoryV3(stream, aes);
+					return new HeaderStreamRepositoryV3(stream, password, aesKey);
 				case VERSION_4:
-					return new HeaderStreamRepositoryV4(stream, aes);
+					return new HeaderStreamRepositoryV4(stream, password, aesKey);
+				case VERSION_5:
+					return new HeaderStreamRepositoryV5(stream, password, aesKey);
 			}
 
-			throw new Exception();
+			throw new UnsupportedVersionException();
 		}
 	}
 }
