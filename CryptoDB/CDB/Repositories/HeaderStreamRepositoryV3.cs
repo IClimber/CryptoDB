@@ -1,15 +1,35 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace CryptoDataBase.CDB.Repositories
 {
 	public class HeaderStreamRepositoryV3: HeaderRepository
 	{
 		public const byte CURRENT_VERSION = 3;
-		public HeaderStreamRepositoryV3(Stream stream, AesCryptoServiceProvider aes) : base(stream, aes)
+		public HeaderStreamRepositoryV3(Stream stream, string password, byte[] aesKey = null) : base(stream)
 		{
+			_dekAes = new AesCryptoServiceProvider();
+			_dekAes.KeySize = 256;
+			_dekAes.BlockSize = 128;
+			_dekAes.Key = aesKey ?? GetAesKeyByPassword(password);
+			_dekAes.Mode = CipherMode.CBC;
+			_dekAes.Padding = PaddingMode.None;
+		}
 
+		private byte[] GetAesKeyByPassword(string password)
+		{
+			SHA256 hash = SHA256.Create();
+			byte[] salt = hash.ComputeHash(Encoding.UTF8.GetBytes(password));
+			for (int i = 0; i < 50000; i++)
+			{
+				salt = hash.ComputeHash(salt);
+			}
+
+			var key = new Rfc2898DeriveBytes(password, salt, 100000);
+
+			return key.GetBytes(32);
 		}
 
 		public override ulong GetStartPosBySize(ulong position, ushort size)
