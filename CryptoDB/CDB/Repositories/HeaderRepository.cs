@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -11,7 +12,7 @@ namespace CryptoDataBase.CDB.Repositories
 
 		protected Stream _stream;
 		protected SafeStreamAccess _safeStream;
-		protected AesCryptoServiceProvider _aes;
+		protected AesCryptoServiceProvider _dekAes;
 		public delegate void ProgressCallback(double percent, string message);
 
 		public abstract ulong GetStartPosBySize(ulong position, ushort size);
@@ -20,17 +21,32 @@ namespace CryptoDataBase.CDB.Repositories
 
 		public abstract void ExportStructToFile(IList<Element> elements);
 
-		public HeaderRepository(Stream stream, AesCryptoServiceProvider aes)
+		public HeaderRepository(Stream stream)
 		{
 			_stream = stream;
 			_safeStream = new SafeStreamAccess(stream);
+		}
 
-			_aes = new AesCryptoServiceProvider();
-			_aes.KeySize = aes.KeySize;
-			_aes.BlockSize = aes.BlockSize;
-			_aes.Key = aes.Key;
-			_aes.Mode = aes.Mode;
-			_aes.Padding = PaddingMode.None;
+		public AesCryptoServiceProvider GetDek()
+		{
+			var aes = new AesCryptoServiceProvider();
+			aes.KeySize = _dekAes.KeySize;
+			aes.BlockSize = _dekAes.BlockSize;
+			aes.Key = _dekAes.Key;
+			aes.Mode = _dekAes.Mode;
+			aes.Padding = _dekAes.Padding;
+
+			return aes;
+		}
+
+		public virtual bool CanChangePassword()
+		{
+			return false;
+		}
+
+		public virtual void ChangePassword(string newPassword)
+		{
+			throw new UnsupportedMethodException();
 		}
 
 		protected Header ReadHeader(Stream memoryStream, ulong startPos)
@@ -52,7 +68,7 @@ namespace CryptoDataBase.CDB.Repositories
 			Buffer.BlockCopy(buf, 0, IV, 0, 16);
 			Exists = buf[16] < 128;
 
-			ICryptoTransform transform = _aes.CreateDecryptor(_aes.Key, IV);
+			ICryptoTransform transform = _dekAes.CreateDecryptor(_dekAes.Key, IV);
 			memoryStream.Read(buf, 0, 16);
 			buf = Crypto.AesConvertBuf(buf, 16, transform);
 
@@ -91,7 +107,7 @@ namespace CryptoDataBase.CDB.Repositories
 
 		public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] IV)
 		{
-			using (ICryptoTransform transform = _aes.CreateEncryptor(_aes.Key, IV))
+			using (ICryptoTransform transform = _dekAes.CreateEncryptor(_dekAes.Key, IV))
 			{
 				byte[] buf = Crypto.AesConvertBuf(inputData, inputData.Length, transform);
 				_safeStream.Write(streamOffset, buf, 0, buf.Length);
@@ -102,7 +118,7 @@ namespace CryptoDataBase.CDB.Repositories
 		{
 			_stream.Close();
 			_safeStream.Close();
-			_aes.Dispose();
+			_dekAes.Dispose();
 		}
 	}
 }

@@ -10,9 +10,9 @@ namespace CryptoDataBase.CDB
 {
 	class XDB : DirElement, IDisposable
 	{
-		const byte CURRENT_VERSION = 4;
+		const byte CURRENT_VERSION = 5;
 
-		AesCryptoServiceProvider AES = new AesCryptoServiceProvider();
+		AesCryptoServiceProvider AES;
 		HeaderRepository headerRepository;
 		FileStream _headersFileStream;
 		FileStream _dataFileStream;
@@ -21,7 +21,6 @@ namespace CryptoDataBase.CDB
 		public XDB(string FileName, string Password, HeaderRepository.ProgressCallback Progress = null)
 		{
 			Progress?.Invoke(0, "Creating AES key");
-			InitKey(Password);
 
 			_addElementLocker = new Object();
 			_changeElementsLocker = new Object();
@@ -53,7 +52,19 @@ namespace CryptoDataBase.CDB
 
 			byte version = ReadVersion(_headersFileStream);
 
-			headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, AES);
+			try
+			{
+				headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, Password);
+			}
+			catch (Exception exception)
+			{
+				_headersFileStream.Close();
+				_dataFileStream.Close();
+
+				throw exception;
+			}
+
+			AES = headerRepository.GetDek();
 			dataRepository = new DataRepository(_dataFileStream, AES);
 			header = new Header(headerRepository, ElementType.Dir);
 
@@ -67,16 +78,26 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public void ExportStructToFile(string FileName)
+		public void ExportStructToFile(string FileName, string password)
 		{
 			var stream = new FileStream(FileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
-			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CURRENT_VERSION, stream, AES);
+			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CURRENT_VERSION, stream, password, AES.Key);
 			List<Element> allElements = new List<Element>();
 			AddElementsToList(Elements, allElements);
 			allElements.Sort(new TimeComparer());
 			repository.ExportStructToFile(allElements);
 			allElements.Clear();
 			stream.Close();
+		}
+
+		public bool CanChangePassword()
+		{
+			return headerRepository.CanChangePassword();
+		}
+
+		public void ChangePassword(string newPassword)
+		{
+			headerRepository.ChangePassword(newPassword);
 		}
 
 		private void AddElementsToList(IList<Element> inputElementsList, List<Element> outputElementsList)
@@ -194,23 +215,6 @@ namespace CryptoDataBase.CDB
 			int index = dirs.BinarySearch(dir, new IDComparer());
 
 			return index >= 0 ? dirs[index] : null;
-		}
-
-		private void InitKey(string Password)
-		{
-			SHA256 hash = SHA256.Create();
-			byte[] salt = hash.ComputeHash(Encoding.UTF8.GetBytes(Password));
-			for (int i = 0; i < 50000; i++)
-			{
-				salt = hash.ComputeHash(salt);
-			}
-
-			var key = new Rfc2898DeriveBytes(Password, salt, 100000);
-
-			AES.KeySize = 256;
-			AES.BlockSize = 128;
-			AES.Key = key.GetBytes(AES.KeySize / 8);
-			AES.Mode = CipherMode.CBC;
 		}
 
 		public void Dispose()
