@@ -10,63 +10,83 @@ namespace CryptoDataBase.CDB
 {
 	public abstract class Element : INotifyPropertyChanged
 	{
-		protected Object _addElementLocker;
-		protected Object _changeElementsLocker;
+		protected object AddElementLocker;
+		protected object ChangeElementsLocker;
 		public event PropertyChangedEventHandler PropertyChanged;
-		protected Header header;
+		protected Header Header;
 		public abstract ElementType Type { get; }
-		public abstract UInt64 Size { get; }
-		public abstract UInt64 FullSize { get; }
-		public abstract UInt64 FullEncryptSize { get; }
-		public bool Exists { get { return _Exists; } }
-		protected bool _Exists { get { return header.Exists; } set { if (value) header.Restore(); else header.Delete(); } }
+		public abstract ulong Size { get; }
+		public abstract ulong FullSize { get; }
+		public abstract ulong FullEncryptSize { get; }
+		public bool IsExists => Exists;
+		protected bool Exists
+		{
+			get
+			{
+				return Header.Exists;
+			}
+			set
+			{
+				if (value) Header.Restore(); else Header.Delete();
+			}
+		}
 		public Bitmap Icon { get { return GetIcon(); } set { SetIcon(value); } }
-		public UInt64 IconStartPos { get { return _IconStartPos; } }
-		protected UInt64 _IconStartPos;
-		public UInt32 IconSize { get { return _IconSize; } }
-		protected UInt32 _IconSize;
-		public byte[] PHash { get { return _PHash; } }
-		protected byte[] _PHash;
-		protected byte[] _IconIV { get { return __IconIV == null ? (__IconIV = Crypto.GetMD5(header.IV)) : __IconIV; } set { __IconIV = value; } }
-		private byte[] __IconIV;
-		public UInt64 ParentID { get { return _ParentID; } }
-		protected UInt64 _ParentID;
+		public ulong IconStartPosition => IconStartPos;
+		protected ulong IconStartPos;
+		public uint IconSize => IconSizeInner;
+		protected uint IconSizeInner;
+		public byte[] IconPHash => PHash;
+		protected byte[] PHash;
+		protected byte[] IconIV
+		{
+			get
+			{
+				return _iconIV ?? (_iconIV = Crypto.GetMD5(Header.IV));
+			}
+			set
+			{
+				_iconIV = value;
+			}
+		}
+		private byte[] _iconIV;
+		public ulong ParentId => ParentElementId;
+		protected ulong ParentElementId;
 		public abstract DirElement Parent { get; set; }
-		protected DirElement _Parent;
-		public string Name { get { return _Name; } set { Rename(value); } }
-		protected string _Name;
-		public long TimeIndex { get { return (long)header.StartPos; } }
-		public string FullPath { get { return _GetPath(); } }
-		protected DataRepository dataRepository;
+		protected DirElement ParentElement;
+		public string Name { get { return ElementName; } set { Rename(value); } }
+		protected string ElementName;
+		public long TimeIndex { get { return (long)Header.StartPos; } }
+		public string FullPath => GetPath();
+		protected DataRepository DataRepository;
 
 		protected Element()
 		{
 
 		}
 
-		protected Element(Header header, DataRepository dataRepository, Object addElementLocker, Object changeElementsLocker)
+		protected Element(Header header, DataRepository dataRepository, object addElementLocker, object changeElementsLocker)
 		{
-			this.header = header;
-			this.dataRepository = dataRepository;
-			_addElementLocker = addElementLocker;
-			_changeElementsLocker = changeElementsLocker;
+			Header = header;
+			DataRepository = dataRepository;
+			AddElementLocker = addElementLocker;
+			ChangeElementsLocker = changeElementsLocker;
 		}
 
-		protected Element(Object addElementLocker, Object changeElementsLocker)
+		protected Element(object addElementLocker, object changeElementsLocker)
 		{
-			_addElementLocker = addElementLocker;
-			_changeElementsLocker = changeElementsLocker;
+			AddElementLocker = addElementLocker;
+			ChangeElementsLocker = changeElementsLocker;
 		}
 
 		public abstract ushort GetRawInfoLength();
 
 		public abstract void ExportInfTo(HeaderRepository stream, ulong position);
 
-		public abstract void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null);
+		public abstract void SaveTo(string pathToSave, SafeStreamAccess.ProgressCallback progress = null);
 
-		public abstract void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null);
+		public abstract void SaveAs(string fullName, SafeStreamAccess.ProgressCallback progress = null, Func<string, string> getFileName = null);
 
-		public abstract bool SetVirtualParent(DirElement NewParent);
+		public abstract bool SetVirtualParent(DirElement newParent);
 
 		public abstract bool Delete();
 
@@ -76,9 +96,9 @@ namespace CryptoDataBase.CDB
 
 		protected abstract void SaveInf();
 
-		protected UInt64 GenID()
+		protected ulong GenID()
 		{
-			return CryptoRandom.Random(UInt64.MaxValue - 2) + 2;
+			return CryptoRandom.Random(ulong.MaxValue - 2) + 2;
 		}
 
 		private void NotifyPropertyChanged(String propertyName = "")
@@ -86,20 +106,20 @@ namespace CryptoDataBase.CDB
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 
-		protected virtual void Rename(string NewName)
+		protected virtual void Rename(string newName)
 		{
 			NotifyPropertyChanged("Name");
 		}
 
-		private string _GetPath()
+		private string GetPath()
 		{
-			string result = _Parent?.FullPath + (_Parent == null ? "" : "\\") + _Parent?.Name;
+			string result = ParentElement?.FullPath + (ParentElement == null ? "" : "\\") + ParentElement?.Name;
 			return result;
 		}
 
 		public Element GetRootDir()
 		{
-			return _Parent == null ? this : _Parent.GetRootDir();
+			return ParentElement == null ? this : ParentElement.GetRootDir();
 		}
 
 		private Bitmap GetIcon()
@@ -109,13 +129,13 @@ namespace CryptoDataBase.CDB
 				return null;
 			}
 
-			if (_IconIV == null)
+			if (IconIV == null)
 			{
-				_IconIV = Crypto.GetMD5(header.IV);
+				IconIV = Crypto.GetMD5(Header.IV);
 			}
 
 			MemoryStream stream = new MemoryStream();
-			dataRepository.MultithreadDecrypt((long)_IconStartPos, stream, _IconSize, _IconIV, null);
+			DataRepository.MultithreadDecrypt((long)IconStartPos, stream, IconSizeInner, IconIV, null);
 
 			try
 			{
@@ -126,35 +146,35 @@ namespace CryptoDataBase.CDB
 			}
 			catch
 			{
+				stream.Dispose();
 				return null;
 			}
 		}
 
 		private void SetIcon(Bitmap icon)
 		{
-			lock (_addElementLocker)
+			lock (AddElementLocker)
 			{
 				byte[] buf;
-				UInt32 oldIconSize = _IconSize;
+				uint oldIconSize = IconSizeInner;
 				//Якщо стара іконка видаляється, то зробити пошук в FreeSpaceMap і додавати туди вільне місце
-				_IconSize = 0;
-				_IconStartPos = GenID();
-				_PHash = GetPHash(Icon);
+				IconSizeInner = 0;
+				IconStartPos = GenID();
+				PHash = GetIconPHash(icon);
 
 				if (icon != null)
 				{
 					buf = GetIconBytes(icon);
 
-					_IconSize = (UInt32)buf.Length;
-					if (_IconSize == 0) //Вибираємо місце куди писати іконку
+					IconSizeInner = (uint)buf.Length;
+					if (IconSizeInner == 0) //Вибираємо місце куди писати іконку
 					{
-						_IconStartPos = GenID();
+						IconStartPos = GenID();
 					}
 					else
 					{
-
-						_IconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(_IconSize));
-						dataRepository.WriteEncrypt((long)_IconStartPos, buf, _IconIV);
+						IconStartPos = DataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(IconSizeInner));
+						DataRepository.WriteEncrypt((long)IconStartPos, buf, IconIV);
 					}
 				}
 
@@ -165,19 +185,19 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		protected byte[] GetIconBytes(Bitmap Icon)
+		protected byte[] GetIconBytes(Bitmap icon)
 		{
 			try
 			{
 				using (MemoryStream ms = new MemoryStream())
 				{
-					if (Icon?.PixelFormat == PixelFormat.Format32bppArgb)
+					if (icon?.PixelFormat == PixelFormat.Format32bppArgb)
 					{
-						Icon.Save(ms, ImageFormat.Png);
+						icon.Save(ms, ImageFormat.Png);
 					}
 					else
 					{
-						Icon?.Save(ms, ImageFormat.Jpeg);
+						icon?.Save(ms, ImageFormat.Jpeg);
 					}
 					ms.Position = 0;
 
@@ -190,9 +210,9 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		protected static byte[] GetPHash(Bitmap Icon)
+		protected static byte[] GetIconPHash(Bitmap icon)
 		{
-			if (Icon == null)
+			if (icon == null)
 			{
 				byte[] phash = new byte[8];
 				CryptoRandom.GetBytes(phash);
@@ -201,15 +221,15 @@ namespace CryptoDataBase.CDB
 
 			try
 			{
-				return _GetPHash(Icon);
+				return GetPHash(icon);
 			}
 			catch
 			{
-				return GetPHash(null);
+				return GetIconPHash(null);
 			}
 		}
 
-		private static byte[] _GetPHash(Bitmap bmp)
+		private static byte[] GetPHash(Bitmap bmp)
 		{
 			Bitmap bm = new Bitmap(bmp, new Size(8, 8));
 			BitmapData data = bm.LockBits(new Rectangle(0, 0, bm.Width, bm.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
@@ -242,13 +262,14 @@ namespace CryptoDataBase.CDB
 			bm.Dispose();
 
 			bitArr.CopyTo(result, 0);
+
 			return result;
 		}
 
-		public static byte GetHammingDistance(UInt64 PHash1, UInt64 PHash2)
+		public static byte GetHammingDistance(ulong pHash1, ulong pHash2)
 		{
 			byte dist = 0;
-			UInt64 val = PHash1 ^ PHash2;
+			ulong val = pHash1 ^ pHash2;
 
 			while (val > 0)
 			{
@@ -259,9 +280,10 @@ namespace CryptoDataBase.CDB
 			return dist;
 		}
 
-		public static bool ComparePHashes(byte[] PHash1, byte[] PHash2, byte sensative)
+		public static bool ComparePHashes(byte[] pHash1, byte[] pHash2, byte sensative)
 		{
-			byte dist = GetHammingDistance(BitConverter.ToUInt64(PHash1, 0), BitConverter.ToUInt64(PHash2, 0));
+			byte dist = GetHammingDistance(BitConverter.ToUInt64(pHash1, 0), BitConverter.ToUInt64(pHash2, 0));
+
 			return (dist <= sensative) || (dist >= (64 - sensative));
 		}
 	}

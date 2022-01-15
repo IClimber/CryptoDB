@@ -6,11 +6,11 @@ namespace CryptoDataBase.CDB
 {
 	public class Crypto
 	{
-		public static byte[] GetMD5(byte[] Data)
+		public static byte[] GetMD5(byte[] data)
 		{
 			using (MD5 md5 = MD5.Create())
 			{
-				return md5.ComputeHash(Data);
+				return md5.ComputeHash(data);
 			}
 		}
 
@@ -22,11 +22,11 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public static byte[] GetFileSHA256(string FileName)
+		public static byte[] GetFileSHA256(string fileName)
 		{
 			try
 			{
-				using (FileStream fs = new FileStream(FileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
 					using (SHA256 sha256 = SHA256.Create())
 					{
@@ -34,17 +34,17 @@ namespace CryptoDataBase.CDB
 					}
 				}
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				return null;
 			}
 		}
 
-		public static bool CompareHash(byte[] Hash1, byte[] Hash2)
+		public static bool CompareHash(byte[] hash1, byte[] hash2)
 		{
-			for (int i = 0; i < Hash1.Length; i++)
+			for (int i = 0; i < hash1.Length; i++)
 			{
-				if (Hash1[i] != Hash2[i])
+				if (hash1[i] != hash2[i])
 				{
 					return false;
 				}
@@ -58,14 +58,14 @@ namespace CryptoDataBase.CDB
 			return transform.TransformFinalBlock(inputData, 0, size);
 		}
 
-		public static UInt16 GetMod16(UInt16 length)
+		public static ushort GetMod16(ushort length)
 		{
-			return (UInt16)GetMod16((UInt64)length);
+			return GetMod16(length);
 		}
 
-		public static UInt64 GetMod16(UInt64 length)
+		public static ulong GetMod16(ulong length)
 		{
-			return length == 0 ? 0 : length % 16 == 0 ? length + 16 : (UInt64)(Math.Ceiling(length / 16.0) * 16);
+			return length == 0 ? 0 : length % 16 == 0 ? length + 16 : (ulong)(Math.Ceiling(length / 16.0) * 16);
 		}
 	}
 }

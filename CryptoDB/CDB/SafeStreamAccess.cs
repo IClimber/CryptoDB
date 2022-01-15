@@ -8,52 +8,50 @@ namespace CryptoDataBase.CDB
 	public class SafeStreamAccess
 	{
 		public delegate void ProgressCallback(double percent);
-		public readonly Object writeLock = new Object();
-		private Object _ReadWriteLock = new Object();
-		private Object _WriteLock = new Object();
-		private Stream _stream;
-		public Stream BaseStream { get { return _stream; } }
-		public long Length { get { return Math.Max(_stream.Length, _Length); } }
-		private long _Length;
-		private FreeSpaceMap freeSpaceMap;
-		private static int threadsCount = Environment.ProcessorCount;
-		//private byte[] ecnryptBuffer = new byte[1048576];
-		//private byte[] decryptBuffer = new byte[1048576];
+		public readonly object WriteLock = new object();
+		public Stream BaseStream => _stream;
+		public long Length => Math.Max(_stream.Length, _length);
+		private object _readWriteLock = new object();
+		private object _writeLock = new object();
+		private readonly Stream _stream;
+		private long _length;
+		private FreeSpaceMap _freeSpaceMap;
+		private int s_threadsCount = Environment.ProcessorCount;
 
 		public SafeStreamAccess(Stream stream)
 		{
 			_stream = stream;
-			freeSpaceMap = new FreeSpaceMap(stream.Length, false);
+			_freeSpaceMap = new FreeSpaceMap(stream.Length, false);
 		}
 
 		//Кодує файли, перед викликом не забути присвоїти потрібний IV
-		public void WriteEncrypt(long streamOffset, Stream inputStream, AesCryptoServiceProvider AES, out byte[] Hash, ProgressCallback Progress)
+		public void WriteEncrypt(long streamOffset, Stream inputStream, AesCryptoServiceProvider aes, out byte[] hash, ProgressCallback progress)
 		{
-			lock (_WriteLock)
+			lock (_writeLock)
 			{
 				if (streamOffset > _stream.Length)
 				{
-					throw new Exception("");
+					throw new Exception();
 				}
 
-				if (AES.Padding == PaddingMode.None)
+				if (aes.Padding == PaddingMode.None)
 				{
-					_Length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+					_length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
 				}
 				else
 				{
-					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)(inputStream.Length - inputStream.Position));
+					_length = streamOffset + (long)Crypto.GetMod16((ulong)(inputStream.Length - inputStream.Position));
 				}
 
 				byte[] buffer = new byte[1048576];
-				CryptoStream cs = new CryptoStream(_stream, AES.CreateEncryptor(), CryptoStreamMode.Write);
+				CryptoStream cs = new CryptoStream(_stream, aes.CreateEncryptor(), CryptoStreamMode.Write);
 				MD5 md5 = MD5.Create();
 				long position = streamOffset;
 
 				while (inputStream.Position < inputStream.Length)
 				{
 					int count = inputStream.Read(buffer, 0, buffer.Length);
-					lock (_ReadWriteLock)
+					lock (_readWriteLock)
 					{
 						_stream.Position = position;
 						cs.Write(buffer, 0, count);
@@ -69,36 +67,36 @@ namespace CryptoDataBase.CDB
 						md5.TransformFinalBlock(buffer, 0, count);
 					}
 
-					Progress?.Invoke(inputStream.Position / (double)inputStream.Length * 100.0);
+					progress?.Invoke(inputStream.Position / (double)inputStream.Length * 100.0);
 				}
 
-				lock (_ReadWriteLock)
+				lock (_readWriteLock)
 				{
 					_stream.Position = position;
 					cs.FlushFinalBlock();
 				}
 
-				Hash = md5.Hash;
+				hash = md5.Hash;
 			}
 		}
 
 		//Кодує і записує масив байт, перед викликом не забути присвоїти потрібний IV
-		public void WriteEncrypt(long streamOffset, byte[] inputData, AesCryptoServiceProvider AES)
+		public void WriteEncrypt(long streamOffset, byte[] inputData, AesCryptoServiceProvider aes)
 		{
-			lock (_WriteLock)
+			lock (_writeLock)
 			{
-				if (AES.Padding == PaddingMode.None)
+				if (aes.Padding == PaddingMode.None)
 				{
-					_Length = streamOffset + inputData.Length;
+					_length = streamOffset + inputData.Length;
 				}
 				else
 				{
-					_Length = streamOffset + (long)Crypto.GetMod16((UInt64)inputData.Length);
+					_length = streamOffset + (long)Crypto.GetMod16((ulong)inputData.Length);
 				}
 
-				lock (_ReadWriteLock)
+				lock (_readWriteLock)
 				{
-					CryptoStream cs = new CryptoStream(_stream, AES.CreateEncryptor(), CryptoStreamMode.Write);
+					CryptoStream cs = new CryptoStream(_stream, aes.CreateEncryptor(), CryptoStreamMode.Write);
 					_stream.Position = streamOffset;
 					cs.Write(inputData, 0, inputData.Length);
 					cs.FlushFinalBlock();
@@ -109,11 +107,11 @@ namespace CryptoDataBase.CDB
 		//Записує нешифровані дані напряму в потік
 		public void Write(long streamOffset, byte[] buffer, int offset, int count)
 		{
-			lock (_WriteLock)
+			lock (_writeLock)
 			{
-				_Length = streamOffset + count;
+				_length = streamOffset + count;
 
-				lock (_ReadWriteLock)
+				lock (_readWriteLock)
 				{
 					_stream.Position = streamOffset;
 					_stream.Write(buffer, offset, count);
@@ -124,11 +122,11 @@ namespace CryptoDataBase.CDB
 		//Записує нешифровані дані напряму в потік
 		public void WriteByte(long streamOffset, byte value)
 		{
-			lock (_WriteLock)
+			lock (_writeLock)
 			{
-				_Length = streamOffset + 1;
+				_length = streamOffset + 1;
 
-				lock (_ReadWriteLock)
+				lock (_readWriteLock)
 				{
 					_stream.Position = streamOffset;
 					_stream.WriteByte(value);
@@ -136,41 +134,41 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, AesCryptoServiceProvider AES, ProgressCallback Progress)
+		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, AesCryptoServiceProvider aes, ProgressCallback progress)
 		{
 			byte[] buffer = new byte[1048576];
 			byte[] outputBuffer = new byte[buffer.Length];
-			byte[] IV = AES.IV;
+			byte[] iv = aes.IV;
 			long max = (long)Crypto.GetMod16((ulong)dataSize);
 			long position = streamOffset;
 
 			while (max > 0)
 			{
-				lock (_ReadWriteLock)
+				lock (_readWriteLock)
 				{
 					_stream.Position = position;
 					bool lastBlock = (max - buffer.Length) <= 0;
 					int length = _stream.Read(buffer, 0, (int)Math.Min(buffer.Length, max));
-					MultithreadDecryptBufer(buffer, ref outputBuffer, length, AES, lastBlock, ref IV);
+					MultithreadDecryptBufer(buffer, ref outputBuffer, length, aes, lastBlock, ref iv);
 					outputStream.Write(outputBuffer, 0, outputBuffer.Length);
 					position = _stream.Position;
 					max -= length;
 				}
 
-				Progress?.Invoke((dataSize - max) / (double)dataSize * 100.0);
+				progress?.Invoke((dataSize - max) / (double)dataSize * 100.0);
 			}
 		}
 
-		private void MultithreadDecryptBufer(byte[] inputBuffer, ref byte[] outputBuffer, int lenght, AesCryptoServiceProvider AES, bool thisLastBlock, ref byte[] IV)
+		private void MultithreadDecryptBufer(byte[] inputBuffer, ref byte[] outputBuffer, int lenght, AesCryptoServiceProvider aes, bool thisLastBlock, ref byte[] iv)
 		{
 			int blockSize = 65536;
 			byte[] outBuffer = outputBuffer;
 			int count = (int)Math.Ceiling(lenght / (double)blockSize);
-			byte[] lastIV = IV;
+			byte[] lastIV = iv;
 			byte[] result = null;
-			Object AESLock = new Object();
+			object aesLock = new object();
 
-			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
+			Parallel.For(0, count, new ParallelOptions { MaxDegreeOfParallelism = s_threadsCount }, i =>
 			{
 				byte[] myIV = new byte[lastIV.Length];
 				ICryptoTransform transform;
@@ -186,10 +184,10 @@ namespace CryptoDataBase.CDB
 
 				if (thisLastBlock && (i == (count - 1)))
 				{
-					lock (AESLock)
+					lock (aesLock)
 					{
-						AES.Padding = PaddingMode.ISO10126;
-						transform = AES.CreateDecryptor(AES.Key, myIV);
+						aes.Padding = PaddingMode.ISO10126;
+						transform = aes.CreateDecryptor(aes.Key, myIV);
 					}
 					int inputCount = Math.Min(blockSize, lenght - i * blockSize);
 					byte[] decryptedData = transform.TransformFinalBlock(inputBuffer, i * blockSize, inputCount);
@@ -198,10 +196,10 @@ namespace CryptoDataBase.CDB
 				}
 				else
 				{
-					lock (AESLock)
+					lock (aesLock)
 					{
-						AES.Padding = PaddingMode.None;
-						transform = AES.CreateDecryptor(AES.Key, myIV);
+						aes.Padding = PaddingMode.None;
+						transform = aes.CreateDecryptor(aes.Key, myIV);
 					}
 					transform.TransformBlock(inputBuffer, i * blockSize, blockSize, outBuffer, i * blockSize);
 				}
@@ -224,29 +222,29 @@ namespace CryptoDataBase.CDB
 			_stream.Close();
 		}
 
-		public UInt64 GetFreeSpaceStartPos(UInt64 size, bool withWrite = true)
+		public ulong GetFreeSpaceStartPos(ulong size, bool withWrite = true)
 		{
-			return freeSpaceMap.GetFreeSpacePos(size, Length, withWrite);
+			return _freeSpaceMap.GetFreeSpacePos(size, Length, withWrite);
 		}
 
 		public void RemoveFreeSpace(ulong start, ulong length)
 		{
-			freeSpaceMap.RemoveFreeSpace(start, length);
+			_freeSpaceMap.RemoveFreeSpace(start, length);
 		}
 
 		public void AddFreeSpace(ulong start, ulong length)
 		{
-			freeSpaceMap.AddFreeSpace(start, length);
+			_freeSpaceMap.AddFreeSpace(start, length);
 		}
 
 		public void FreeSpaceAnalyse()
 		{
-			freeSpaceMap.FreeSpaceAnalyse((UInt64)Length);
+			_freeSpaceMap.FreeSpaceAnalyse((ulong)Length);
 		}
 
-		public bool IsFreeSpace(ulong Start, ulong Size)
+		public bool IsFreeSpace(ulong start, ulong size)
 		{
-			return freeSpaceMap.IsFreeSpace(Start, Size);
+			return _freeSpaceMap.IsFreeSpace(start, size);
 		}
 	}
 }

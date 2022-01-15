@@ -5,17 +5,20 @@ using System.Text;
 
 namespace CryptoDataBase.CDB.Repositories
 {
-	public class HeaderStreamRepositoryV3: HeaderRepository
+	public class HeaderStreamRepositoryV3 : HeaderRepository
 	{
-		public const byte CURRENT_VERSION = 3;
+		public const byte Version = 3;
+
 		public HeaderStreamRepositoryV3(Stream stream, string password, byte[] aesKey = null) : base(stream)
 		{
-			_dekAes = new AesCryptoServiceProvider();
-			_dekAes.KeySize = 256;
-			_dekAes.BlockSize = 128;
-			_dekAes.Key = aesKey ?? GetAesKeyByPassword(password);
-			_dekAes.Mode = CipherMode.CBC;
-			_dekAes.Padding = PaddingMode.None;
+			DekAes = new AesCryptoServiceProvider
+			{
+				KeySize = 256,
+				BlockSize = 128,
+				Key = aesKey ?? GetAesKeyByPassword(password),
+				Mode = CipherMode.CBC,
+				Padding = PaddingMode.None
+			};
 		}
 
 		private byte[] GetAesKeyByPassword(string password)
@@ -39,31 +42,29 @@ namespace CryptoDataBase.CDB.Repositories
 
 		public override void ExportStructToFile(IList<Element> elements)
 		{
-			_stream.WriteByte(CURRENT_VERSION);
+			BaseStream.WriteByte(Version);
 
 			foreach (Element element in elements)
 			{
-				ushort rawSize = (ushort)(element.GetRawInfoLength() + Header.RAW_LENGTH);
-				ulong position = (ulong)_stream.Position;
-				element.ExportInfTo(this, position);
+				element.ExportInfTo(this, (ulong)BaseStream.Position);
 			}
 		}
 
-		public override List<Header> ReadFileStruct(ProgressCallback Progress)
+		public override List<Header> ReadFileStruct(ProgressCallback progress)
 		{
 			List<Header> headers = new List<Header>();
-			_stream.Position = 0;
 			byte[] buf = new byte[1048576];
 			double percent = 0;
 
 			//Читаємо список файлів з диску в пам’ять
 			MemoryStream headersStream = new MemoryStream();
-			while (_stream.Position < _stream.Length)
+			BaseStream.Position = 0;
+			while (BaseStream.Position < BaseStream.Length)
 			{
-				int count = _stream.Read(buf, 0, buf.Length);
+				int count = BaseStream.Read(buf, 0, buf.Length);
 				headersStream.Write(buf, 0, count);
 
-				Progress?.Invoke(_stream.Position / (double)_stream.Length * 100.0, "Reading file list to memory");
+				progress?.Invoke(BaseStream.Position / (double)BaseStream.Length * 100.0, "Reading file list to memory");
 			}
 
 			headersStream.Position = 1;
@@ -78,9 +79,9 @@ namespace CryptoDataBase.CDB.Repositories
 				}
 
 				percent = headersStream.Position / (double)headersStream.Length * 100.0;
-				if ((Progress != null) && (lastProgress != (int)percent))
+				if ((progress != null) && (lastProgress != (int)percent))
 				{
-					Progress(percent, "Reading elements from file");
+					progress(percent, "Reading elements from file");
 					lastProgress = (int)percent;
 				}
 			}

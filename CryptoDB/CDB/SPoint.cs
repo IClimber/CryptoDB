@@ -1,13 +1,11 @@
-﻿using System;
-
-namespace CryptoDataBase.CDB
+﻿namespace CryptoDataBase.CDB
 {
 	public class SPoint
 	{
-		public UInt64 Start;
-		public UInt64 Size;
+		public ulong Start;
+		public ulong Size;
 
-		public SPoint(UInt64 start, UInt64 size)
+		public SPoint(ulong start, ulong size)
 		{
 			Start = start;
 			Size = size;

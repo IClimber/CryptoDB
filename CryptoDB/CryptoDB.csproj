@@ -105,6 +105,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CDB\Exceptions\FreeSpaceMapWasNotCalculatedException.cs" />
+    <Compile Include="CDB\Exceptions\InvalidFileStartPositionException.cs" />
+    <Compile Include="CDB\Exceptions\FileIsTooBigException.cs" />
     <Compile Include="CDB\Exceptions\DuplicatesFileNameException.cs" />
     <Compile Include="CDB\Exceptions\UnsupportedMethodException.cs" />
     <Compile Include="CDB\Exceptions\UnsupportedVersionException.cs" />
@@ -146,7 +149,6 @@
     <Compile Include="WpfAnimatedGif\Decoding\GifTrailer.cs" />
     <Compile Include="WpfAnimatedGif\ImageAnimationController.cs" />
     <Compile Include="WpfAnimatedGif\ImageBehavior.cs" />
-    <Compile Include="CDB\ArrayReader.cs" />
     <Compile Include="CDB\Comparers.cs" />
     <Compile Include="CDB\Crypto.cs" />
     <Compile Include="CDB\CryptoRandom.cs" />

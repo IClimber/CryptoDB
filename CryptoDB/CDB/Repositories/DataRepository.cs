@@ -6,93 +6,95 @@ namespace CryptoDataBase.CDB.Repositories
 {
 	public class DataRepository : IDisposable
 	{
-		public readonly object writeLock;
+		public readonly object WriteLock;
 
-		protected SafeStreamAccess _safeStream;
-		protected Stream _stream;
-		protected AesCryptoServiceProvider _aes;
+		protected SafeStreamAccess SafeStream;
+		protected Stream BaseStream;
+		protected AesCryptoServiceProvider DekAes;
 
 		public DataRepository(Stream stream, AesCryptoServiceProvider aes)
 		{
-			_stream = stream;
-			_safeStream = new SafeStreamAccess(stream);
-			writeLock = _safeStream.writeLock;
+			BaseStream = stream;
+			SafeStream = new SafeStreamAccess(stream);
+			WriteLock = SafeStream.WriteLock;
 
-			_aes = new AesCryptoServiceProvider();
-			_aes.KeySize = aes.KeySize;
-			_aes.BlockSize = aes.BlockSize;
-			_aes.Key = aes.Key;
-			_aes.Mode = aes.Mode;
-			_aes.Padding = PaddingMode.ISO10126;
-		}
-
-		protected AesCryptoServiceProvider GetAesCryptoProvider(byte[] IV = null)
-		{
-			AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
-			aes.KeySize = _aes.KeySize;
-			aes.BlockSize = _aes.BlockSize;
-			aes.Key = _aes.Key;
-			aes.Mode = _aes.Mode;
-			aes.Padding = _aes.Padding;
-			aes.IV = IV;
-
-			return aes;
-		}
-
-		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, byte[] IV, SafeStreamAccess.ProgressCallback Progress)
-		{
-			using (var aes = GetAesCryptoProvider(IV))
+			DekAes = new AesCryptoServiceProvider
 			{
-				_safeStream.MultithreadDecrypt(streamOffset, outputStream, dataSize, aes, Progress);
+				KeySize = aes.KeySize,
+				BlockSize = aes.BlockSize,
+				Key = aes.Key,
+				Mode = aes.Mode,
+				Padding = PaddingMode.ISO10126
+			};
+		}
+
+		protected AesCryptoServiceProvider GetAesCryptoProvider(byte[] iv = null)
+		{
+			return new AesCryptoServiceProvider
+			{
+				KeySize = DekAes.KeySize,
+				BlockSize = DekAes.BlockSize,
+				Key = DekAes.Key,
+				Mode = DekAes.Mode,
+				Padding = DekAes.Padding,
+				IV = iv
+			};
+		}
+
+		public void MultithreadDecrypt(long streamOffset, Stream outputStream, long dataSize, byte[] iv, SafeStreamAccess.ProgressCallback progress)
+		{
+			using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
+			{
+				SafeStream.MultithreadDecrypt(streamOffset, outputStream, dataSize, aes, progress);
 			}
 		}
 
-		public void WriteEncrypt(long streamOffset, Stream inputStream, byte[] IV, out byte[] Hash, SafeStreamAccess.ProgressCallback Progress)
+		public void WriteEncrypt(long streamOffset, Stream inputStream, byte[] iv, out byte[] hash, SafeStreamAccess.ProgressCallback progress)
 		{
-			using (var aes = GetAesCryptoProvider(IV))
+			using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
 			{
-				_safeStream.WriteEncrypt(streamOffset, inputStream, aes, out Hash, Progress);
+				SafeStream.WriteEncrypt(streamOffset, inputStream, aes, out hash, progress);
 			}
 		}
 
-		public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] IV)
+		public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] iv)
 		{
-			using (var aes = GetAesCryptoProvider(IV))
+			using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
 			{
-				_safeStream.WriteEncrypt(streamOffset, inputData, aes);
+				SafeStream.WriteEncrypt(streamOffset, inputData, aes);
 			}
 		}
 
 		public void FreeSpaceAnalyse()
 		{
-			_safeStream.FreeSpaceAnalyse();
+			SafeStream.FreeSpaceAnalyse();
 		}
 
-		public UInt64 GetFreeSpaceStartPos(UInt64 size, bool withWrite = true)
+		public ulong GetFreeSpaceStartPos(ulong size, bool withWrite = true)
 		{
-			return _safeStream.GetFreeSpaceStartPos(size, withWrite);
+			return SafeStream.GetFreeSpaceStartPos(size, withWrite);
 		}
 
 		public void AddFreeSpace(ulong start, ulong length)
 		{
-			_safeStream.AddFreeSpace(start, length);
+			SafeStream.AddFreeSpace(start, length);
 		}
 
 		public void RemoveFreeSpace(ulong start, ulong length)
 		{
-			_safeStream.RemoveFreeSpace(start, length);
+			SafeStream.RemoveFreeSpace(start, length);
 		}
 
-		public bool IsFreeSpace(ulong Start, ulong Size)
+		public bool IsFreeSpace(ulong start, ulong size)
 		{
-			return _safeStream.IsFreeSpace(Start, Size);
+			return SafeStream.IsFreeSpace(start, size);
 		}
 
 		public void Dispose()
 		{
-			_stream.Close();
-			_safeStream.Close();
-			_aes.Dispose();
+			BaseStream.Close();
+			SafeStream.Close();
+			DekAes.Dispose();
 		}
 	}
 }
