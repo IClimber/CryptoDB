@@ -3,7 +3,6 @@ using CryptoDataBase.CDB.Repositories;
 using System;
 using System.Drawing;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace CryptoDataBase.CDB
@@ -11,79 +10,77 @@ namespace CryptoDataBase.CDB
 	public class FileElement : Element
 	{
 		public const int RawInfLength = 63;
-		public override ElementType Type { get { return ElementType.File; } }
-		public override UInt64 Size { get { return GetSize(); } }
-		public override UInt64 FullSize { get { return GetFullSize(); } }
-		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
-		public byte[] Hash { get { return _Hash; } }
-		public bool IsCompressed { get { return _IsCompressed; } }
-		public UInt64 FileStartPos { get { return _FileStartPos; } }
-		public override DirElement Parent { get { return _Parent; } set { ChangeParent(value); } }
+		public override ElementType Type => ElementType.File;
+		public override ulong Size => GetSize();
+		public override ulong FullSize => GetFullSize();
+		public override ulong FullEncryptSize => GetFullEncryptSize();
+		public byte[] Hash => _hash;
+		public bool IsCompressed => _isCompressed;
+		public ulong FileStartPos => _fileStartPos;
+		public override DirElement Parent { get { return ParentElement; } set { ChangeParent(value); } }
 
-		private byte[] _FileIV { get { return __FileIV == null ? (__FileIV = Crypto.GetMD5(_IconIV)) : __FileIV; } set { __FileIV = value; } }
-		private byte[] __FileIV;
-		private UInt64 _FileSize;
-		private byte[] _Hash;
-		private bool _IsCompressed;
-		private UInt64 _FileStartPos;
+		private byte[] _fileIV { get { return _innerFileIV == null ? (_innerFileIV = Crypto.GetMD5(IconIV)) : _innerFileIV; } set { _innerFileIV = value; } }
+		private byte[] _innerFileIV;
+		private ulong _fileSize;
+		private byte[] _hash;
+		private bool _isCompressed;
+		private ulong _fileStartPos;
 
 		//Створення файлу при читані з файлу
 		public FileElement(Header header, DataRepository dataRepository, Object addElementLocker, Object changeElementsLocker) : base(header, dataRepository, addElementLocker, changeElementsLocker)
 		{
-			byte[] buf = header.GetInfoBuf();
-
-			ReadElementParamsFromBuffer(buf);
-
-			buf = null;
+			ReadElementParamsFromBuffer(header.GetInfoBuf());
 		}
 
 		//Створення файлу вручну
-		public FileElement(DirElement parent, Header parentHeader, DataRepository dataRepository, string Name, Stream fileStream, bool isCompressed,
-			Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null) : base(addElementLocker, changeElementsLocker)
+		public FileElement(DirElement parent, Header parentHeader, DataRepository dataRepository, string name, Stream fileStream, bool isCompressed,
+			Object addElementLocker, Object changeElementsLocker, Bitmap icon = null, SafeStreamAccess.ProgressCallback progress = null) : base(addElementLocker, changeElementsLocker)
 		{
-			lock (_addElementLocker)
+			lock (AddElementLocker)
 			{
-				UInt64 fileSize = (UInt64)fileStream.Length;
+				ulong fileSize = (ulong)fileStream.Length;
 
-				byte[] icon = GetIconBytes(Icon);
-				UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
+				byte[] iconBytes = GetIconBytes(icon);
+				UInt32 iconSize = iconBytes == null ? 0 : (UInt32)iconBytes.Length;
 
-				UInt64 fileStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
-				UInt64 iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+				//Вибираємо місце куди писати файл
+				ulong fileStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize));
+				//Вибираємо місце куди писати іконку
+				ulong iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize));
 				iconStartPos = (iconStartPos == fileStartPos) ? iconStartPos += Crypto.GetMod16(fileSize) : iconStartPos;
 
-				lock (dataRepository.writeLock)
+				lock (dataRepository.WriteLock)
 				{
-					header = new Header(parentHeader.repository, ElementType.File);
-					this.dataRepository = dataRepository;
+					Header = new Header(parentHeader.Repository, ElementType.File);
+					this.DataRepository = dataRepository;
 
-					_Name = Name;
-					_ParentID = parent.ID;
-					_FileStartPos = fileStartPos;
-					_FileSize = fileSize;
-					_IconStartPos = iconStartPos;
-					_IconSize = iconSize;
-					_IsCompressed = isCompressed;
-					_Hash = new byte[16];
-					CryptoRandom.GetBytes(_Hash);
-					_PHash = GetPHash(Icon);
+					ElementName = name;
+					ParentElementId = parent.Id;
+					_fileStartPos = fileStartPos;
+					_fileSize = fileSize;
+					IconStartPos = iconStartPos;
+					IconSizeInner = iconSize;
+					_isCompressed = isCompressed;
+					_hash = new byte[16];
+					CryptoRandom.GetBytes(_hash);
+					PHash = GetIconPHash(icon);
 
 					SaveInf();
-					_Exists = false;
+					Exists = false;
 				}
 
 				if (fileSize > 0)
 				{
-					dataRepository.WriteEncrypt((long)fileStartPos, fileStream, _FileIV, out _Hash, Progress);
+					dataRepository.WriteEncrypt((long)fileStartPos, fileStream, _fileIV, out _hash, progress);
 				}
 
-				if ((icon != null) && (iconSize > 0))
+				if ((iconBytes != null) && (iconSize > 0))
 				{
-					dataRepository.WriteEncrypt((long)iconStartPos, icon, _IconIV);
+					dataRepository.WriteEncrypt((long)iconStartPos, iconBytes, IconIV);
 				}
 
 				//Закидаємо файл в потрібну папку і записуємо зміни
-				_Exists = true;
+				Exists = true;
 				ChangeParent(parent, true);
 			}
 		}
@@ -91,24 +88,24 @@ namespace CryptoDataBase.CDB
 		//for read from file
 		private void ReadElementParamsFromBuffer(byte[] buf)
 		{
-			_Hash = new byte[16];
-			_PHash = new byte[8];
+			_hash = new byte[16];
+			PHash = new byte[8];
 
-			_FileStartPos = BitConverter.ToUInt64(buf, 0);
-			_IconStartPos = BitConverter.ToUInt64(buf, 8);
-			_FileSize = BitConverter.ToUInt64(buf, 16);
-			_IconSize = BitConverter.ToUInt32(buf, 24);
-			_IsCompressed = buf[28] < 128;
-			Buffer.BlockCopy(buf, 29, _Hash, 0, 16);
-			Buffer.BlockCopy(buf, 45, _PHash, 0, 8);
-			_ParentID = BitConverter.ToUInt64(buf, 53);
+			_fileStartPos = BitConverter.ToUInt64(buf, 0);
+			IconStartPos = BitConverter.ToUInt64(buf, 8);
+			_fileSize = BitConverter.ToUInt64(buf, 16);
+			IconSizeInner = BitConverter.ToUInt32(buf, 24);
+			_isCompressed = buf[28] < 128;
+			Buffer.BlockCopy(buf, 29, _hash, 0, 16);
+			Buffer.BlockCopy(buf, 45, PHash, 0, 8);
+			ParentElementId = BitConverter.ToUInt64(buf, 53);
 			int lengthName = BitConverter.ToUInt16(buf, 61);
-			_Name = Encoding.UTF8.GetString(buf, 63, lengthName);
+			ElementName = Encoding.UTF8.GetString(buf, 63, lengthName);
 		}
 
 		public override ushort GetRawInfoLength()
 		{
-			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
+			byte[] UTF8Name = Encoding.UTF8.GetBytes(ElementName);
 			int realLength = RawInfLength + UTF8Name.Length;
 
 			return Header.GetNewInfSizeByBufLength(realLength);
@@ -116,22 +113,22 @@ namespace CryptoDataBase.CDB
 
 		protected override byte[] GetRawInfo()
 		{
-			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
-			int realLength = RawInfLength + UTF8Name.Length;
+			byte[] utf8Name = Encoding.UTF8.GetBytes(ElementName);
+			int realLength = RawInfLength + utf8Name.Length;
 			ushort newInfSize = Header.GetNewInfSizeByBufLength(realLength);
 
 			byte[] buf = new byte[newInfSize];
-			Buffer.BlockCopy(BitConverter.GetBytes(_FileStartPos), 0, buf, 0, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_IconStartPos), 0, buf, 8, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_FileSize), 0, buf, 16, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_IconSize), 0, buf, 24, 4);
-			byte isCompressed = (byte)(Convert.ToByte(!_IsCompressed) * 128 + (int)CryptoRandom.Random(128));
+			Buffer.BlockCopy(BitConverter.GetBytes(_fileStartPos), 0, buf, 0, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(IconStartPos), 0, buf, 8, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(_fileSize), 0, buf, 16, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(IconSizeInner), 0, buf, 24, 4);
+			byte isCompressed = (byte)(Convert.ToByte(!_isCompressed) * 128 + (int)CryptoRandom.Random(128));
 			Buffer.BlockCopy(BitConverter.GetBytes(isCompressed), 0, buf, 28, 1);
-			Buffer.BlockCopy(_Hash, 0, buf, 29, 16);
-			Buffer.BlockCopy(_PHash, 0, buf, 45, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_ParentID), 0, buf, 53, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)UTF8Name.Length), 0, buf, 61, 2);
-			Buffer.BlockCopy(UTF8Name, 0, buf, 63, UTF8Name.Length);
+			Buffer.BlockCopy(_hash, 0, buf, 29, 16);
+			Buffer.BlockCopy(PHash, 0, buf, 45, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(ParentElementId), 0, buf, 53, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)utf8Name.Length), 0, buf, 61, 2);
+			Buffer.BlockCopy(utf8Name, 0, buf, 63, utf8Name.Length);
 
 			CryptoRandom.GetBytes(buf, realLength, buf.Length - realLength);
 
@@ -140,76 +137,76 @@ namespace CryptoDataBase.CDB
 
 		protected override void SaveInf()
 		{
-			header.SaveInfo(GetRawInfo());
+			Header.SaveInfo(GetRawInfo());
 		}
 
 		public override void ExportInfTo(HeaderRepository repository, ulong position)
 		{
-			header.ExportInfoTo(repository, position, GetRawInfo());
+			Header.ExportInfoTo(repository, position, GetRawInfo());
 		}
 
-		private UInt64 GetSize()
+		private ulong GetSize()
 		{
-			return _FileSize;
+			return _fileSize;
 		}
 
-		private UInt64 GetFullSize()
+		private ulong GetFullSize()
 		{
-			return _FileSize + _IconSize;
+			return _fileSize + IconSize;
 		}
 
-		private UInt64 GetFullEncryptSize()
+		private ulong GetFullEncryptSize()
 		{
-			return Crypto.GetMod16(_FileSize) + Crypto.GetMod16(_IconSize);
+			return Crypto.GetMod16(_fileSize) + Crypto.GetMod16(IconSize);
 		}
 
-		public void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback Progress = null)
+		public void SaveTo(Stream stream, SafeStreamAccess.ProgressCallback progress = null)
 		{
-			if (_FileSize == 0)
+			if (_fileSize == 0)
 			{
 				return;
 			}
 
-			dataRepository.MultithreadDecrypt((long)_FileStartPos, stream, (long)_FileSize, _FileIV, Progress);
+			DataRepository.MultithreadDecrypt((long)_fileStartPos, stream, (long)_fileSize, _fileIV, progress);
 		}
 
-		public override void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
+		public override void SaveTo(string pathToSave, SafeStreamAccess.ProgressCallback progress = null)
 		{
-			Directory.CreateDirectory(PathToSave);
-			using (FileStream stream = new FileStream(PathToSave + '\\' + _Name, FileMode.Create, FileAccess.Write, FileShare.Read))
+			Directory.CreateDirectory(pathToSave);
+			using (FileStream stream = new FileStream(pathToSave + '\\' + ElementName, FileMode.Create, FileAccess.Write, FileShare.Read))
 			{
-				SaveTo(stream, Progress);
+				SaveTo(stream, progress);
 			}
 
 		}
 
-		public override void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
+		public override void SaveAs(string fullName, SafeStreamAccess.ProgressCallback progress = null, Func<string, string> getFileName = null)
 		{
-			Directory.CreateDirectory(Path.GetDirectoryName(FullName));
-			using (FileStream stream = new FileStream(FullName, FileMode.Create, FileAccess.Write, FileShare.Read))
+			Directory.CreateDirectory(Path.GetDirectoryName(fullName));
+			using (FileStream stream = new FileStream(fullName, FileMode.Create, FileAccess.Write, FileShare.Read))
 			{
-				SaveTo(stream, Progress);
+				SaveTo(stream, progress);
 			}
 		}
 
 		protected override void Rename(string newName)
 		{
-			if ((_Parent == null) || (String.IsNullOrEmpty(newName)) || (newName == Name))
+			if ((ParentElement == null) || (String.IsNullOrEmpty(newName)) || (newName == Name))
 			{
 				return;
 			}
 
-			if ((_Parent as DirElement).FileExists(newName))
+			if ((ParentElement as DirElement).FileExists(newName))
 			{
-				throw new DuplicatesFileNameException("Файл з таким ім'ям вже є");
+				throw new DuplicatesFileNameException();
 			}
 
-			lock (dataRepository.writeLock)
+			lock (DataRepository.WriteLock)
 			{
-				lock (_changeElementsLocker)
+				lock (ChangeElementsLocker)
 				{
-					_Name = newName;
-					(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
+					ElementName = newName;
+					(ParentElement as DirElement).RefreshChildOrders();
 					SaveInf();
 				}
 
@@ -217,15 +214,16 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public void ChangeContent(Stream NewData, SafeStreamAccess.ProgressCallback Progress = null)
+		public void ChangeContent(Stream newData, SafeStreamAccess.ProgressCallback progress = null)
 		{
-			lock (_addElementLocker)
+			lock (AddElementLocker)
 			{
-				UInt64 fileSize = (UInt64)NewData.Length;
-				UInt64 fileStartPos = _FileStartPos;
-				if (fileSize >= Crypto.GetMod16(_FileSize))
+				ulong fileSize = (ulong)newData.Length;
+				ulong fileStartPos = _fileStartPos;
+				if (fileSize >= Crypto.GetMod16(_fileSize))
 				{
-					fileStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize)); //Вибираємо місце куди писати файл
+					//Вибираємо місце куди писати файл
+					fileStartPos = DataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(fileSize));
 				}
 
 				byte[] tempHash;
@@ -234,7 +232,7 @@ namespace CryptoDataBase.CDB
 				{
 					if (fileSize > 0)
 					{
-						dataRepository.WriteEncrypt((long)fileStartPos, NewData, _FileIV, out tempHash, Progress);
+						DataRepository.WriteEncrypt((long)fileStartPos, newData, _fileIV, out tempHash, progress);
 					}
 					else
 					{
@@ -244,75 +242,75 @@ namespace CryptoDataBase.CDB
 				}
 				catch
 				{
-					throw new DataWasNotWrittenException("Файл не записався.");
+					throw new DataWasNotWrittenException();
 				}
 
 				try
 				{
-					_FileStartPos = fileStartPos;
-					_FileSize = fileSize;
-					_Hash = tempHash;
+					_fileStartPos = fileStartPos;
+					_fileSize = fileSize;
+					_hash = tempHash;
 					SaveInf();
 				}
 				catch
 				{
-					throw new HeaderWasNotWrittenException("Інформація про зміни не записалась!");
+					throw new HeaderWasNotWrittenException();
 				}
 			}
 		}
 
-		public override bool SetVirtualParent(DirElement NewParent)
+		public override bool SetVirtualParent(DirElement newParent)
 		{
-			if (NewParent == null)
+			if (newParent == null)
 			{
 				return false;
 			}
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (NewParent.FileExists(_Name))
+				if (newParent.FileExists(ElementName))
 				{
 					return false;
 				}
 
-				if (_Parent != null)
+				if (ParentElement != null)
 				{
-					_Parent.RemoveElementFromElementsList(this);
+					ParentElement.RemoveElementFromElementsList(this);
 				}
 
-				_Parent = NewParent;
-				_ParentID = NewParent.ID;
+				ParentElement = newParent;
+				ParentElementId = newParent.Id;
 
-				_Parent.InsertElementToElementsList(this);
+				ParentElement.InsertElementToElementsList(this);
 			}
 
 			return true;
 		}
 
-		private void ChangeParent(DirElement NewParent, bool withWrite = false)
+		private void ChangeParent(DirElement newParent, bool withWrite = false)
 		{
-			if (NewParent == null)
+			if (newParent == null)
 			{
 				return;
 			}
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (NewParent.FileExists(_Name))
+				if (newParent.FileExists(ElementName))
 				{
 					return;
 				}
 
-				if (_Parent != null)
+				if (ParentElement != null)
 				{
-					(_Parent as DirElement).RemoveElementFromElementsList(this);
+					(ParentElement as DirElement).RemoveElementFromElementsList(this);
 				}
 
-				bool writeToFile = _ParentID != NewParent.ID || withWrite;
-				_Parent = NewParent;
-				_ParentID = NewParent.ID;
+				bool writeToFile = ParentElementId != newParent.Id || withWrite;
+				ParentElement = newParent;
+				ParentElementId = newParent.Id;
 
-				(_Parent as DirElement).InsertElementToElementsList(this);
+				(ParentElement as DirElement).InsertElementToElementsList(this);
 
 				if (writeToFile)
 				{
@@ -323,11 +321,11 @@ namespace CryptoDataBase.CDB
 
 		public override bool Delete()
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (_Delete())
+				if (InnerDelete())
 				{
-					if (_Parent != null)
+					if (ParentElement != null)
 					{
 						Parent.RemoveElementFromElementsList(this);
 					}
@@ -339,13 +337,13 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public bool _Delete()
+		public bool InnerDelete()
 		{
 			try
 			{
-				header.Delete();
-				dataRepository.AddFreeSpace(_FileStartPos, Crypto.GetMod16(_FileSize));
-				dataRepository.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
+				Header.Delete();
+				DataRepository.AddFreeSpace(_fileStartPos, Crypto.GetMod16(_fileSize));
+				DataRepository.AddFreeSpace(IconStartPos, Crypto.GetMod16(IconSizeInner));
 			}
 			catch
 			{
@@ -357,17 +355,17 @@ namespace CryptoDataBase.CDB
 
 		public override bool Restore()
 		{
-			if (_Exists)
+			if (Exists)
 			{
 				return true;
 			}
 
-			if ((_FileSize == 0 || dataRepository.IsFreeSpace(_FileStartPos, _FileSize)) && (_IconSize == 0 || dataRepository.IsFreeSpace(_IconStartPos, _IconSize)))
+			if ((_fileSize == 0 || DataRepository.IsFreeSpace(_fileStartPos, _fileSize)) && (IconSizeInner == 0 || DataRepository.IsFreeSpace(IconStartPos, IconSizeInner)))
 			{
 				try
 				{
-					Parent = _Parent;
-					_Exists = true;
+					Parent = ParentElement;
+					Exists = true;
 				}
 				catch
 				{

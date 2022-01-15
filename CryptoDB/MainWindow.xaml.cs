@@ -822,7 +822,7 @@ namespace CryptoDataBase
 				return;
 			}
 
-			if (!newParent.Exists)
+			if (!newParent.IsExists)
 			{
 				movedElementTo.Restore();
 				bindingList.Insert(index, movedElementTo);
@@ -854,7 +854,7 @@ namespace CryptoDataBase
 			int i = 0;
 			while (i < bindingList.Count)
 			{
-				if (!bindingList[i].Exists)
+				if (!bindingList[i].IsExists)
 				{
 					bindingList.RemoveAt(i);
 					i--;
@@ -1302,7 +1302,7 @@ namespace CryptoDataBase
 			int j = 0;
 			while (j < bindingList.Count)
 			{
-				if (!bindingList[j].Exists)
+				if (!bindingList[j].IsExists)
 				{
 					bindingList.RemoveAt(j);
 					j--;

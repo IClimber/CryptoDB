@@ -235,7 +235,7 @@ namespace CryptoDataBase
 
 					for (int j = from; j < to; j++)
 					{
-						if (Element.ComparePHashes(search_array[i].PHash, search_in_array[j].PHash, sensative) && !search_array[i].Equals(search_in_array[j]))
+						if (Element.ComparePHashes(search_array[i].IconPHash, search_in_array[j].IconPHash, sensative) && !search_array[i].Equals(search_in_array[j]))
 						{
 							lock (addLock)
 							{
@@ -284,7 +284,7 @@ namespace CryptoDataBase
 			{
 				if (element.IconSize > 0)
 				{
-					var result = getSearchableDir().FindAllByPHash(element.PHash, (byte)slider.Value);
+					var result = getSearchableDir().FindAllByPHash(element.IconPHash, (byte)slider.Value);
 					if (result.Count > 1)
 					{
 						resultList.AddRange(result);

@@ -6,37 +6,34 @@ using System.Security.Cryptography;
 
 namespace CryptoDataBase.CDB.Repositories
 {
-	public abstract class HeaderRepository: IDisposable
+	public abstract class HeaderRepository : IDisposable
 	{
-		public readonly object writeLock = new object();
-
-		protected Stream _stream;
-		protected SafeStreamAccess _safeStream;
-		protected AesCryptoServiceProvider _dekAes;
+		public readonly object WriteLock = new object();
 		public delegate void ProgressCallback(double percent, string message);
-
 		public abstract ulong GetStartPosBySize(ulong position, ushort size);
-
-		public abstract List<Header> ReadFileStruct(ProgressCallback Progress);
-
+		public abstract List<Header> ReadFileStruct(ProgressCallback progress);
 		public abstract void ExportStructToFile(IList<Element> elements);
+
+		protected Stream BaseStream;
+		protected SafeStreamAccess SafeStream;
+		protected AesCryptoServiceProvider DekAes;
 
 		public HeaderRepository(Stream stream)
 		{
-			_stream = stream;
-			_safeStream = new SafeStreamAccess(stream);
+			BaseStream = stream;
+			SafeStream = new SafeStreamAccess(stream);
 		}
 
 		public AesCryptoServiceProvider GetDek()
 		{
-			var aes = new AesCryptoServiceProvider();
-			aes.KeySize = _dekAes.KeySize;
-			aes.BlockSize = _dekAes.BlockSize;
-			aes.Key = _dekAes.Key;
-			aes.Mode = _dekAes.Mode;
-			aes.Padding = _dekAes.Padding;
-
-			return aes;
+			return new AesCryptoServiceProvider
+			{
+				KeySize = DekAes.KeySize,
+				BlockSize = DekAes.BlockSize,
+				Key = DekAes.Key,
+				Mode = DekAes.Mode,
+				Padding = DekAes.Padding
+			};
 		}
 
 		public virtual bool CanChangePassword()
@@ -51,74 +48,66 @@ namespace CryptoDataBase.CDB.Repositories
 
 		protected Header ReadHeader(Stream memoryStream, ulong startPos)
 		{
-			UInt64 StartPos;
-			byte[] IV;
-			bool Exists;
-			ElementType ElType;
-			UInt16 InfSize;
-			byte[] infDdata;
-
 			//Зчитуємо незакодовані дані, IV (16 байт) і Exists (1 байт)
 			byte[] buf = new byte[17];
-			StartPos = startPos;
 			memoryStream.Read(buf, 0, buf.Length);
 
 			//Записуємо зчитані дані в відповідні параметри
-			IV = new byte[16];
-			Buffer.BlockCopy(buf, 0, IV, 0, 16);
-			Exists = buf[16] < 128;
+			byte[] iv = new byte[16];
+			Buffer.BlockCopy(buf, 0, iv, 0, 16);
+			bool exists = buf[16] < 128;
 
-			ICryptoTransform transform = _dekAes.CreateDecryptor(_dekAes.Key, IV);
+			ICryptoTransform transform = DekAes.CreateDecryptor(DekAes.Key, iv);
 			memoryStream.Read(buf, 0, 16);
 			buf = Crypto.AesConvertBuf(buf, 16, transform);
 
-			InfSize = BitConverter.ToUInt16(buf, 13);
-			ElType = (ElementType)(buf[15] / 128);
+			ushort infSize = BitConverter.ToUInt16(buf, 13);
+			ElementType elementType = (ElementType)(buf[15] / 128);
 
-			if (!Exists)
+			if (!exists)
 			{
 				transform.Dispose();
 
-				return new Header(this, StartPos, IV, Exists, ElType, InfSize);
+				return new Header(this, startPos, iv, exists, elementType, infSize);
 			}
 
-			infDdata = new byte[InfSize];
+			byte[] infDdata = new byte[infSize];
 			memoryStream.Read(infDdata, 0, infDdata.Length);
 			infDdata = Crypto.AesConvertBuf(infDdata, infDdata.Length, transform);
 			transform.Dispose();
 
-			return new Header(this, StartPos, IV, Exists, ElType, InfSize, infDdata);
+			return new Header(this, startPos, iv, exists, elementType, infSize, infDdata);
 		}
 
 		public ulong GetEndPosition()
 		{
-			return (ulong)_safeStream.Length;
+			return (ulong)SafeStream.Length;
 		}
 
 		public void Write(long streamOffset, byte[] buffer, int offset, int count)
 		{
-			_safeStream.Write(streamOffset, buffer, offset, count);
+			SafeStream.Write(streamOffset, buffer, offset, count);
 		}
 
 		public void WriteByte(long streamOffset, byte value)
 		{
-			_safeStream.WriteByte(streamOffset, value);
+			SafeStream.WriteByte(streamOffset, value);
 		}
 
-		public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] IV)
+		public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] iv)
 		{
-			using (ICryptoTransform transform = _dekAes.CreateEncryptor(_dekAes.Key, IV))
+			using (ICryptoTransform transform = DekAes.CreateEncryptor(DekAes.Key, iv))
 			{
 				byte[] buf = Crypto.AesConvertBuf(inputData, inputData.Length, transform);
-				_safeStream.Write(streamOffset, buf, 0, buf.Length);
+				SafeStream.Write(streamOffset, buf, 0, buf.Length);
 			}
 		}
 
 		public void Dispose()
 		{
-			_stream.Close();
-			_safeStream.Close();
-			_dekAes.Dispose();
+			BaseStream.Close();
+			SafeStream.Close();
+			DekAes.Dispose();
 		}
 	}
 }
