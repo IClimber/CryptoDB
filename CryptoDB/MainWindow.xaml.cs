@@ -191,15 +191,19 @@ namespace CryptoDataBase
 
 		private string GetUserPassword(string title)
 		{
+			string password = null;
 			PassWindow passwordWindow = null;
-			Dispatcher.Invoke(() => passwordWindow = new PassWindow() { Owner = this, Title = title });
-			Dispatcher.Invoke(() => passwordWindow.ShowDialog());
-			if (passwordWindow.DialogResult != true)
+			Dispatcher.Invoke(() =>
 			{
-				return null;
-			}
+				passwordWindow = new PassWindow() { Owner = this, Title = title };
+				passwordWindow.ShowDialog();
+				if (passwordWindow.DialogResult == true)
+				{
+					password = passwordWindow.Password;
+				}
+			});
 
-			return passwordWindow.Password;
+			return password;
 		}
 
 		private DirElement ForceDirectories(DirElement parent, string path)
