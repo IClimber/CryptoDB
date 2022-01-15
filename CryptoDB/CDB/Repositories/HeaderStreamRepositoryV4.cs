@@ -7,20 +7,22 @@ using System.Threading.Tasks;
 
 namespace CryptoDataBase.CDB.Repositories
 {
-	class HeaderStreamRepositoryV4 : HeaderRepository
+	public class HeaderStreamRepositoryV4 : HeaderRepository
 	{
-		const uint BLOCK_SIZE = 1048576;
-		public const byte CURRENT_VERSION = 4;
-		private static int threadsCount = Environment.ProcessorCount;
+		public const byte Version = 4;
+		private readonly int _threadsCount = Environment.ProcessorCount;
+		private const uint BlockSize = 1048576;
 
 		public HeaderStreamRepositoryV4(Stream stream, string password, byte[] aesKey = null) : base(stream)
 		{
-			_dekAes = new AesCryptoServiceProvider();
-			_dekAes.KeySize = 256;
-			_dekAes.BlockSize = 128;
-			_dekAes.Key = aesKey ?? GetAesKeyByPassword(password);
-			_dekAes.Mode = CipherMode.CBC;
-			_dekAes.Padding = PaddingMode.None;
+			DekAes = new AesCryptoServiceProvider
+			{
+				KeySize = 256,
+				BlockSize = 128,
+				Key = aesKey ?? GetAesKeyByPassword(password),
+				Mode = CipherMode.CBC,
+				Padding = PaddingMode.None
+			};
 		}
 
 		private byte[] GetAesKeyByPassword(string password)
@@ -39,45 +41,42 @@ namespace CryptoDataBase.CDB.Repositories
 
 		public override ulong GetStartPosBySize(ulong position, ushort size)
 		{
-			if (position / BLOCK_SIZE < (position + size) / BLOCK_SIZE)
-			{
-				return (ulong)Math.Ceiling(position / (double)BLOCK_SIZE) * BLOCK_SIZE;
-			}
-
-			return position;
+			return position / BlockSize < (position + size) / BlockSize
+				? (ulong)Math.Ceiling(position / (double)BlockSize) * BlockSize
+				: position;
 		}
 
 		public override void ExportStructToFile(IList<Element> elements)
 		{
-			_stream.WriteByte(CURRENT_VERSION);
+			BaseStream.WriteByte(Version);
 
 			foreach (Element element in elements)
 			{
-				ushort rawSize = (ushort)(element.GetRawInfoLength() + Header.RAW_LENGTH);
-				ulong position = GetStartPosBySize((ulong)_stream.Position, rawSize);
+				ushort rawSize = (ushort)(element.GetRawInfoLength() + Header.RawLength);
+				ulong position = GetStartPosBySize((ulong)BaseStream.Position, rawSize);
 				element.ExportInfTo(this, position);
 			}
 		}
 
-		public override List<Header> ReadFileStruct(ProgressCallback Progress)
+		public override List<Header> ReadFileStruct(ProgressCallback progress)
 		{
 			List<Header> headers = new List<Header>();
 			double percent = 0;
 			int lastProgress = 0;
-			long length = _stream.Length;
+			long length = BaseStream.Length;
 			object locker = new object();
 			object addLocker = new object();
 
-			int blockCount = (int)Math.Ceiling(_stream.Length / (double)BLOCK_SIZE);
-			Parallel.For(0, blockCount, new ParallelOptions { MaxDegreeOfParallelism = threadsCount }, i =>
+			int blockCount = (int)Math.Ceiling(BaseStream.Length / (double)BlockSize);
+			Parallel.For(0, blockCount, new ParallelOptions { MaxDegreeOfParallelism = _threadsCount }, i =>
 			{
 				MemoryStream headerStream = new MemoryStream();
-				byte[] buf = new byte[BLOCK_SIZE];
+				byte[] buf = new byte[BlockSize];
 				int count;
 				lock (locker)
 				{
-					_stream.Position = i * BLOCK_SIZE;
-					count = _stream.Read(buf, 0, buf.Length);
+					BaseStream.Position = i * BlockSize;
+					count = BaseStream.Read(buf, 0, buf.Length);
 				}
 
 				headerStream.Write(buf, 0, count);
@@ -85,7 +84,7 @@ namespace CryptoDataBase.CDB.Repositories
 				while (headerStream.Position < headerStream.Length)
 				{
 					long lastPos = headerStream.Position;
-					Header header = GetNextElementFromStream(headerStream, (ulong)(i * BLOCK_SIZE));
+					Header header = GetNextElementFromStream(headerStream, (ulong)(i * BlockSize));
 					if (header != null)
 					{
 						lock (addLocker)
@@ -97,9 +96,9 @@ namespace CryptoDataBase.CDB.Repositories
 					//percents
 					percent += headerStream.Position - lastPos;
 					double percent1 = percent / (double)length * 100.0;
-					if ((Progress != null) && (lastProgress != (int)percent1))
+					if ((progress != null) && (lastProgress != (int)percent1))
 					{
-						Progress(percent1, "Reading elements from file");
+						progress(percent1, "Reading elements from file");
 						lastProgress = (int)percent1;
 					}
 				}
@@ -118,7 +117,7 @@ namespace CryptoDataBase.CDB.Repositories
 			try
 			{
 				header = ReadHeader(stream, position + offset);
-				if (header.InfSize + (ulong)Header.RAW_LENGTH + position > (ulong)stream.Length)
+				if (header.InfSize + (ulong)Header.RawLength + position > (ulong)stream.Length)
 				{
 					return null;
 				}

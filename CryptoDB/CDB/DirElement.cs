@@ -5,81 +5,78 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace CryptoDataBase.CDB
 {
 	public class DirElement : Element
 	{
-		public override ElementType Type { get { return ElementType.Dir; } }
-		public IList<Element> Elements { get { return _Elements.AsReadOnly(); } }
-		public override UInt64 Size { get { return GetSize(); } }
-		public override UInt64 FullSize { get { return GetFullSize(); } }
-		public override UInt64 FullEncryptSize { get { return GetFullEncryptSize(); } }
-		public UInt64 ID { get { return _ID; } }
-		private List<Element> _Elements;
+		public override ElementType Type => ElementType.Dir;
+		public IList<Element> Elements => _elements.AsReadOnly();
+		public override ulong Size => GetSize();
+		public override ulong FullSize => GetFullSize();
+		public override ulong FullEncryptSize => GetFullEncryptSize();
+		public ulong Id => _id;
+		public override DirElement Parent { get { return ParentElement; } set { ChangeParent(value); } }
 		private const int RawInfLength = 38;
-		protected UInt64 _ID;
-		public override DirElement Parent { get { return _Parent; } set { ChangeParent(value); } }
+		private List<Element> _elements;
+		private ulong _id;
 
 		protected DirElement()
 		{
-			_Elements = new List<Element>();
+			_elements = new List<Element>();
 		}
 
 		protected DirElement(Object addElementLocker, Object changeElementsLocker) : base(addElementLocker, changeElementsLocker)
 		{
-			_Elements = new List<Element>();
+			_elements = new List<Element>();
 		}
 
 		private DirElement(string Name)
 		{
-			_Name = Name;
+			ElementName = Name;
 		}
 
-		public DirElement(UInt64 ID)
+		public DirElement(ulong ID)
 		{
-			_ID = ID;
+			_id = ID;
 		}
 
 		//Створення папки при читані з файлу
 		public DirElement(Header header, DataRepository datarRepository, Object addElementLocker, Object changeElementsLocker) : base(header, datarRepository, addElementLocker, changeElementsLocker)
 		{
-			_Elements = new List<Element>();
+			_elements = new List<Element>();
 			byte[] buf = header.GetInfoBuf();
 
 			ReadElementParamsFromBuffer(buf);
-
-			buf = null;
 		}
 
 		//Створення папки вручну
-		protected DirElement(DirElement parent, DataRepository dataRepository, string Name, Object addElementLocker, Object changeElementsLocker, Bitmap Icon = null,
-			SafeStreamAccess.ProgressCallback Progress = null) : this(addElementLocker, changeElementsLocker)
+		protected DirElement(DirElement parent, DataRepository dataRepository, string name, Object addElementLocker, Object changeElementsLocker, Bitmap icon = null) : this(addElementLocker, changeElementsLocker)
 		{
-			lock (_addElementLocker)
+			lock (AddElementLocker)
 			{
-				lock (dataRepository.writeLock)
+				lock (dataRepository.WriteLock)
 				{
-					header = new Header(parent.header.repository, ElementType.Dir);
-					this.dataRepository = dataRepository;
+					Header = new Header(parent.Header.Repository, ElementType.Dir);
+					this.DataRepository = dataRepository;
 
-					byte[] icon = GetIconBytes(Icon);
-					UInt32 iconSize = icon == null ? 0 : (UInt32)icon.Length;
-					UInt64 iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize)); //Вибираємо місце куди писати іконку
+					byte[] iconBytes = GetIconBytes(icon);
+					uint iconSize = iconBytes == null ? 0 : (uint)iconBytes.Length;
+					//Вибираємо місце куди писати іконку
+					ulong iconStartPos = dataRepository.GetFreeSpaceStartPos(Crypto.GetMod16(iconSize));
 
-					if ((icon != null) && (iconSize > 0))
+					if ((iconBytes != null) && (iconSize > 0))
 					{
-						dataRepository.WriteEncrypt((long)iconStartPos, icon, _IconIV);
+						dataRepository.WriteEncrypt((long)iconStartPos, iconBytes, IconIV);
 					}
 
-					_Name = Name;
-					_ID = GenID();
-					_ParentID = parent.ID;
-					_IconStartPos = iconStartPos;
-					_IconSize = iconSize;
-					_PHash = GetPHash(Icon);
+					ElementName = name;
+					_id = GenID();
+					ParentElementId = parent.Id;
+					IconStartPos = iconStartPos;
+					IconSizeInner = iconSize;
+					PHash = GetIconPHash(icon);
 					Parent = parent;
 
 					SaveInf();
@@ -87,13 +84,13 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private UInt64 GetSize()
+		private ulong GetSize()
 		{
-			UInt64 result = 0;
+			ulong result = 0;
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					result += element.Size;
 				}
@@ -102,13 +99,13 @@ namespace CryptoDataBase.CDB
 			return result;
 		}
 
-		private UInt64 GetFullSize()
+		private ulong GetFullSize()
 		{
-			UInt64 result = _IconSize;
+			ulong result = IconSizeInner;
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					result += element.FullSize;
 				}
@@ -117,13 +114,13 @@ namespace CryptoDataBase.CDB
 			return result;
 		}
 
-		private UInt64 GetFullEncryptSize()
+		private ulong GetFullEncryptSize()
 		{
-			UInt64 result = Crypto.GetMod16(_IconSize);
+			ulong result = Crypto.GetMod16(IconSizeInner);
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					result += element.FullEncryptSize;
 				}
@@ -134,39 +131,39 @@ namespace CryptoDataBase.CDB
 
 		private void ReadElementParamsFromBuffer(byte[] buf)
 		{
-			_PHash = new byte[8];
+			PHash = new byte[8];
 
-			_IconStartPos = BitConverter.ToUInt64(buf, 0);
-			_IconSize = BitConverter.ToUInt32(buf, 8);
-			Buffer.BlockCopy(buf, 12, _PHash, 0, 8);
-			_ParentID = BitConverter.ToUInt64(buf, 20);
-			_ID = BitConverter.ToUInt64(buf, 28);
+			IconStartPos = BitConverter.ToUInt64(buf, 0);
+			IconSizeInner = BitConverter.ToUInt32(buf, 8);
+			Buffer.BlockCopy(buf, 12, PHash, 0, 8);
+			ParentElementId = BitConverter.ToUInt64(buf, 20);
+			_id = BitConverter.ToUInt64(buf, 28);
 			int lengthName = BitConverter.ToUInt16(buf, 36);
-			_Name = Encoding.UTF8.GetString(buf, 38, lengthName);
+			ElementName = Encoding.UTF8.GetString(buf, 38, lengthName);
 		}
 
 		public override ushort GetRawInfoLength()
 		{
-			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
-			int realLength = RawInfLength + UTF8Name.Length;
+			byte[] utf8Name = Encoding.UTF8.GetBytes(ElementName);
+			int realLength = RawInfLength + utf8Name.Length;
 
 			return Header.GetNewInfSizeByBufLength(realLength);
 		}
 
 		protected override byte[] GetRawInfo()
 		{
-			byte[] UTF8Name = Encoding.UTF8.GetBytes(_Name);
-			int realLength = RawInfLength + UTF8Name.Length;
+			byte[] utf8Name = Encoding.UTF8.GetBytes(ElementName);
+			int realLength = RawInfLength + utf8Name.Length;
 			ushort newInfSize = Header.GetNewInfSizeByBufLength(realLength);
 
 			byte[] buf = new byte[newInfSize];
-			Buffer.BlockCopy(BitConverter.GetBytes(_IconStartPos), 0, buf, 0, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_IconSize), 0, buf, 8, 4);
-			Buffer.BlockCopy(_PHash, 0, buf, 12, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_ParentID), 0, buf, 20, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes(_ID), 0, buf, 28, 8);
-			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)UTF8Name.Length), 0, buf, 36, 2);
-			Buffer.BlockCopy(UTF8Name, 0, buf, 38, UTF8Name.Length);
+			Buffer.BlockCopy(BitConverter.GetBytes(IconStartPos), 0, buf, 0, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(IconSizeInner), 0, buf, 8, 4);
+			Buffer.BlockCopy(PHash, 0, buf, 12, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(ParentElementId), 0, buf, 20, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes(_id), 0, buf, 28, 8);
+			Buffer.BlockCopy(BitConverter.GetBytes((UInt16)utf8Name.Length), 0, buf, 36, 2);
+			Buffer.BlockCopy(utf8Name, 0, buf, 38, utf8Name.Length);
 
 			CryptoRandom.GetBytes(buf, realLength, buf.Length - realLength);
 
@@ -175,36 +172,36 @@ namespace CryptoDataBase.CDB
 
 		protected override void SaveInf()
 		{
-			header.SaveInfo(GetRawInfo());
+			Header.SaveInfo(GetRawInfo());
 		}
 
 		public override void ExportInfTo(HeaderRepository repository, ulong position)
 		{
-			header.ExportInfoTo(repository, position, GetRawInfo());
+			Header.ExportInfoTo(repository, position, GetRawInfo());
 		}
 
-		public override void SaveTo(string PathToSave, SafeStreamAccess.ProgressCallback Progress = null)
+		public override void SaveTo(string pathToSave, SafeStreamAccess.ProgressCallback progress = null)
 		{
-			ExportDir(PathToSave, Progress: Progress);
+			ExportDir(pathToSave, progress: progress);
 		}
 
-		public override void SaveAs(string FullName, SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
+		public override void SaveAs(string fullName, SafeStreamAccess.ProgressCallback progress = null, Func<string, string> getFileName = null)
 		{
-			ExportDir(Path.GetDirectoryName(FullName), Path.GetFileName(FullName), Progress: Progress, GetFileName: GetFileName);
+			ExportDir(Path.GetDirectoryName(fullName), Path.GetFileName(fullName), progress: progress, getFileName: getFileName);
 		}
 
-		private void ExportDir(string destPath, string Name = "", SafeStreamAccess.ProgressCallback Progress = null, Func<string, string> GetFileName = null)
+		private void ExportDir(string destPath, string name = "", SafeStreamAccess.ProgressCallback progress = null, Func<string, string> getFileName = null)
 		{
-			bool randomNames = (GetFileName != null);
+			bool randomNames = (getFileName != null);
 
-			string tempName = Name == "" ? _Name : Name;
+			string tempName = name == "" ? ElementName : name;
 			Directory.CreateDirectory(destPath + '\\' + tempName);
 			Element[] elementList;
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				elementList = new Element[_Elements.Count];
-				_Elements.CopyTo(elementList);
+				elementList = new Element[_elements.Count];
+				_elements.CopyTo(elementList);
 			}
 
 			foreach (var element in elementList)
@@ -213,151 +210,143 @@ namespace CryptoDataBase.CDB
 				{
 					if (randomNames)
 					{
-						(element as DirElement).ExportDir(destPath + '\\' + tempName, GetFileName(Path.GetExtension(element.Name)), Progress: Progress, GetFileName: GetFileName);
+						(element as DirElement).ExportDir(destPath + '\\' + tempName, getFileName(Path.GetExtension(element.Name)), progress: progress, getFileName: getFileName);
 					}
 					else
 					{
-						(element as DirElement).ExportDir(destPath + '\\' + tempName, Progress: Progress);
+						(element as DirElement).ExportDir(destPath + '\\' + tempName, progress: progress);
 					}
 				}
 				else
 				{
 					if (randomNames)
 					{
-						element.SaveAs(destPath + '\\' + tempName + "\\" + GetFileName(Path.GetExtension(element.Name)), Progress);
+						element.SaveAs(destPath + '\\' + tempName + "\\" + getFileName(Path.GetExtension(element.Name)), progress);
 					}
 					else
 					{
-						element.SaveTo(destPath + '\\' + tempName, Progress);
+						element.SaveTo(destPath + '\\' + tempName, progress);
 					}
 				}
 			}
-
-			elementList = null;
 		}
 
-		private FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null, bool isPrivate = true)
+		private FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap icon = null, SafeStreamAccess.ProgressCallback progress = null, bool isPrivate = true)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (FindByName(_Elements, destFileName) != null)
+				if (FindByName(_elements, destFileName) != null)
 				{
-					throw new DuplicatesFileNameException("Файл або папка з таким ім’ям вже є.");
+					throw new DuplicatesFileNameException();
 				}
 			}
 
-			FileElement file;
-
 			try
 			{
-				file = new FileElement(this, header, dataRepository, destFileName, stream, compressFile, _addElementLocker, _changeElementsLocker, Icon, Progress);
+				return new FileElement(this, Header, DataRepository, destFileName, stream, compressFile, AddElementLocker, ChangeElementsLocker, icon, progress);
 			}
 			catch
 			{
-				throw new DataWasNotWrittenException("Файл або іконка не записались.");
+				throw new DataWasNotWrittenException();
 			}
-
-			return file;
 		}
 
-		public FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null)
+		public FileElement AddFile(Stream stream, string destFileName, bool compressFile = false, Bitmap icon = null, SafeStreamAccess.ProgressCallback progress = null)
 		{
-			return AddFile(stream, destFileName, compressFile, Icon, Progress, true);
+			return AddFile(stream, destFileName, compressFile, icon, progress, true);
 		}
 
-		public Element AddFile(string sourceFileName, string destFileName, bool compressFile = false, Bitmap Icon = null, SafeStreamAccess.ProgressCallback Progress = null)
+		public Element AddFile(string sourceFileName, string destFileName, bool compressFile = false, Bitmap icon = null, SafeStreamAccess.ProgressCallback progress = null)
 		{
 			using (FileStream f = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
 			{
-				return AddFile(f, destFileName, compressFile, Icon, Progress, true);
+				return AddFile(f, destFileName, compressFile, icon, progress, true);
 			}
 		}
 
-		public override bool SetVirtualParent(DirElement NewParent)
+		public override bool SetVirtualParent(DirElement newParent)
 		{
-			if ((NewParent == null) || (NewParent == this))
+			if ((newParent == null) || (newParent == this))
 			{
 				return false;
 			}
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (FindByName(NewParent._Elements, _Name) != null)
+				if (FindByName(newParent._elements, ElementName) != null)
 				{
 					return false;
 				}
 
-				if (FindSubDirByID(NewParent.ID) != null)
+				if (FindSubDirByID(newParent.Id) != null)
 				{
-					throw new RecursiveFolderAttachmentException("Невірна вкладеність папок");
+					throw new RecursiveFolderAttachmentException();
 				}
 
 				int index;
-				if (_Parent != null)
+				if (ParentElement != null)
 				{
-					if (FindByName(_Parent._Elements, _Name, out index) != null)
+					if (FindByName(ParentElement._elements, ElementName, out index) != null)
 					{
-						_Parent._Elements.RemoveAt(index);
+						ParentElement._elements.RemoveAt(index);
 					}
 				}
 
-				_Parent = NewParent;
-				_ParentID = NewParent.ID;
+				ParentElement = newParent;
+				ParentElementId = newParent.Id;
 
-				if (FindByName(_Parent._Elements, _Name, out index) == null)
+				if (FindByName(ParentElement._elements, ElementName, out index) == null)
 				{
-					_Parent._Elements.Insert(index, this);
+					ParentElement._elements.Insert(index, this);
 				}
 				else
 				{
-					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
+					throw new DuplicatesFileNameException();
 				}
 			}
 
 			return true;
 		}
 
-		private void ChangeParent(DirElement NewParent)
+		private void ChangeParent(DirElement newParent)
 		{
-			if ((NewParent == null) || (NewParent == this))
+			if ((newParent == null) || (newParent == this))
 			{
 				return;
 			}
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				//bool writeToFile = ((_Parent != NewParent) && (NewParent.ID != _ParentID));
-
-				if (FindByName(NewParent._Elements, _Name) != null)
+				if (FindByName(newParent._elements, ElementName) != null)
 				{
 					return;
 				}
 
-				if (FindSubDirByID(NewParent.ID) != null)
+				if (FindSubDirByID(newParent.Id) != null)
 				{
-					throw new RecursiveFolderAttachmentException("Невірна вкладеність папок");
+					throw new RecursiveFolderAttachmentException();
 				}
 
 				int index;
-				if (_Parent != null)
+				if (ParentElement != null)
 				{
-					if (FindByName((_Parent as DirElement)._Elements, _Name, out index) != null)
+					if (FindByName((ParentElement as DirElement)._elements, ElementName, out index) != null)
 					{
-						(_Parent as DirElement)._Elements.RemoveAt(index);
+						(ParentElement as DirElement)._elements.RemoveAt(index);
 					}
 				}
 
-				bool writeToFile = _ParentID != NewParent.ID;
-				_Parent = NewParent;
-				_ParentID = NewParent.ID;
+				bool writeToFile = ParentElementId != newParent.Id;
+				ParentElement = newParent;
+				ParentElementId = newParent.Id;
 
-				if (FindByName((_Parent as DirElement)._Elements, _Name, out index) == null)
+				if (FindByName((ParentElement as DirElement)._elements, ElementName, out index) == null)
 				{
-					(_Parent as DirElement)._Elements.Insert(index, this);
+					(ParentElement as DirElement)._elements.Insert(index, this);
 				}
 				else
 				{
-					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
+					throw new DuplicatesFileNameException();
 				}
 
 				if (writeToFile)
@@ -369,31 +358,31 @@ namespace CryptoDataBase.CDB
 
 		public void RefreshChildOrders()
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				_Elements.Sort(new NameComparer());
+				_elements.Sort(new NameComparer());
 			}
 		}
 
 		protected override void Rename(string newName)
 		{
-			if ((_Parent == null) || (String.IsNullOrEmpty(newName)) || (newName == Name))
+			if ((ParentElement == null) || (String.IsNullOrEmpty(newName)) || (newName == Name))
 			{
 				return;
 			}
 
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				Element duplicate = FindByName((_Parent as DirElement)._Elements, newName);
+				Element duplicate = FindByName((ParentElement as DirElement)._elements, newName);
 				if ((duplicate != null) && (duplicate != this))
 				{
 					return;
 				}
 
-				lock (dataRepository.writeLock)
+				lock (DataRepository.WriteLock)
 				{
-					_Name = newName;
-					(_Parent as DirElement).RefreshChildOrders(); //ускорити це!
+					ElementName = newName;
+					(ParentElement as DirElement).RefreshChildOrders();
 					SaveInf();
 
 					base.Rename(newName);
@@ -403,15 +392,13 @@ namespace CryptoDataBase.CDB
 
 		public bool RemoveElementFromElementsList(Element element)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				int index;
-
 				try
 				{
-					if (FindByName(_Elements, element.Name, out index) != null)
+					if (FindByName(_elements, element.Name, out int index) != null)
 					{
-						_Elements.RemoveAt(index);
+						_elements.RemoveAt(index);
 					}
 				}
 				catch
@@ -425,51 +412,46 @@ namespace CryptoDataBase.CDB
 
 		public bool InsertElementToElementsList(Element element)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				int index;
-
-				if (FindByName(_Elements, element.Name, out index) == null)
+				if (FindByName(_elements, element.Name, out int index) == null)
 				{
-					_Elements.Insert(index, element);
+					_elements.Insert(index, element);
 				}
 				else
 				{
-					throw new DuplicatesFileNameException("Елемент з такою назвою в цьому списку вже є!");
+					throw new DuplicatesFileNameException();
 				}
 			}
-
 
 			return true;
 		}
 
 		// Пошук в папці по імені файла
-		public bool FileExists(string Name)
+		public bool FileExists(string name)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				return _Elements.BinarySearch(new DirElement(Name), new NameComparer()) >= 0;
+				return _elements.BinarySearch(new DirElement(name), new NameComparer()) >= 0;
 			}
 		}
 
 		//Пошук підпапки по ID
-		private DirElement FindSubDirByID(UInt64 ID)
+		private DirElement FindSubDirByID(ulong id)
 		{
-			DirElement result;
-
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (DirElement element in _Elements.Where(x => (x.Type == ElementType.Dir)))
+				foreach (DirElement element in _elements.Where(x => (x.Type == ElementType.Dir)))
 				{
-					if (element.ID == ID)
+					if (element.Id == id)
 					{
 						return element;
 					}
 
-					result = element.FindSubDirByID(ID);
-					if (result != null)
+					DirElement dir = element.FindSubDirByID(id);
+					if (dir != null)
 					{
-						return result;
+						return dir;
 					}
 				}
 			}
@@ -478,35 +460,33 @@ namespace CryptoDataBase.CDB
 		}
 
 		//Шукає в сортованому по Name списку
-		public Element FindByName(string Name)
+		public Element FindByName(string name)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				int index = _Elements.BinarySearch(new DirElement(Name), new NameComparer());
-				Element result = index >= 0 ? _Elements[index] : null;
+				int index = _elements.BinarySearch(new DirElement(name), new NameComparer());
 
-				return result;
+				return index >= 0 ? _elements[index] : null;
 			}
 		}
 
 		//Шукає в сортованому по Name списку
-		private Element FindByName(List<Element> elements, string Name)
+		private Element FindByName(List<Element> elements, string name)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				int index = elements.BinarySearch(new DirElement(Name), new NameComparer());
-				Element result = index >= 0 ? elements[index] : null;
+				int index = elements.BinarySearch(new DirElement(name), new NameComparer());
 
-				return result;
+				return index >= 0 ? elements[index] : null;
 			}
 		}
 
 		//Шукає в сортованому по Name списку
-		private Element FindByName(List<Element> elements, string Name, out int index)
+		private Element FindByName(List<Element> elements, string name, out int index)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				index = elements.BinarySearch(new DirElement(Name), new NameComparer());
+				index = elements.BinarySearch(new DirElement(name), new NameComparer());
 				Element result = index >= 0 ? elements[index] : null;
 				index = index < 0 ? Math.Abs(index) - 1 : index;
 
@@ -514,28 +494,28 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		public List<Element> FindByName(string Name, bool FindAsTags = false, bool AllTagsRequired = false, bool FindInSubDirectories = true)
+		public List<Element> FindByName(string name, bool findAsTags = false, bool allTagsRequired = false, bool findInSubDirectories = true)
 		{
 			List<Element> result = new List<Element>();
 
-			if (FindAsTags)
+			if (findAsTags)
 			{
-				string[] tags = Name.Split(' ');
-				_FindAsTags(result, tags, AllTagsRequired, FindInSubDirectories);
+				string[] tags = name.Split(' ');
+				FindAsTags(result, tags, allTagsRequired, findInSubDirectories);
 			}
 			else
 			{
-				_Find(result, Name, FindInSubDirectories);
+				Find(result, name, findInSubDirectories);
 			}
 
 			return result;
 		}
 
-		private void _FindAsTags(List<Element> resultList, string[] tags, bool allTagsRequired, bool FindInSubDirectories)
+		private void FindAsTags(List<Element> resultList, string[] tags, bool allTagsRequired, bool findInSubDirectories)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					int coincidencesNumber = 0;
 
@@ -560,42 +540,40 @@ namespace CryptoDataBase.CDB
 						}
 					}
 
-					if ((element is DirElement) && (FindInSubDirectories))
+					if ((element is DirElement) && (findInSubDirectories))
 					{
-						(element as DirElement)._FindAsTags(resultList, tags, allTagsRequired, FindInSubDirectories);
+						(element as DirElement).FindAsTags(resultList, tags, allTagsRequired, findInSubDirectories);
 					}
 				}
 			}
 		}
 
-		private void _Find(List<Element> resultList, string Name, bool FindInSubDirectories)
+		private void Find(List<Element> resultList, string name, bool findInSubDirectories)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
-					if (element.Name.IndexOf(Name, StringComparison.CurrentCultureIgnoreCase) >= 0)
+					if (element.Name.IndexOf(name, StringComparison.CurrentCultureIgnoreCase) >= 0)
 					{
 						resultList.Add(element);
 					}
 
-					if ((element is DirElement) && (FindInSubDirectories))
+					if ((element is DirElement) && (findInSubDirectories))
 					{
-						(element as DirElement)._Find(resultList, Name, FindInSubDirectories);
+						(element as DirElement).Find(resultList, name, findInSubDirectories);
 					}
 				}
 			}
 		}
 
-		public DirElement CreateDir(string Name, Bitmap Icon)
+		public DirElement CreateDir(string name, Bitmap icon)
 		{
-			int index;
-
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (FindByName(_Elements, Name, out index) != null)
+				if (FindByName(_elements, name, out int index) != null)
 				{
-					throw new DuplicatesFileNameException("Не можна створити папку. Файл з таким ім’ям вже є.");
+					throw new DuplicatesFileNameException();
 				}
 			}
 
@@ -603,82 +581,82 @@ namespace CryptoDataBase.CDB
 
 			try
 			{
-				dir = new DirElement(this, dataRepository, Name, _addElementLocker, _changeElementsLocker, Icon);
+				dir = new DirElement(this, DataRepository, name, AddElementLocker, ChangeElementsLocker, icon);
 			}
 			catch
 			{
-				throw new DataWasNotWrittenException("Іконка папки не записалась.");
+				throw new DataWasNotWrittenException();
 			}
 
 			return dir;
 		}
 
-		public DirElement CreateDir(string Name)
+		public DirElement CreateDir(string name)
 		{
-			return CreateDir(Name, null);
+			return CreateDir(name, null);
 		}
 
-		public List<Element> FindAllByIcon(Bitmap image, byte sensative = 0, bool FindInSubDirectories = true)
+		public List<Element> FindAllByIcon(Bitmap image, byte sensative = 0, bool findInSubDirectories = true)
 		{
-			byte[] pHash = GetPHash(image);
+			byte[] pHash = GetIconPHash(image);
 			List<Element> result = new List<Element>();
-			_FindAllByPHash(result, pHash, sensative, FindInSubDirectories);
+			InnerFindAllByPHash(result, pHash, sensative, findInSubDirectories);
 
 			return result;
 		}
 
-		public List<Element> FindAllByPHash(byte[] pHash, byte sensative = 0, bool FindInSubDirectories = true)
+		public List<Element> FindAllByPHash(byte[] pHash, byte sensative = 0, bool findInSubDirectories = true)
 		{
 			List<Element> result = new List<Element>();
-			_FindAllByPHash(result, pHash, sensative, FindInSubDirectories);
+			InnerFindAllByPHash(result, pHash, sensative, findInSubDirectories);
 
 			return result;
 		}
 
-		private void _FindAllByPHash(List<Element> resultList, byte[] pHash, byte sensative, bool FindInSubDirectories)
+		private void InnerFindAllByPHash(List<Element> resultList, byte[] pHash, byte sensative, bool findInSubDirectories)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					if (element.IconSize > 0)
 					{
-						if (ComparePHashes(element.PHash, pHash, sensative))
+						if (ComparePHashes(element.IconPHash, pHash, sensative))
 						{
 							resultList.Add(element);
 						}
 					}
 
-					if ((element is DirElement) && (FindInSubDirectories))
+					if ((element is DirElement) && (findInSubDirectories))
 					{
-						(element as DirElement)._FindAllByPHash(resultList, pHash, sensative, FindInSubDirectories);
+						(element as DirElement).InnerFindAllByPHash(resultList, pHash, sensative, findInSubDirectories);
 					}
 				}
 			}
 		}
 
-		public List<Element> FindByHash(byte[] Hash, bool FindInSubDirectories = true)
+		public List<Element> FindByHash(byte[] hash, bool findInSubDirectories = true)
 		{
 			List<Element> result = new List<Element>();
-			_FindByHash(result, Hash, FindInSubDirectories);
+			InnerFindByHash(result, hash, findInSubDirectories);
 
 			return result;
 		}
 
-		private void _FindByHash(List<Element> resultList, byte[] Hash, bool FindInSubDirectories)
+		private void InnerFindByHash(List<Element> resultList, byte[] hash, bool findInSubDirectories)
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
-					if ((element is FileElement) && (Crypto.CompareHash((element as FileElement).Hash, Hash)))
+					if ((element is FileElement) && (Crypto.CompareHash((element as FileElement).Hash, hash)))
 					{
 						resultList.Add(element);
 					}
 
-					if ((element is DirElement) && (FindInSubDirectories))
+					if ((element is DirElement) && (findInSubDirectories))
 					{
-						(element as DirElement)._FindByHash(resultList, Hash, FindInSubDirectories);
+						(element as DirElement).InnerFindByHash(resultList, hash, findInSubDirectories);
 					}
 				}
 			}
@@ -686,11 +664,11 @@ namespace CryptoDataBase.CDB
 
 		public override bool Delete()
 		{
-			lock (_changeElementsLocker)
+			lock (ChangeElementsLocker)
 			{
-				if (_Delete())
+				if (InnerDelete())
 				{
-					if (_Parent != null)
+					if (ParentElement != null)
 					{
 						Parent.RemoveElementFromElementsList(this);
 					}
@@ -702,26 +680,26 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private bool _Delete()
+		private bool InnerDelete()
 		{
 			try
 			{
-				header.Delete();
-				dataRepository.AddFreeSpace(_IconStartPos, Crypto.GetMod16(_IconSize));
+				Header.Delete();
+				DataRepository.AddFreeSpace(IconStartPos, Crypto.GetMod16(IconSizeInner));
 
-				foreach (var element in _Elements)
+				foreach (var element in _elements)
 				{
 					if (element is FileElement)
 					{
-						(element as FileElement)._Delete();
+						(element as FileElement).InnerDelete();
 					}
 					else if (element is DirElement)
 					{
-						(element as DirElement)._Delete();
+						(element as DirElement).InnerDelete();
 					}
 				}
 
-				_Elements.Clear();
+				_elements.Clear();
 			}
 			catch
 			{

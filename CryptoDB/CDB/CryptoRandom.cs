@@ -3,9 +3,9 @@ using System.Security.Cryptography;
 
 namespace CryptoDataBase.CDB
 {
-	static class CryptoRandom
+	public static class CryptoRandom
 	{
-		static public void GetBytes(byte[] buffer)
+		public static void GetBytes(byte[] buffer)
 		{
 			using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
 			{
@@ -13,7 +13,7 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		static public void GetBytes(byte[] buffer, int offset, int count)
+		public static void GetBytes(byte[] buffer, int offset, int count)
 		{
 			using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
 			{
@@ -21,7 +21,7 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		static public UInt64 Random(UInt64 max)
+		public static ulong Random(ulong max)
 		{
 			RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
 			byte[] result = new byte[8];

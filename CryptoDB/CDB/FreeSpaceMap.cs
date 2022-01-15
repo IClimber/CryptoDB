@@ -1,11 +1,12 @@
-﻿using System;
+﻿using CryptoDataBase.CDB.Exceptions;
+using System;
 using System.Collections.Generic;
 
 namespace CryptoDataBase.CDB
 {
 	public class FreeSpaceMap
 	{
-		private Object _freeSpaceMapLocker = new Object();
+		private object _freeSpaceMapLocker = new object();
 		private List<SPoint> _freeSpaceMapSize = new List<SPoint>();
 		private List<SPoint> _freeSpaceMapPos = new List<SPoint>();
 		private bool _realTimeCalculating;
@@ -26,7 +27,7 @@ namespace CryptoDataBase.CDB
 			}
 		}
 
-		private int _GetIndexBySize(UInt64 Size)
+		private int GetIndexBySize(ulong size)
 		{
 			int index = -1;
 			int min = 0,
@@ -35,11 +36,11 @@ namespace CryptoDataBase.CDB
 			while (min <= max)
 			{
 				int mid = (min + max) / 2;
-				if (Size == _freeSpaceMapSize[mid].Size)
+				if (size == _freeSpaceMapSize[mid].Size)
 				{
 					return mid;
 				}
-				else if (Size < _freeSpaceMapSize[mid].Size)
+				else if (size < _freeSpaceMapSize[mid].Size)
 				{
 					max = mid - 1;
 					index = mid;
@@ -49,10 +50,11 @@ namespace CryptoDataBase.CDB
 					min = mid + 1;
 				}
 			}
+
 			return index;
 		}
 
-		private int _GetIndexByPos(UInt64 startPos)
+		private int GetIndexByPos(ulong startPos)
 		{
 			int index = -1;
 			int min = 0;
@@ -75,19 +77,20 @@ namespace CryptoDataBase.CDB
 					index = mid;
 				}
 			}
+
 			return index;
 		}
 
-		private SPoint _SeparateFreeSpacePoint(SPoint sPoint, UInt64 start, UInt64 size)
+		private SPoint SeparateFreeSpacePoint(SPoint sPoint, ulong start, ulong size)
 		{
 			if (size > sPoint.Size)
 			{
-				throw new Exception("Розмір файлу не може бути більше ніж розмір вільного місця");
+				throw new FileIsTooBigException();
 			}
 
 			if (start < sPoint.Start)
 			{
-				throw new Exception("Не туди вставляєш");
+				throw new InvalidFileStartPositionException();
 			}
 
 			if (start > sPoint.Start)
@@ -140,7 +143,7 @@ namespace CryptoDataBase.CDB
 					return;
 				}
 
-				int indexByPos = _GetIndexByPos(start);
+				int indexByPos = GetIndexByPos(start);
 
 				if (indexByPos < 0)
 				{
@@ -148,7 +151,7 @@ namespace CryptoDataBase.CDB
 				}
 
 				SPoint sPoint = _freeSpaceMapPos[indexByPos];
-				SPoint newSPoint = _SeparateFreeSpacePoint(sPoint, start, length);
+				SPoint newSPoint = SeparateFreeSpacePoint(sPoint, start, length);
 
 				_freeSpaceMapSize.Remove(sPoint);
 
@@ -159,33 +162,33 @@ namespace CryptoDataBase.CDB
 					return;
 				}
 
-				_InsertSPointToSizeMap(sPoint);
+				InsertSPointToSizeMap(sPoint);
 
 				if (newSPoint != null)
 				{
-					_InsertSPointToSizeMap(newSPoint);
+					InsertSPointToSizeMap(newSPoint);
 					_freeSpaceMapPos.Insert(indexByPos + 1, newSPoint);
 				}
 			}
 		}
 
-		public ulong GetFreeSpacePos(UInt64 size, long fileSize, bool withWrite = true)
+		public ulong GetFreeSpacePos(ulong size, long fileSize, bool withWrite = true)
 		{
 			lock (_freeSpaceMapLocker)
 			{
 				if (size == 0)
 				{
-					return CryptoRandom.Random(UInt64.MaxValue - 2) + 2;
+					return CryptoRandom.Random(ulong.MaxValue - 2) + 2;
 				}
 
 				if (!_realTimeCalculating && !_isAnalysed)
 				{
-					throw new Exception("Не було проведено аналіз вільного місця. Використай метод FreeSpaceAnalyse()");
+					throw new FreeSpaceMapWasNotCalculatedException("First you have to use the method FreeSpaceAnalyse()");
 				}
 
-				UInt64 result = (ulong)fileSize;
+				ulong result = (ulong)fileSize;
 
-				int indexBySize = _GetIndexBySize(size);
+				int indexBySize = GetIndexBySize(size);
 
 				if (indexBySize < 0)
 				{
@@ -205,7 +208,7 @@ namespace CryptoDataBase.CDB
 
 				if ((sPoint.Size - size) == 0)
 				{
-					int indexByPos = _GetIndexByPos(sPoint.Start);
+					int indexByPos = GetIndexByPos(sPoint.Start);
 					_freeSpaceMapPos.RemoveAt(indexByPos);
 					return result;
 				}
@@ -213,7 +216,7 @@ namespace CryptoDataBase.CDB
 				sPoint.Start += size;
 				sPoint.Size -= size;
 
-				_InsertSPointToSizeMap(sPoint);
+				InsertSPointToSizeMap(sPoint);
 
 				return result;
 			}
@@ -230,7 +233,7 @@ namespace CryptoDataBase.CDB
 
 				if (!_realTimeCalculating && !_isAnalysed)
 				{
-					throw new Exception("Не було проведено аналіз вільного місця. Використай метод FreeSpaceAnalyse()");
+					throw new FreeSpaceMapWasNotCalculatedException("First you have to use the method FreeSpaceAnalyse()");
 				}
 
 				if (_freeSpaceMapPos.Count == 0)
@@ -242,7 +245,7 @@ namespace CryptoDataBase.CDB
 					return true;
 				}
 
-				int indexByPos = _GetIndexByPos(start);
+				int indexByPos = GetIndexByPos(start);
 
 				SPoint prevPoint = null;
 				SPoint nextPoint = null;
@@ -266,7 +269,7 @@ namespace CryptoDataBase.CDB
 				{
 					prevPoint.Size += length + nextPoint.Size;
 					_freeSpaceMapSize.Remove(prevPoint);
-					_InsertSPointToSizeMap(prevPoint);
+					InsertSPointToSizeMap(prevPoint);
 
 					_freeSpaceMapPos.RemoveAt(indexByPos + 1);
 					_freeSpaceMapSize.Remove(nextPoint);
@@ -278,7 +281,7 @@ namespace CryptoDataBase.CDB
 				{
 					prevPoint.Size += length;
 					_freeSpaceMapSize.Remove(prevPoint);
-					_InsertSPointToSizeMap(prevPoint);
+					InsertSPointToSizeMap(prevPoint);
 
 					return true;
 				}
@@ -288,7 +291,7 @@ namespace CryptoDataBase.CDB
 					nextPoint.Start -= length;
 					nextPoint.Size += length;
 					_freeSpaceMapSize.Remove(nextPoint);
-					_InsertSPointToSizeMap(nextPoint);
+					InsertSPointToSizeMap(nextPoint);
 
 					return true;
 				}
@@ -296,13 +299,13 @@ namespace CryptoDataBase.CDB
 				SPoint newSPoint = new SPoint(start, length);
 
 				_freeSpaceMapPos.Insert(indexByPos + 1, newSPoint);
-				_InsertSPointToSizeMap(newSPoint);
+				InsertSPointToSizeMap(newSPoint);
 
 				return true;
 			}
 		}
 
-		private void _InsertSPointToSizeMap(SPoint sPoint)
+		private void InsertSPointToSizeMap(SPoint sPoint)
 		{
 			int indexBySize = _freeSpaceMapSize.BinarySearch(sPoint, new PSizeComparer());
 			indexBySize = indexBySize < 0 ? Math.Abs(indexBySize) - 1 : indexBySize;
@@ -310,9 +313,9 @@ namespace CryptoDataBase.CDB
 			_freeSpaceMapSize.Insert(indexBySize, sPoint);
 		}
 
-		public bool IsFreeSpace(ulong Start, ulong Size)
+		public bool IsFreeSpace(ulong start, ulong size)
 		{
-			int index = _GetIndexByPos(Start);
+			int index = GetIndexByPos(start);
 			SPoint sPoint = index >= 0 ? _freeSpaceMapPos[index] : null;
 
 			if (sPoint == null)
@@ -320,7 +323,7 @@ namespace CryptoDataBase.CDB
 				return false;
 			}
 
-			if (sPoint.Start <= Start && (sPoint.Start + sPoint.Size) >= (Start + Size))
+			if (sPoint.Start <= start && (sPoint.Start + sPoint.Size) >= (start + size))
 			{
 				return true;
 			}
@@ -328,7 +331,7 @@ namespace CryptoDataBase.CDB
 			return false;
 		}
 
-		public void FreeSpaceAnalyse(UInt64 fileSize)
+		public void FreeSpaceAnalyse(ulong fileSize)
 		{
 			if (_realTimeCalculating || _isAnalysed)
 			{
@@ -339,8 +342,8 @@ namespace CryptoDataBase.CDB
 			{
 				_freeSpaceMapPos.Sort(new PosComparer());
 				int count = 0;
-				UInt64 start = 0;
-				UInt64 size = 0;
+				ulong start = 0;
+				ulong size = 0;
 
 				if (_freeSpaceMapPos.Count == 0)
 				{

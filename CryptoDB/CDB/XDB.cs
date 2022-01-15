@@ -4,37 +4,36 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace CryptoDataBase.CDB
 {
 	class XDB : DirElement, IDisposable
 	{
-		const byte CURRENT_VERSION = 5;
+		public const byte CurrentVersion = 5;
 
-		AesCryptoServiceProvider AES;
-		HeaderRepository headerRepository;
-		FileStream _headersFileStream;
-		FileStream _dataFileStream;
 		public readonly bool IsReadOnly = true;
+		private AesCryptoServiceProvider _aes;
+		private HeaderRepository _headerRepository;
+		private FileStream _headersFileStream;
+		private FileStream _dataFileStream;
 
-		public XDB(string FileName, string Password, HeaderRepository.ProgressCallback Progress = null)
+		public XDB(string fileName, string password, HeaderRepository.ProgressCallback progress = null)
 		{
-			Progress?.Invoke(0, "Creating AES key");
+			progress?.Invoke(0, "Creating AES key");
 
-			_addElementLocker = new Object();
-			_changeElementsLocker = new Object();
+			AddElementLocker = new object();
+			ChangeElementsLocker = new object();
 
-			string DataFilename = Path.GetDirectoryName(FileName) + "\\" + Path.GetFileNameWithoutExtension(FileName) + ".Data";
+			string dataFilePath = Path.GetDirectoryName(fileName) + "\\" + Path.GetFileNameWithoutExtension(fileName) + ".Data";
 
 			try
 			{
-				bool writeVersion = !File.Exists(FileName);
-				_headersFileStream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-				_dataFileStream = new FileStream(DataFilename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+				bool writeVersion = !File.Exists(fileName);
+				_headersFileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+				_dataFileStream = new FileStream(dataFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 				if (writeVersion)
 				{
-					_headersFileStream.WriteByte(CURRENT_VERSION);
+					_headersFileStream.WriteByte(CurrentVersion);
 				}
 				IsReadOnly = false;
 			}
@@ -45,8 +44,8 @@ namespace CryptoDataBase.CDB
 					_headersFileStream.Close();
 				}
 
-				_headersFileStream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
-				_dataFileStream = new FileStream(DataFilename, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+				_headersFileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+				_dataFileStream = new FileStream(dataFilePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
 				IsReadOnly = true;
 			}
 
@@ -54,7 +53,7 @@ namespace CryptoDataBase.CDB
 
 			try
 			{
-				headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, Password);
+				_headerRepository = HeaderRepositoryFactory.GetRepositoryByVersion(version, _headersFileStream, password);
 			}
 			catch (Exception exception)
 			{
@@ -64,24 +63,24 @@ namespace CryptoDataBase.CDB
 				throw exception;
 			}
 
-			AES = headerRepository.GetDek();
-			dataRepository = new DataRepository(_dataFileStream, AES);
-			header = new Header(headerRepository, ElementType.Dir);
+			_aes = _headerRepository.GetDek();
+			DataRepository = new DataRepository(_dataFileStream, _aes);
+			Header = new Header(_headerRepository, ElementType.Dir);
 
 			try
 			{
-				ReadFileStruct(Progress);
+				ReadFileStruct(progress);
 			}
 			catch (Exception)
 			{
-				throw new ReadingDataException("Помилка читання даних. Можливо невірний пароль.");
+				throw new ReadingDataException("Wrong password");
 			}
 		}
 
-		public void ExportStructToFile(string FileName, string password)
+		public void ExportStructToFile(string fileName, string password)
 		{
-			var stream = new FileStream(FileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
-			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CURRENT_VERSION, stream, password, AES.Key);
+			var stream = new FileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
+			var repository = HeaderRepositoryFactory.GetRepositoryByVersion(CurrentVersion, stream, password, _aes.Key);
 			List<Element> allElements = new List<Element>();
 			AddElementsToList(Elements, allElements);
 			allElements.Sort(new TimeComparer());
@@ -92,12 +91,12 @@ namespace CryptoDataBase.CDB
 
 		public bool CanChangePassword()
 		{
-			return headerRepository.CanChangePassword();
+			return _headerRepository.CanChangePassword();
 		}
 
 		public void ChangePassword(string newPassword)
 		{
-			headerRepository.ChangePassword(newPassword);
+			_headerRepository.ChangePassword(newPassword);
 		}
 
 		private void AddElementsToList(IList<Element> inputElementsList, List<Element> outputElementsList)
@@ -122,13 +121,13 @@ namespace CryptoDataBase.CDB
 			return buf[0];
 		}
 
-		private void ReadFileStruct(HeaderRepository.ProgressCallback Progress)
+		private void ReadFileStruct(HeaderRepository.ProgressCallback progress)
 		{
-			List<DirElement> dirs = new List<DirElement>(); //Потім зробити приватним
+			List<DirElement> dirs = new List<DirElement>();
 			List<Element> elements = new List<Element>();
 			dirs.Add(this);
 
-			List<Header> headers = headerRepository.ReadFileStruct(Progress);
+			List<Header> headers = _headerRepository.ReadFileStruct(progress);
 			int index = 0;
 			double percent = 0;
 			int lastProgress = 0;
@@ -138,59 +137,58 @@ namespace CryptoDataBase.CDB
 				index++;
 
 				percent = index / (double)headers.Count * 100.0;
-				if ((Progress != null) && (lastProgress != (int)percent))
+				if ((progress != null) && (lastProgress != (int)percent))
 				{
-					Progress(percent, "Parsing elements");
+					progress(percent, "Parsing elements");
 					lastProgress = (int)percent;
 				}
 			}
 
-			dataRepository.FreeSpaceAnalyse();
+			DataRepository.FreeSpaceAnalyse();
 
-			FillParents(dirs, elements, Progress);
+			FillParents(dirs, elements, progress);
 			elements.Clear();
 			dirs.Clear();
 		}
 
-		private void AddElementByHeader(List<DirElement> DirsList, List<Element> elementList, Header header)
+		private void AddElementByHeader(List<DirElement> dirsList, List<Element> elementList, Header header)
 		{
 			Element element = null;
-			if (header.ElType == ElementType.File)
+			if (header.ElementType == ElementType.File)
 			{
-				element = new FileElement(header, dataRepository, _addElementLocker, _changeElementsLocker);
+				element = new FileElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
 			}
-			else if (header.ElType == ElementType.Dir)
+			else if (header.ElementType == ElementType.Dir)
 			{
-				element = new DirElement(header, dataRepository, _addElementLocker, _changeElementsLocker);
+				element = new DirElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
 			}
 
 			elementList.Add(element);
 			if (element is DirElement)
 			{
-				DirsList.Add(element as DirElement);
+				dirsList.Add(element as DirElement);
 			}
 
 			if ((element is FileElement) && ((element as FileElement).Size > 0))
 			{
-				dataRepository.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
+				DataRepository.RemoveFreeSpace((element as FileElement).FileStartPos, Crypto.GetMod16((element as FileElement).Size));
 			}
 
 			if (element.IconSize > 0)
 			{
-				dataRepository.RemoveFreeSpace(element.IconStartPos, Crypto.GetMod16(element.IconSize));
+				DataRepository.RemoveFreeSpace(element.IconStartPosition, Crypto.GetMod16(element.IconSize));
 			}
 		}
 
-		private void FillParents(List<DirElement> dirsList, List<Element> elementList, HeaderRepository.ProgressCallback Progress)
+		private void FillParents(List<DirElement> dirsList, List<Element> elementList, HeaderRepository.ProgressCallback progress)
 		{
 			dirsList.Sort(new IDComparer());
 			int index = 0;
 			int count = elementList.Count;
-			double percent = 0;
 			int lastProgress = 0;
 			foreach (var element in elementList)
 			{
-				DirElement parent = FindParentByID(dirsList, element.ParentID);
+				DirElement parent = FindParentByID(dirsList, element.ParentId);
 				try
 				{
 					element.SetVirtualParent(parent != null ? parent : this);
@@ -199,19 +197,19 @@ namespace CryptoDataBase.CDB
 				{ }
 				index++;
 
-				percent = index / (double)count * 100.0;
-				if ((Progress != null) && (lastProgress != (int)percent))
+				double percent = index / (double)count * 100.0;
+				if ((progress != null) && (lastProgress != (int)percent))
 				{
-					Progress(percent, "Creating elements structure");
+					progress(percent, "Creating elements structure");
 					lastProgress = (int)percent;
 				}
 			}
 		}
 
 		//Шукає в сортованому по ID списку
-		private DirElement FindParentByID(List<DirElement> dirs, UInt64 ParentID)
+		private DirElement FindParentByID(List<DirElement> dirs, ulong parentId)
 		{
-			var dir = new DirElement(ParentID);
+			var dir = new DirElement(parentId);
 			int index = dirs.BinarySearch(dir, new IDComparer());
 
 			return index >= 0 ? dirs[index] : null;
@@ -219,8 +217,8 @@ namespace CryptoDataBase.CDB
 
 		public void Dispose()
 		{
-			dataRepository.Dispose();
-			headerRepository.Dispose();
+			DataRepository.Dispose();
+			_headerRepository.Dispose();
 		}
 	}
 }

@@ -9,7 +9,7 @@ namespace CryptoDataBase.CDB
 	{
 		int IComparer<DirElement>.Compare(DirElement x, DirElement y)
 		{
-			return x.ID == y.ID ? 0 : x.ID < y.ID ? -1 : 1;
+			return x.Id == y.Id ? 0 : x.Id < y.Id ? -1 : 1;
 		}
 	}
 
@@ -61,23 +61,6 @@ namespace CryptoDataBase.CDB
 		int IComparer<SPoint>.Compare(SPoint x, SPoint y)
 		{
 			return x.Size < y.Size ? -1 : x.Size > y.Size ? 1 : 0;
-		}
-	}
-
-	public class PHashComparer : IComparer<Element>
-	{
-		private byte sensative = 0;
-
-		public PHashComparer(byte sensative = 0)
-		{
-			this.sensative = sensative;
-		}
-
-		int IComparer<Element>.Compare(Element x, Element y)
-		{
-			byte dist1 = Element.GetHammingDistance(BitConverter.ToUInt64(x.PHash, 0), 0);
-			byte dist2 = Element.GetHammingDistance(BitConverter.ToUInt64(y.PHash, 0), 0);
-			return dist1 < dist2 ? -1 : dist1 > dist2 ? 1 : 0;
 		}
 	}
 }
