@@ -31,6 +31,7 @@ namespace CryptoDataBase.Services
 			{
 				try
 				{
+					extractor.Dispose();
 					extractor = new SevenZipExtractor(fileName, getUserPasswordCallback(title));
 					var data = extractor.ArchiveFileData;
 				}
