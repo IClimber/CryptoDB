@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace CryptoDataBase.CryptoContainer
 {
-    class CryptoContainer : DirElement, IDisposable
+    class CryptoContainer : DirectoryElement, IDisposable
     {
         public const byte CurrentVersion = 5;
 
@@ -69,7 +69,7 @@ namespace CryptoDataBase.CryptoContainer
 
             _aes = _headerRepository.GetDek();
             DataRepository = new DataRepository(_dataFileStream, _aes);
-            Header = new Header(_headerRepository, ElementType.Dir);
+            Header = new Header(_headerRepository, ElementType.Directory);
 
             try
             {
@@ -109,9 +109,9 @@ namespace CryptoDataBase.CryptoContainer
 
             foreach (Element element in inputElementsList)
             {
-                if (element is DirElement)
+                if (element is DirectoryElement)
                 {
-                    AddElementsToList((element as DirElement).Elements, outputElementsList);
+                    AddElementsToList((element as DirectoryElement).Elements, outputElementsList);
                 }
             }
         }
@@ -127,9 +127,9 @@ namespace CryptoDataBase.CryptoContainer
 
         private void ReadFileStruct(HeaderRepository.ProgressCallback progress)
         {
-            List<DirElement> dirs = new List<DirElement>();
+            List<DirectoryElement> directories = new List<DirectoryElement>();
             List<Element> elements = new List<Element>();
-            dirs.Add(this);
+            directories.Add(this);
 
             List<Header> headers = _headerRepository.ReadFileStruct(progress);
             int index = 0;
@@ -137,7 +137,7 @@ namespace CryptoDataBase.CryptoContainer
             int lastProgress = 0;
             foreach (Header header in headers)
             {
-                AddElementByHeader(dirs, elements, header);
+                AddElementByHeader(directories, elements, header);
                 index++;
 
                 percent = index / (double)headers.Count * 100.0;
@@ -150,27 +150,27 @@ namespace CryptoDataBase.CryptoContainer
 
             DataRepository.FreeSpaceAnalyse();
 
-            FillParents(dirs, elements, progress);
+            FillParents(directories, elements, progress);
             elements.Clear();
-            dirs.Clear();
+            directories.Clear();
         }
 
-        private void AddElementByHeader(List<DirElement> dirsList, List<Element> elementList, Header header)
+        private void AddElementByHeader(List<DirectoryElement> directoriesList, List<Element> elementList, Header header)
         {
             Element element = null;
             if (header.ElementType == ElementType.File)
             {
                 element = new FileElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
             }
-            else if (header.ElementType == ElementType.Dir)
+            else if (header.ElementType == ElementType.Directory)
             {
-                element = new DirElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
+                element = new DirectoryElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
             }
 
             elementList.Add(element);
-            if (element is DirElement)
+            if (element is DirectoryElement)
             {
-                dirsList.Add(element as DirElement);
+                directoriesList.Add(element as DirectoryElement);
             }
 
             if ((element is FileElement) && ((element as FileElement).Size > 0))
@@ -184,15 +184,15 @@ namespace CryptoDataBase.CryptoContainer
             }
         }
 
-        private void FillParents(List<DirElement> dirsList, List<Element> elementList, HeaderRepository.ProgressCallback progress)
+        private void FillParents(List<DirectoryElement> directoriesList, List<Element> elementList, HeaderRepository.ProgressCallback progress)
         {
-            dirsList.Sort(new IDComparer());
+            directoriesList.Sort(new IDComparer());
             int index = 0;
             int count = elementList.Count;
             int lastProgress = 0;
             foreach (var element in elementList)
             {
-                DirElement parent = FindParentByID(dirsList, element.ParentId);
+                DirectoryElement parent = FindParentByID(directoriesList, element.ParentId);
                 try
                 {
                     element.SetVirtualParent(parent != null ? parent : this);
@@ -211,12 +211,12 @@ namespace CryptoDataBase.CryptoContainer
         }
 
         //Шукає в сортованому по ID списку
-        private DirElement FindParentByID(List<DirElement> dirs, ulong parentId)
+        private DirectoryElement FindParentByID(List<DirectoryElement> directories, ulong parentId)
         {
-            var dir = new DirElement(parentId);
-            int index = dirs.BinarySearch(dir, new IDComparer());
+            var directory = new DirectoryElement(parentId);
+            int index = directories.BinarySearch(directory, new IDComparer());
 
-            return index >= 0 ? dirs[index] : null;
+            return index >= 0 ? directories[index] : null;
         }
 
         public void Dispose()

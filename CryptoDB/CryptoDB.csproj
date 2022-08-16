@@ -162,7 +162,7 @@
     <Compile Include="CryptoContainer\Helpers\RandomHelper.cs" />
     <Compile Include="CryptoContainer\Models\Element.cs" />
     <Compile Include="CryptoContainer\Types\ElementType.cs" />
-    <Compile Include="CryptoContainer\Models\DirElement.cs" />
+    <Compile Include="CryptoContainer\Models\DirectoryElement.cs" />
     <Compile Include="CryptoContainer\Exceptions\DataWasNotWrittenException.cs" />
     <Compile Include="CryptoContainer\Models\FileElement.cs" />
     <Compile Include="CryptoContainer\Services\FreeSpaceMapService.cs" />

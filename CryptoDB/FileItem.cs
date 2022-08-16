@@ -6,7 +6,7 @@ namespace CryptoDataBase
 {
     class FileItem
 	{
-		public DirElement parentElement;
+		public DirectoryElement parentElement;
 		public List<FileItem> children = new List<FileItem>();
 		public string name;
 		public FileItemType type;
@@ -14,12 +14,12 @@ namespace CryptoDataBase
 		//public uint SubFilesCount { get { return _fileCount; } }
 		private uint _fileCount = 0;
 
-		public FileItem(string file, DirElement parentElement = null) : this(file, parentElement, 0)
+		public FileItem(string file, DirectoryElement parentElement = null) : this(file, parentElement, 0)
 		{
 
 		}
 
-		private FileItem(string file, DirElement parentElement = null, uint count = 0)
+		private FileItem(string file, DirectoryElement parentElement = null, uint count = 0)
 		{
 			this.parentElement = parentElement;
 			name = file;
@@ -27,7 +27,7 @@ namespace CryptoDataBase
 
 			if (Directory.Exists(file))
 			{
-				type = FileItemType.Dir;
+				type = FileItemType.Directory;
 
 				List<string> items = new List<string>();
 				items.AddRange(Directory.GetDirectories(file));
@@ -50,7 +50,7 @@ namespace CryptoDataBase
 
 		private int _SubFilesCount(FileItem fileItem, int count)
 		{
-			if (fileItem.type == FileItemType.Dir)
+			if (fileItem.type == FileItemType.Directory)
 			{
 				foreach (var item in children)
 				{
@@ -69,6 +69,6 @@ namespace CryptoDataBase
 	public enum FileItemType
 	{
 		File = 0,
-		Dir = 1
+		Directory = 1
 	}
 }
