@@ -1,10 +1,10 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using System.Collections.Generic;
 using System.IO;
 
 namespace CryptoDataBase
 {
-	class FileItem
+    class FileItem
 	{
 		public DirElement parentElement;
 		public List<FileItem> children = new List<FileItem>();

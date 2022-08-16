@@ -105,21 +105,29 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="CDB\Exceptions\FreeSpaceMapWasNotCalculatedException.cs" />
-    <Compile Include="CDB\Exceptions\InvalidFileStartPositionException.cs" />
-    <Compile Include="CDB\Exceptions\FileIsTooBigException.cs" />
-    <Compile Include="CDB\Exceptions\DuplicatesFileNameException.cs" />
-    <Compile Include="CDB\Exceptions\UnsupportedMethodException.cs" />
-    <Compile Include="CDB\Exceptions\UnsupportedVersionException.cs" />
-    <Compile Include="CDB\Exceptions\ReadingDataException.cs" />
-    <Compile Include="CDB\Exceptions\RecursiveFolderAttachmentException.cs" />
-    <Compile Include="CDB\Exceptions\HeaderWasNotWrittenException.cs" />
-    <Compile Include="CDB\Repositories\DataRepository.cs" />
-    <Compile Include="CDB\Repositories\HeaderRepositoryFactory.cs" />
-    <Compile Include="CDB\Repositories\HeaderStreamRepositoryV5.cs" />
-    <Compile Include="CDB\Repositories\HeaderStreamRepositoryV4.cs" />
-    <Compile Include="CDB\Repositories\HeaderStreamRepositoryV3.cs" />
-    <Compile Include="CDB\Repositories\HeaderRepository.cs" />
+    <Compile Include="CryptoContainer\Exceptions\FreeSpaceMapWasNotCalculatedException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\InvalidFileStartPositionException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\FileIsTooBigException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\DuplicatesFileNameException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\UnsupportedMethodException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\UnsupportedVersionException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\ReadingDataException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\RecursiveFolderAttachmentException.cs" />
+    <Compile Include="CryptoContainer\Exceptions\HeaderWasNotWrittenException.cs" />
+    <Compile Include="CryptoContainer\Comparers\IDComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\NameComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\ExtComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\SPointPositionComparer.cs" />
+    <Compile Include="CryptoContainer\Helpers\HashHelper.cs" />
+    <Compile Include="CryptoContainer\Helpers\MathHelper.cs" />
+    <Compile Include="CryptoContainer\Repositories\DataRepository.cs" />
+    <Compile Include="CryptoContainer\Repositories\HeaderRepositoryFactory.cs" />
+    <Compile Include="CryptoContainer\Repositories\HeaderStreamRepositoryV5.cs" />
+    <Compile Include="CryptoContainer\Repositories\HeaderStreamRepositoryV4.cs" />
+    <Compile Include="CryptoContainer\Repositories\HeaderStreamRepositoryV3.cs" />
+    <Compile Include="CryptoContainer\Repositories\HeaderRepository.cs" />
+    <Compile Include="CryptoContainer\Comparers\SizeComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\TimeComparer.cs" />
     <Compile Include="ClipboardChange.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -149,19 +157,19 @@
     <Compile Include="WpfAnimatedGif\Decoding\GifTrailer.cs" />
     <Compile Include="WpfAnimatedGif\ImageAnimationController.cs" />
     <Compile Include="WpfAnimatedGif\ImageBehavior.cs" />
-    <Compile Include="CDB\Comparers.cs" />
-    <Compile Include="CDB\Crypto.cs" />
-    <Compile Include="CDB\CryptoRandom.cs" />
-    <Compile Include="CDB\Element.cs" />
-    <Compile Include="CDB\ElementType.cs" />
-    <Compile Include="CDB\DirElement.cs" />
-    <Compile Include="CDB\Exceptions\DataWasNotWrittenException.cs" />
-    <Compile Include="CDB\FileElement.cs" />
-    <Compile Include="CDB\FreeSpaceMap.cs" />
-    <Compile Include="CDB\Header.cs" />
-    <Compile Include="CDB\SafeStreamAccess.cs" />
-    <Compile Include="CDB\SPoint.cs" />
-    <Compile Include="CDB\XDB.cs" />
+    <Compile Include="CryptoContainer\Comparers\SPointSizeComparer.cs" />
+    <Compile Include="CryptoContainer\Helpers\CryptoHelper.cs" />
+    <Compile Include="CryptoContainer\Helpers\RandomHelper.cs" />
+    <Compile Include="CryptoContainer\Models\Element.cs" />
+    <Compile Include="CryptoContainer\Types\ElementType.cs" />
+    <Compile Include="CryptoContainer\Models\DirElement.cs" />
+    <Compile Include="CryptoContainer\Exceptions\DataWasNotWrittenException.cs" />
+    <Compile Include="CryptoContainer\Models\FileElement.cs" />
+    <Compile Include="CryptoContainer\Services\FreeSpaceMapService.cs" />
+    <Compile Include="CryptoContainer\Models\Header.cs" />
+    <Compile Include="CryptoContainer\Services\MultithreadingStreamService.cs" />
+    <Compile Include="CryptoContainer\Types\SPoint.cs" />
+    <Compile Include="CryptoContainer\CryptoContainer.cs" />
     <Compile Include="DuplicatesWindow.xaml.cs">
       <DependentUpon>DuplicatesWindow.xaml</DependentUpon>
     </Compile>
@@ -294,6 +302,7 @@
   <ItemGroup>
     <Content Include=".gitignore" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\7z.Libs.21.6.0\build\net\7z.Libs.targets" Condition="Exists('..\packages\7z.Libs.21.6.0\build\net\7z.Libs.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
