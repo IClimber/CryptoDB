@@ -82,7 +82,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.File).Count();
 
-			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirectoryElement item in elements.Where(x => x.Type == ElementType.Directory))
 			{
 				result += GetFilesCount(item.Elements.ToList());
 			}
@@ -92,9 +92,9 @@ namespace CryptoDataBase
 
 		private int GetDirsCount(List<Element> elements)
 		{
-			int result = elements.Where(x => x.Type == ElementType.Dir).Count();
+			int result = elements.Where(x => x.Type == ElementType.Directory).Count();
 
-			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirectoryElement item in elements.Where(x => x.Type == ElementType.Directory))
 			{
 				result += GetDirsCount(item.Elements.ToList());
 			}

@@ -20,7 +20,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         public byte[] Hash => _hash;
         public bool IsCompressed => _isCompressed;
         public ulong FileStartPos => _fileStartPos;
-        public override DirElement Parent { get { return ParentElement; } set { ChangeParent(value); } }
+        public override DirectoryElement Parent { get { return ParentElement; } set { ChangeParent(value); } }
 
         private byte[] _fileIV { get { return _innerFileIV == null ? (_innerFileIV = HashHelper.GetMD5(IconIV)) : _innerFileIV; } set { _innerFileIV = value; } }
         private byte[] _innerFileIV;
@@ -36,7 +36,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         }
 
         //Створення файлу вручну
-        public FileElement(DirElement parent, Header parentHeader, DataRepository dataRepository, string name, Stream fileStream, bool isCompressed,
+        public FileElement(DirectoryElement parent, Header parentHeader, DataRepository dataRepository, string name, Stream fileStream, bool isCompressed,
             object addElementLocker, object changeElementsLocker, Bitmap icon = null, MultithreadingStreamService.ProgressCallback progress = null) : base(addElementLocker, changeElementsLocker)
         {
             lock (AddElementLocker)
@@ -199,7 +199,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                 return;
             }
 
-            if ((ParentElement as DirElement).FileExists(newName))
+            if ((ParentElement as DirectoryElement).FileExists(newName))
             {
                 throw new DuplicatesFileNameException();
             }
@@ -209,7 +209,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                 lock (ChangeElementsLocker)
                 {
                     ElementName = newName;
-                    (ParentElement as DirElement).RefreshChildOrders();
+                    (ParentElement as DirectoryElement).RefreshChildOrders();
                     SaveInf();
                 }
 
@@ -262,7 +262,7 @@ namespace CryptoDataBase.CryptoContainer.Models
             }
         }
 
-        public override bool SetVirtualParent(DirElement newParent)
+        public override bool SetVirtualParent(DirectoryElement newParent)
         {
             if (newParent == null)
             {
@@ -290,7 +290,7 @@ namespace CryptoDataBase.CryptoContainer.Models
             return true;
         }
 
-        private void ChangeParent(DirElement newParent, bool withWrite = false)
+        private void ChangeParent(DirectoryElement newParent, bool withWrite = false)
         {
             if (newParent == null)
             {
@@ -306,14 +306,14 @@ namespace CryptoDataBase.CryptoContainer.Models
 
                 if (ParentElement != null)
                 {
-                    (ParentElement as DirElement).RemoveElementFromElementsList(this);
+                    (ParentElement as DirectoryElement).RemoveElementFromElementsList(this);
                 }
 
                 bool writeToFile = ParentElementId != newParent.Id || withWrite;
                 ParentElement = newParent;
                 ParentElementId = newParent.Id;
 
-                (ParentElement as DirElement).InsertElementToElementsList(this);
+                (ParentElement as DirectoryElement).InsertElementToElementsList(this);
 
                 if (writeToFile)
                 {

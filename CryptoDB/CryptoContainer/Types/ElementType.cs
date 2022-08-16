@@ -3,6 +3,6 @@
     public enum ElementType
     {
         File = 0,
-        Dir = 1
+        Directory = 1
     }
 }
