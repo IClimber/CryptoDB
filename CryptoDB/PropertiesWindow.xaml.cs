@@ -1,4 +1,5 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
+using CryptoDataBase.CryptoContainer.Types;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -10,10 +11,10 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Логика взаимодействия для PropertiesWindow.xaml
-	/// </summary>
-	public partial class PropertiesWindow : Window
+    /// <summary>
+    /// Логика взаимодействия для PropertiesWindow.xaml
+    /// </summary>
+    public partial class PropertiesWindow : Window
 	{
 		Element element;
 

@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -12,10 +12,10 @@ using System.Windows.Media.Imaging;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Логика взаимодействия для DocSource.xaml
-	/// </summary>
-	public partial class ImageViewer : Window
+    /// <summary>
+    /// Логика взаимодействия для DocSource.xaml
+    /// </summary>
+    public partial class ImageViewer : Window
 	{
 		public const int STANDART_DPI = 96;
 

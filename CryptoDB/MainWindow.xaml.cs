@@ -1,6 +1,10 @@
 ﻿using ClipboardAssist;
-using CryptoDataBase.CDB;
-using CryptoDataBase.CDB.Exceptions;
+using CryptoDataBase.CryptoContainer;
+using CryptoDataBase.CryptoContainer.Comparers;
+using CryptoDataBase.CryptoContainer.Exceptions;
+using CryptoDataBase.CryptoContainer.Helpers;
+using CryptoDataBase.CryptoContainer.Models;
+using CryptoDataBase.CryptoContainer.Types;
 using CryptoDataBase.Services;
 using ImageConverter;
 using SevenZip;
@@ -20,16 +24,16 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Логика взаимодействия для MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window, INotifyPropertyChanged
+    /// <summary>
+    /// Логика взаимодействия для MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window, INotifyPropertyChanged
 	{
 		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
 		private static string[] ArchiveExtensions = new string[] { ".zip", ".rar", ".7z", ".001", ".tar", ".gzip" };
 		private List<Element> CutList = new List<Element>();
-		XDB xdb;
+        CryptoContainer.CryptoContainer xdb;
 		string password;
 		string databaseFile;
 		public const int THUMBNAIL_SIZE = 200;
@@ -165,7 +169,7 @@ namespace CryptoDataBase
 				{
 					using (FileStream fs = new FileStream(FileName, FileMode.Open, FileAccess.Read))
 					{
-						duplicates = xdb.FindByHash(Crypto.GetMD5(fs));
+						duplicates = xdb.FindByHash(HashHelper.GetMD5(fs));
 					}
 				}
 			}
@@ -547,7 +551,7 @@ namespace CryptoDataBase
 				GC.Collect();
 
 				CanChangePassword = Visibility.Collapsed;
-				xdb = new XDB(databaseFile, e.Argument.ToString(), PerortProgress);
+                xdb = new CryptoContainer.CryptoContainer(databaseFile, e.Argument.ToString(), this.PerortProgress);
 				CanChangePassword = xdb.CanChangePassword() && !IsReadOnly ? Visibility.Visible : Visibility.Collapsed;
 				_faildedOpen = false;
 			}
@@ -1202,13 +1206,13 @@ namespace CryptoDataBase
 		{
 			byte[] buf = new byte[length];
 
-			CryptoRandom.GetBytes(buf);
+			RandomHelper.GetBytes(buf);
 			return BitConverter.ToString(buf).Replace("-", String.Empty).Substring(0, length);
 		}
 
 		public static string GetRandomName(string file_ext = "")
 		{
-			int length = (int)CryptoRandom.Random(64) + 32;
+			int length = (int)RandomHelper.Random(64) + 32;
 			return GetRandomName(length) + file_ext;
 		}
 

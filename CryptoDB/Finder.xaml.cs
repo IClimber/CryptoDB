@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -12,10 +12,10 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Interaction logic for Finder.xaml
-	/// </summary>
-	public partial class Finder : Window
+    /// <summary>
+    /// Interaction logic for Finder.xaml
+    /// </summary>
+    public partial class Finder : Window
 	{
 		public delegate void CallBackResult(List<Element> result);
 
