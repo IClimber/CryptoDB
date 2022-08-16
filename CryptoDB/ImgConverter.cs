@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 
 namespace ImageConverter
 {
-	static class ImgConverter
+    static class ImgConverter
 	{
 		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif" };
 

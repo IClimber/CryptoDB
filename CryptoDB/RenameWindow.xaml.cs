@@ -1,13 +1,13 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Types;
 using System.Windows;
 using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Interaction logic for RenameWindow.xaml
-	/// </summary>
-	public partial class RenameWindow : Window
+    /// <summary>
+    /// Interaction logic for RenameWindow.xaml
+    /// </summary>
+    public partial class RenameWindow : Window
 	{
 		public RenameWindow()
 		{
