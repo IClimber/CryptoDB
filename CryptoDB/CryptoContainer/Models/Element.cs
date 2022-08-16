@@ -54,8 +54,8 @@ namespace CryptoDataBase.CryptoContainer.Models
         private byte[] _iconIV;
         public ulong ParentId => ParentElementId;
         protected ulong ParentElementId;
-        public abstract DirElement Parent { get; set; }
-        protected DirElement ParentElement;
+        public abstract DirectoryElement Parent { get; set; }
+        protected DirectoryElement ParentElement;
         public string Name { get { return ElementName; } set { Rename(value); } }
         protected string ElementName;
         public long TimeIndex { get { return (long)Header.StartPos; } }
@@ -89,7 +89,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         public abstract void SaveAs(string fullName, MultithreadingStreamService.ProgressCallback progress = null, Func<string, string> getFileName = null);
 
-        public abstract bool SetVirtualParent(DirElement newParent);
+        public abstract bool SetVirtualParent(DirectoryElement newParent);
 
         public abstract bool Delete();
 
@@ -120,9 +120,9 @@ namespace CryptoDataBase.CryptoContainer.Models
             return result;
         }
 
-        public Element GetRootDir()
+        public Element GetRootDirectory()
         {
-            return ParentElement == null ? this : ParentElement.GetRootDir();
+            return ParentElement == null ? this : ParentElement.GetRootDirectory();
         }
 
         private Bitmap GetIcon()

@@ -19,7 +19,7 @@ namespace CryptoDataBase
 	{
 		public delegate void CallBackResult(List<Element> result);
 
-		DirElement search_dir;
+		DirectoryElement search_directory;
 		Bitmap _bitmap;
 		private BackgroundWorker searchWorker = new BackgroundWorker();
 		private CallBackResult resultCallback;
@@ -29,7 +29,7 @@ namespace CryptoDataBase
 
 		private byte _sensative = 0;
 		private string _search_text = "";
-		private bool _find_in_all_dirs = true;
+		private bool _find_in_all_directories = true;
 		private bool _find_as_tag = false;
 		private bool _all_tags = false;
 		private static int threadsCount = Environment.ProcessorCount;
@@ -48,12 +48,12 @@ namespace CryptoDataBase
 			searchWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(SearchComplete);
 		}
 
-		private Finder(DirElement Root) : this()
+		private Finder(DirectoryElement Root) : this()
 		{
-			search_dir = Root;
+			search_directory = Root;
 		}
 
-		public Finder(DirElement Root, Bitmap thumbnail, CallBackResult Result) : this(Root)
+		public Finder(DirectoryElement Root, Bitmap thumbnail, CallBackResult Result) : this(Root)
 		{
 			resultCallback = Result;
 			SetThumbnail(thumbnail);
@@ -67,7 +67,7 @@ namespace CryptoDataBase
 			slider.Focus();
 		}
 
-		public Finder(DirElement Root, CallBackResult Result) : this(Root)
+		public Finder(DirectoryElement Root, CallBackResult Result) : this(Root)
 		{
 			image.Source = null;
 			_bitmap?.Dispose();
@@ -79,16 +79,16 @@ namespace CryptoDataBase
 		{
 			_sensative = (byte)slider.Value;
 			_search_text = textBox.Text;
-			_find_in_all_dirs = findInAllDirs.IsChecked == true;
+			_find_in_all_directories = findInAllDirs.IsChecked == true;
 			_find_as_tag = findAsTag.IsChecked == true;
 			_all_tags = allTags.IsChecked == true;
 			Opacity = 0.4;
 		}
 
-		private DirElement getSearchableDir()
+		private DirectoryElement getSearchableDir()
 		{
-			var dir = _find_in_all_dirs ? search_dir.GetRootDir() as DirElement : search_dir;
-			return _find_in_all_dirs ? search_dir.GetRootDir() as DirElement : search_dir;
+			var directory = _find_in_all_directories ? search_directory.GetRootDirectory() as DirectoryElement : search_directory;
+			return _find_in_all_directories ? search_directory.GetRootDirectory() as DirectoryElement : search_directory;
 		}
 
 		private void SearchWork(object sender, DoWorkEventArgs e)
@@ -208,7 +208,7 @@ namespace CryptoDataBase
 			Stopwatch sw = Stopwatch.StartNew();
 			List<Element> resultList = new List<Element>();
 			IList<Element> searchList = new List<Element>();
-			_GetAllElementsWithIcon(search_dir, searchList);
+			_GetAllElementsWithIcon(search_directory, searchList);
 			Element[] search_array = searchList.ToArray();
 
 			searchList.Clear();
@@ -262,7 +262,7 @@ namespace CryptoDataBase
 			return resultList;
 		}
 
-		private void _GetAllElementsWithIcon(DirElement parent, IList<Element> resultList)
+		private void _GetAllElementsWithIcon(DirectoryElement parent, IList<Element> resultList)
 		{
 			foreach (Element element in parent.Elements)
 			{
@@ -271,14 +271,14 @@ namespace CryptoDataBase
 					resultList.Add(element);
 				}
 
-				if (element is DirElement)
+				if (element is DirectoryElement)
 				{
-					_GetAllElementsWithIcon(element as DirElement, resultList);
+					_GetAllElementsWithIcon(element as DirectoryElement, resultList);
 				}
 			}
 		}
 
-		private void _FindAllDuplicateImage(DirElement parent, List<Element> resultList)
+		private void _FindAllDuplicateImage(DirectoryElement parent, List<Element> resultList)
 		{
 			foreach (Element element in parent.Elements)
 			{
@@ -291,9 +291,9 @@ namespace CryptoDataBase
 					}
 				}
 
-				if (element is DirElement)
+				if (element is DirectoryElement)
 				{
-					_FindAllDuplicateImage(element as DirElement, resultList);
+					_FindAllDuplicateImage(element as DirectoryElement, resultList);
 				}
 			}
 		}

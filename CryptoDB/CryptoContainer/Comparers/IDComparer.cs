@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace CryptoDataBase.CryptoContainer.Comparers
 {
-    public class IDComparer : IComparer<DirElement>
+    public class IDComparer : IComparer<DirectoryElement>
     {
-        int IComparer<DirElement>.Compare(DirElement x, DirElement y)
+        int IComparer<DirectoryElement>.Compare(DirectoryElement x, DirectoryElement y)
         {
             return x.Id == y.Id ? 0 : x.Id < y.Id ? -1 : 1;
         }

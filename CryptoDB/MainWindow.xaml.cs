@@ -43,7 +43,7 @@ namespace CryptoDataBase
 		Stopwatch sw = new Stopwatch();
 		List<FileItem> addedFilesList = new List<FileItem>();
 		MultithreadImageResizer multithreadImageResizer;
-		DirElement LastParent;
+		DirectoryElement LastParent;
 		FileElement movedElementFrom = null;
 		FileElement movedElementTo = null;
 		private int AddedFilesCount;
@@ -127,12 +127,12 @@ namespace CryptoDataBase
 			return TextExtensions.Contains(System.IO.Path.GetExtension(FileName).ToLower());
 		}
 
-		private void CountFilesInDir(string dir, ref int count)
+		private void CountFilesInDirectory(string directory, ref int count)
 		{
-			count += Directory.GetFiles(dir).Length;
-			foreach (var directory in Directory.GetDirectories(dir))
+			count += Directory.GetFiles(directory).Length;
+			foreach (var subDirectory in Directory.GetDirectories(directory))
 			{
-				CountFilesInDir(directory, ref count);
+				CountFilesInDirectory(subDirectory, ref count);
 			}
 		}
 
@@ -143,9 +143,9 @@ namespace CryptoDataBase
 				return 1;
 			}
 
-			int result = (root as DirElement).Elements.Count;
+			int result = (root as DirectoryElement).Elements.Count;
 
-			foreach (var item in (root as DirElement).Elements)
+			foreach (var item in (root as DirectoryElement).Elements)
 			{
 				result += GetCountSubElements(item);
 			}
@@ -210,27 +210,27 @@ namespace CryptoDataBase
 			return password;
 		}
 
-		private DirElement ForceDirectories(DirElement parent, string path)
+		private DirectoryElement ForceDirectories(DirectoryElement parent, string path)
 		{
-			var dirs = path.Split(Path.DirectorySeparatorChar);
-			DirElement currentParent = parent;
+			var directories = path.Split(Path.DirectorySeparatorChar);
+			DirectoryElement currentParent = parent;
 
-			foreach (var dir in dirs)
+			foreach (var directory in directories)
 			{
-				if (dir == "")
+				if (directory == "")
 				{
 					break;
 				}
 
-				Element element = currentParent.FindByName(dir);
+				Element element = currentParent.FindByName(directory);
 
 				if (element == null)
 				{
-					currentParent = currentParent.CreateDir(dir);
+					currentParent = currentParent.CreateDirectory(directory);
 				}
-				else if (element is DirElement)
+				else if (element is DirectoryElement)
 				{
-					currentParent = (DirElement)element;
+					currentParent = (DirectoryElement)element;
 				}
 				else
 				{
@@ -320,11 +320,11 @@ namespace CryptoDataBase
 			}
 			else
 			{
-				DirElement newParent;
+				DirectoryElement newParent;
 
 				try
 				{
-					newParent = item.parentElement.CreateDir(Path.GetFileName(item.name));
+					newParent = item.parentElement.CreateDirectory(Path.GetFileName(item.name));
 				}
 				catch (Exception e)
 				{
@@ -376,7 +376,7 @@ namespace CryptoDataBase
 
 		private void Files_Drop(object sender, System.Windows.DragEventArgs e)
 		{
-			DirElement parent = (listView.Tag as DirElement);
+			DirectoryElement parent = (listView.Tag as DirectoryElement);
 			if ((xdb == null) || (parent == null) || IsReadOnly)
 			{
 				return;
@@ -665,7 +665,7 @@ namespace CryptoDataBase
 			return new BindingList<Element>(result.OrderByDescending(x => x.Type).ToList());
 		}
 
-		private void SetViewsElement(DirElement parent, IList<Element> elements, Element selected = null, bool with_orders = true)
+		private void SetViewsElement(DirectoryElement parent, IList<Element> elements, Element selected = null, bool with_orders = true)
 		{
 			RefreshPathPanel(parent != null ? parent : LastParent);
 			listView.ItemsSource = with_orders ? OrderBy(elements) : new BindingList<Element>(elements); ;
@@ -695,10 +695,10 @@ namespace CryptoDataBase
 			}
 
 			//Відкриваємо папку
-			if (element is DirElement)
+			if (element is DirectoryElement)
 			{
-				Element select = select_first ? (element as DirElement).Elements.FirstOrDefault() : selected;
-				SetViewsElement((element as DirElement), (element as DirElement).Elements, select);
+				Element select = select_first ? (element as DirectoryElement).Elements.FirstOrDefault() : selected;
+				SetViewsElement((element as DirectoryElement), (element as DirectoryElement).Elements, select);
 
 				return;
 			}
@@ -811,7 +811,7 @@ namespace CryptoDataBase
 				return;
 			}
 
-			DirElement newParent = movedElementTo.Parent;
+			DirectoryElement newParent = movedElementTo.Parent;
 			BindingList<Element> bindingList = (listView.ItemsSource as BindingList<Element>);
 			int index = 0;
 
@@ -928,7 +928,7 @@ namespace CryptoDataBase
 
 			if (e.Key == Key.F5)
 			{
-				ShowFiles(listView.Tag as DirElement);
+				ShowFiles(listView.Tag as DirectoryElement);
 			}
 
 			if (search_text_box.Visibility == Visibility.Hidden)
@@ -969,8 +969,8 @@ namespace CryptoDataBase
 
 			if ((Keyboard.Modifiers == ModifierKeys.Control) && (e.Key == Key.F))
 			{
-				DirElement dir = (listView.Tag as DirElement) != null ? (listView.Tag as DirElement) : xdb;
-				Finder f = new Finder(dir, ShowList);
+				DirectoryElement directory = (listView.Tag as DirectoryElement) != null ? (listView.Tag as DirectoryElement) : xdb;
+				Finder f = new Finder(directory, ShowList);
 				f.Owner = this;
 				f.Show();
 				return;
@@ -1046,7 +1046,7 @@ namespace CryptoDataBase
 						stream.Position = 0;
 						try
 						{
-							newFile = (listView.Tag as DirElement)?.AddFile(stream, FileName, false, icon);
+							newFile = (listView.Tag as DirectoryElement)?.AddFile(stream, FileName, false, icon);
 						}
 						catch (Exception e)
 						{
@@ -1100,7 +1100,7 @@ namespace CryptoDataBase
 
 		private void SetFilterElementByName(string name)
 		{
-			DirElement parent = (listView.Tag as DirElement);
+			DirectoryElement parent = (listView.Tag as DirectoryElement);
 
 			if ((xdb == null) || (parent == null))
 			{
@@ -1157,7 +1157,7 @@ namespace CryptoDataBase
 				//return;
 			}
 
-			DirElement newParent = (listView.Tag as DirElement);
+			DirectoryElement newParent = (listView.Tag as DirectoryElement);
 
 			foreach (var item in CutList)
 			{
@@ -1376,8 +1376,8 @@ namespace CryptoDataBase
 				icon = (listView.SelectedItem as Element).Icon;
 			}
 
-			DirElement dir = (listView.Tag as DirElement) != null ? (listView.Tag as DirElement) : xdb;
-			Finder f = new Finder(dir, icon, ShowList);
+			DirectoryElement directory = (listView.Tag as DirectoryElement) != null ? (listView.Tag as DirectoryElement) : xdb;
+			Finder f = new Finder(directory, icon, ShowList);
 			icon = null;
 			f.Owner = this;
 			f.Show();
@@ -1396,10 +1396,10 @@ namespace CryptoDataBase
 			newdir.label.Content = "Имя папки";
 			if ((newdir.ShowDialog() == true) && (newdir.textBox.Text != ""))
 			{
-				DirElement newDir;
+				DirectoryElement newDir;
 				try
 				{
-					newDir = (listView.Tag as DirElement).CreateDir(newdir.textBox.Text);
+					newDir = (listView.Tag as DirectoryElement).CreateDirectory(newdir.textBox.Text);
 				}
 				catch (Exception ex)
 				{
@@ -1432,7 +1432,7 @@ namespace CryptoDataBase
 					FileElement newTextFile = null;
 					try
 					{
-						newTextFile = (listView.Tag as DirElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
+						newTextFile = (listView.Tag as DirectoryElement).AddFile(ms, newDoc.textBox.Text + ".txt", false, bmp);
 					}
 					catch (Exception ex)
 					{
@@ -1513,7 +1513,7 @@ namespace CryptoDataBase
 		{
 			bool sortDirect = ((sender as System.Windows.Controls.RadioButton).Tag as bool?) == true;
 			(sender as System.Windows.Controls.RadioButton).Tag = !sortDirect;
-			SetViewsElement((listView.Tag as DirElement), listView.ItemsSource as IList<Element>);
+			SetViewsElement((listView.Tag as DirectoryElement), listView.ItemsSource as IList<Element>);
 		}
 
 		private void Insert_Click(object sender, RoutedEventArgs e)
