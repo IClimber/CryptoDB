@@ -46,15 +46,23 @@ namespace CryptoDataBase.CryptoContainer.Models
                 byte[] iconBytes = GetIconBytes(icon);
                 uint iconSize = iconBytes == null ? 0 : (uint)iconBytes.Length;
 
-                //Вибираємо місце куди писати файл
-                ulong fileStartPos = dataRepository.GetFreeSpaceStartPos(MathHelper.GetMod16(fileSize));
-                //Вибираємо місце куди писати іконку
-                ulong iconStartPos = dataRepository.GetFreeSpaceStartPos(MathHelper.GetMod16(iconSize));
-                iconStartPos = iconStartPos == fileStartPos ? iconStartPos += MathHelper.GetMod16(fileSize) : iconStartPos;
+                ulong fileStartPos = GenID();
+                ulong iconStartPos = GenID();
+
+                Header = new Header(parentHeader.Repository, ElementType.File);
+
+                if (fileSize > 0)
+                {
+                    fileStartPos = dataRepository.WriteEncrypt(fileStream, _fileIV, out _hash, progress).Start;
+                }
+
+                if (iconSize > 0)
+                {
+                    iconStartPos = dataRepository.WriteEncrypt(iconBytes, IconIV).Start;
+                }
 
                 lock (dataRepository.WriteLock)
                 {
-                    Header = new Header(parentHeader.Repository, ElementType.File);
                     DataRepository = dataRepository;
 
                     ElementName = name;
@@ -67,23 +75,12 @@ namespace CryptoDataBase.CryptoContainer.Models
                     _hash = new byte[16];
                     RandomHelper.GetBytes(_hash);
                     PHash = GetIconPHash(icon);
+                    Exists = true;
 
                     SaveInf();
-                    Exists = false;
-                }
-
-                if (fileSize > 0)
-                {
-                    dataRepository.WriteEncrypt((long)fileStartPos, fileStream, _fileIV, out _hash, progress);
-                }
-
-                if (iconBytes != null && iconSize > 0)
-                {
-                    dataRepository.WriteEncrypt((long)iconStartPos, iconBytes, IconIV);
                 }
 
                 //Закидаємо файл в потрібну папку і записуємо зміни
-                Exists = true;
                 ChangeParent(parent, true);
             }
         }
@@ -222,25 +219,21 @@ namespace CryptoDataBase.CryptoContainer.Models
             lock (AddElementLocker)
             {
                 ulong fileSize = (ulong)newData.Length;
-                ulong fileStartPos = _fileStartPos;
-                if (fileSize >= MathHelper.GetMod16(_fileSize))
-                {
-                    //Вибираємо місце куди писати файл
-                    fileStartPos = DataRepository.GetFreeSpaceStartPos(MathHelper.GetMod16(fileSize));
-                }
 
-                byte[] tempHash;
+                byte[] newDataHash;
 
                 try
                 {
+                    DataRepository.AddFreeSpace(_fileStartPos, _fileSize);
+
                     if (fileSize > 0)
                     {
-                        DataRepository.WriteEncrypt((long)fileStartPos, newData, _fileIV, out tempHash, progress);
+                        _fileStartPos = DataRepository.WriteEncrypt(newData, _fileIV, out newDataHash, progress).Start;
                     }
                     else
                     {
-                        tempHash = new byte[16];
-                        RandomHelper.GetBytes(tempHash);
+                        newDataHash = new byte[16];
+                        RandomHelper.GetBytes(newDataHash);
                     }
                 }
                 catch
@@ -250,9 +243,8 @@ namespace CryptoDataBase.CryptoContainer.Models
 
                 try
                 {
-                    _fileStartPos = fileStartPos;
                     _fileSize = fileSize;
-                    _hash = tempHash;
+                    _hash = newDataHash;
                     SaveInf();
                 }
                 catch
