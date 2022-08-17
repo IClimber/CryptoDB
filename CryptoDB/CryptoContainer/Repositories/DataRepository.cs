@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CryptoContainer.Services;
+using CryptoDataBase.CryptoContainer.Types;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -9,15 +10,15 @@ namespace CryptoDataBase.CryptoContainer.Repositories
     {
         public readonly object WriteLock;
 
-        protected MultithreadingStreamService SafeStream;
+        protected MultithreadingStreamService StreamService;
         protected Stream BaseStream;
         protected AesCryptoServiceProvider DekAes;
 
         public DataRepository(Stream stream, AesCryptoServiceProvider aes)
         {
             BaseStream = stream;
-            SafeStream = new MultithreadingStreamService(stream);
-            WriteLock = SafeStream.WriteLock;
+            StreamService = new MultithreadingStreamService(stream);
+            WriteLock = new object();
 
             DekAes = new AesCryptoServiceProvider
             {
@@ -46,55 +47,58 @@ namespace CryptoDataBase.CryptoContainer.Repositories
         {
             using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
             {
-                SafeStream.MultithreadDecrypt(streamOffset, outputStream, dataSize, aes, progress);
+                StreamService.MultithreadDecrypt(streamOffset, outputStream, dataSize, aes, progress);
             }
         }
 
-        public void WriteEncrypt(long streamOffset, Stream inputStream, byte[] iv, out byte[] hash, MultithreadingStreamService.ProgressCallback progress)
+        public SPoint WriteEncrypt(Stream inputStream, byte[] iv, out byte[] hash, MultithreadingStreamService.ProgressCallback progress)
         {
+            SPoint result;
+
             using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
             {
-                SafeStream.WriteEncrypt(streamOffset, inputStream, aes, out hash, progress);
+                result = StreamService.WriteEncrypt(inputStream, aes, out hash, progress);
             }
+
+            return result;
         }
 
-        public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] iv)
+        public SPoint WriteEncrypt(byte[] inputData, byte[] iv)
         {
+            SPoint result;
+
             using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
             {
-                SafeStream.WriteEncrypt(streamOffset, inputData, aes);
+                result = StreamService.WriteEncrypt(inputData, aes);
             }
+
+            return result;
         }
 
         public void FreeSpaceAnalyse()
         {
-            SafeStream.FreeSpaceAnalyse();
-        }
-
-        public ulong GetFreeSpaceStartPos(ulong size, bool withWrite = true)
-        {
-            return SafeStream.GetFreeSpaceStartPos(size, withWrite);
+            StreamService.FreeSpaceAnalyse();
         }
 
         public void AddFreeSpace(ulong start, ulong length)
         {
-            SafeStream.AddFreeSpace(start, length);
+            StreamService.AddFreeSpace(start, length);
         }
 
         public void RemoveFreeSpace(ulong start, ulong length)
         {
-            SafeStream.RemoveFreeSpace(start, length);
+            StreamService.RemoveFreeSpace(start, length);
         }
 
         public bool IsFreeSpace(ulong start, ulong size)
         {
-            return SafeStream.IsFreeSpace(start, size);
+            return StreamService.IsFreeSpace(start, size);
         }
 
         public void Dispose()
         {
             BaseStream.Close();
-            SafeStream.Close();
+            StreamService.Close();
             DekAes.Dispose();
         }
     }

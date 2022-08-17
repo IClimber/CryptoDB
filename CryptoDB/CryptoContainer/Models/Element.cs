@@ -169,15 +169,10 @@ namespace CryptoDataBase.CryptoContainer.Models
                 {
                     buf = GetIconBytes(icon);
 
-                    IconSizeInner = (uint)buf.Length;
-                    if (IconSizeInner == 0) //Вибираємо місце куди писати іконку
+                    IconSizeInner = buf == null ? 0 : (uint)buf.Length;
+                    if (IconSizeInner > 0) //Вибираємо місце куди писати іконку
                     {
-                        IconStartPos = GenID();
-                    }
-                    else
-                    {
-                        IconStartPos = DataRepository.GetFreeSpaceStartPos(MathHelper.GetMod16(IconSizeInner));
-                        DataRepository.WriteEncrypt((long)IconStartPos, buf, IconIV);
+                        IconStartPos = DataRepository.WriteEncrypt(buf, IconIV).Start;
                     }
                 }
 

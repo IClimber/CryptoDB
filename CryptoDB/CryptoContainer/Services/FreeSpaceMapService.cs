@@ -84,7 +84,7 @@ namespace CryptoDataBase.CryptoContainer.Services
             return index;
         }
 
-        private SPoint SeparateFreeSpacePoint(SPoint sPoint, ulong start, ulong size)
+        private SPoint SeparateFreeSpacePoint(ref SPoint sPoint, ulong start, ulong size)
         {
             if (size > sPoint.Size)
             {
@@ -98,7 +98,7 @@ namespace CryptoDataBase.CryptoContainer.Services
 
             if (start > sPoint.Start)
             {
-                if (start + size < sPoint.Start + sPoint.Size)
+                if ((start + size) < (sPoint.Start + sPoint.Size))
                 {
                     SPoint result = sPoint.Clone();
                     sPoint.Size = start - sPoint.Start;
@@ -154,7 +154,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                 }
 
                 SPoint sPoint = _freeSpaceMapPos[indexByPos];
-                SPoint newSPoint = SeparateFreeSpacePoint(sPoint, start, length);
+                SPoint newSPoint = SeparateFreeSpacePoint(ref sPoint, start, length);
 
                 _freeSpaceMapSize.Remove(sPoint);
 
@@ -209,7 +209,7 @@ namespace CryptoDataBase.CryptoContainer.Services
 
                 _freeSpaceMapSize.RemoveAt(indexBySize);
 
-                if (sPoint.Size - size == 0)
+                if ((sPoint.Size - size) == 0)
                 {
                     int indexByPos = GetIndexByPos(sPoint.Start);
                     _freeSpaceMapPos.RemoveAt(indexByPos);
@@ -258,17 +258,17 @@ namespace CryptoDataBase.CryptoContainer.Services
                     prevPoint = _freeSpaceMapPos[indexByPos];
                 }
 
-                if (indexByPos + 1 < _freeSpaceMapPos.Count)
+                if ((indexByPos + 1) < _freeSpaceMapPos.Count)
                 {
                     nextPoint = _freeSpaceMapPos[indexByPos + 1];
                 }
 
-                if (prevPoint != null && start < prevPoint.Start + prevPoint.Size || nextPoint != null && start + length > nextPoint.Start)
+                if ((prevPoint != null && start < (prevPoint.Start + prevPoint.Size)) || (nextPoint != null && (start + length) > nextPoint.Start))
                 {
                     return false;
                 }
 
-                if (prevPoint != null && nextPoint != null && start == prevPoint.Start + prevPoint.Size && start + length == nextPoint.Start)
+                if (prevPoint != null && nextPoint != null && start == (prevPoint.Start + prevPoint.Size) && (start + length) == nextPoint.Start)
                 {
                     prevPoint.Size += length + nextPoint.Size;
                     _freeSpaceMapSize.Remove(prevPoint);
@@ -280,7 +280,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                     return true;
                 }
 
-                if (prevPoint != null && start == prevPoint.Start + prevPoint.Size)
+                if (prevPoint != null && start == (prevPoint.Start + prevPoint.Size))
                 {
                     prevPoint.Size += length;
                     _freeSpaceMapSize.Remove(prevPoint);
@@ -289,7 +289,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                     return true;
                 }
 
-                if (nextPoint != null && start + length == nextPoint.Start)
+                if (nextPoint != null && (start + length) == nextPoint.Start)
                 {
                     nextPoint.Start -= length;
                     nextPoint.Size += length;
@@ -326,7 +326,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                 return false;
             }
 
-            if (sPoint.Start <= start && sPoint.Start + sPoint.Size >= start + size)
+            if (sPoint.Start <= start && (sPoint.Start + sPoint.Size) >= (start + size))
             {
                 return true;
             }
@@ -368,16 +368,16 @@ namespace CryptoDataBase.CryptoContainer.Services
 
                 for (int i = count; i < _freeSpaceMapPos.Count - 1; i++)
                 {
-                    if (_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size < _freeSpaceMapPos[i + 1].Start)
+                    if ((_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size) < _freeSpaceMapPos[i + 1].Start)
                     {
-                        start = _freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size;
+                        start = (_freeSpaceMapPos[i].Start + _freeSpaceMapPos[i].Size);
                         size = _freeSpaceMapPos[i + 1].Start - start;
                         _freeSpaceMapPos[count] = new SPoint(start, size);
                         count++;
                     }
                 }
 
-                if (_freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size < fileSize)
+                if ((_freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size) < fileSize)
                 {
                     start = _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Start + _freeSpaceMapPos[_freeSpaceMapPos.Count - 1].Size;
                     size = fileSize - start;
