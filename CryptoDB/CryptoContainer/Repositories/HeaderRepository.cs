@@ -19,13 +19,13 @@ namespace CryptoDataBase.CryptoContainer.Repositories
         public abstract void ExportStructToFile(IList<Element> elements);
 
         protected Stream BaseStream;
-        protected MultithreadingStreamService SafeStream;
+        protected MultithreadingStreamService StreamService;
         protected AesCryptoServiceProvider DekAes;
 
         public HeaderRepository(Stream stream)
         {
             BaseStream = stream;
-            SafeStream = new MultithreadingStreamService(stream);
+            StreamService = new MultithreadingStreamService(stream);
         }
 
         public AesCryptoServiceProvider GetDek()
@@ -85,17 +85,17 @@ namespace CryptoDataBase.CryptoContainer.Repositories
 
         public ulong GetEndPosition()
         {
-            return (ulong)SafeStream.Length;
+            return (ulong)StreamService.Length;
         }
 
         public void Write(long streamOffset, byte[] buffer, int offset, int count)
         {
-            SafeStream.Write(streamOffset, buffer, offset, count);
+            StreamService.Write(streamOffset, buffer, offset, count);
         }
 
         public void WriteByte(long streamOffset, byte value)
         {
-            SafeStream.WriteByte(streamOffset, value);
+            StreamService.WriteByte(streamOffset, value);
         }
 
         public void WriteEncrypt(long streamOffset, byte[] inputData, byte[] iv)
@@ -103,14 +103,14 @@ namespace CryptoDataBase.CryptoContainer.Repositories
             using (ICryptoTransform transform = DekAes.CreateEncryptor(DekAes.Key, iv))
             {
                 byte[] buf = CryptoHelper.AesConvertBuf(inputData, inputData.Length, transform);
-                SafeStream.Write(streamOffset, buf, 0, buf.Length);
+                StreamService.Write(streamOffset, buf, 0, buf.Length);
             }
         }
 
         public void Dispose()
         {
             BaseStream.Close();
-            SafeStream.Close();
+            StreamService.Close();
             DekAes.Dispose();
         }
     }
