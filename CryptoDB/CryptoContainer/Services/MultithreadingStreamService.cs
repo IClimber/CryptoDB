@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CryptoContainer.Helpers;
+using CryptoDataBase.CryptoContainer.Types;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -9,11 +10,11 @@ namespace CryptoDataBase.CryptoContainer.Services
     public class MultithreadingStreamService
     {
         public delegate void ProgressCallback(double percent);
-        public readonly object WriteLock = new object();
-        public Stream BaseStream => _stream;
         public long Length => Math.Max(_stream.Length, _length);
+
         private object _readWriteLock = new object();
         private object _writeLock = new object();
+        private object _freeSpaceMapLocker = new object();
         private readonly Stream _stream;
         private long _length;
         private FreeSpaceMapService _freeSpaceMap;
@@ -25,29 +26,34 @@ namespace CryptoDataBase.CryptoContainer.Services
             _freeSpaceMap = new FreeSpaceMapService(stream.Length, false);
         }
 
-        //Кодує файли, перед викликом не забути присвоїти потрібний IV
-        public void WriteEncrypt(long streamOffset, Stream inputStream, AesCryptoServiceProvider aes, out byte[] hash, ProgressCallback progress)
+        //Encrypt and write data from stream
+        public SPoint WriteEncrypt(Stream inputStream, AesCryptoServiceProvider aes, out byte[] hash, ProgressCallback progress)
         {
             lock (_writeLock)
             {
-                if (streamOffset > _stream.Length)
+                ulong dataRealSize = (ulong)(inputStream.Length - inputStream.Position);
+                long startPosition;
+
+                if (aes.Padding != PaddingMode.None)
                 {
-                    throw new Exception();
+                    dataRealSize = MathHelper.GetMod16(dataRealSize);
                 }
 
-                if (aes.Padding == PaddingMode.None)
+                lock (_freeSpaceMapLocker)
                 {
-                    _length = streamOffset + inputStream.Length - inputStream.Position; //Якщо файл кодується з доповненням, то тут може бути менше значення чим потрібно.
+                    startPosition = (long)_freeSpaceMap.GetFreeSpacePos(dataRealSize, Length);
+                    _length = startPosition + (long)dataRealSize;
                 }
-                else
+
+                if (startPosition > _stream.Length)
                 {
-                    _length = streamOffset + (long)MathHelper.GetMod16((ulong)(inputStream.Length - inputStream.Position));
+                    throw new Exception();
                 }
 
                 byte[] buffer = new byte[1048576];
                 CryptoStream cs = new CryptoStream(_stream, aes.CreateEncryptor(), CryptoStreamMode.Write);
                 MD5 md5 = MD5.Create();
-                long position = streamOffset;
+                long position = startPosition;
 
                 while (inputStream.Position < inputStream.Length)
                 {
@@ -78,30 +84,39 @@ namespace CryptoDataBase.CryptoContainer.Services
                 }
 
                 hash = md5.Hash;
+
+                return new SPoint((ulong)startPosition, dataRealSize);
             }
         }
 
-        //Кодує і записує масив байт, перед викликом не забути присвоїти потрібний IV
-        public void WriteEncrypt(long streamOffset, byte[] inputData, AesCryptoServiceProvider aes)
+        //Encrypt and write data from array
+        public SPoint WriteEncrypt(byte[] inputData, AesCryptoServiceProvider aes)
         {
             lock (_writeLock)
             {
-                if (aes.Padding == PaddingMode.None)
+                ulong dataRealSize = (ulong)inputData.Length;
+                long startPosition;
+
+                if (aes.Padding != PaddingMode.None)
                 {
-                    _length = streamOffset + inputData.Length;
+                    dataRealSize = MathHelper.GetMod16(dataRealSize);
                 }
-                else
+
+                lock (_freeSpaceMapLocker)
                 {
-                    _length = streamOffset + (long)MathHelper.GetMod16((ulong)inputData.Length);
+                    startPosition = (long)_freeSpaceMap.GetFreeSpacePos(dataRealSize, Length);
+                    _length = startPosition + (long)dataRealSize;
                 }
 
                 lock (_readWriteLock)
                 {
                     CryptoStream cs = new CryptoStream(_stream, aes.CreateEncryptor(), CryptoStreamMode.Write);
-                    _stream.Position = streamOffset;
+                    _stream.Position = startPosition;
                     cs.Write(inputData, 0, inputData.Length);
                     cs.FlushFinalBlock();
                 }
+
+                return new SPoint((ulong)startPosition, dataRealSize);
             }
         }
 
@@ -160,6 +175,40 @@ namespace CryptoDataBase.CryptoContainer.Services
             }
         }
 
+        public void Close()
+        {
+            _stream.Close();
+        }
+
+        public void RemoveFreeSpace(ulong start, ulong length)
+        {
+            lock (_freeSpaceMapLocker)
+            {
+                _freeSpaceMap.RemoveFreeSpace(start, length);
+            }
+        }
+
+        public void AddFreeSpace(ulong start, ulong length)
+        {
+            lock (_freeSpaceMapLocker)
+            {
+                _freeSpaceMap.AddFreeSpace(start, length);
+            }
+        }
+
+        public void FreeSpaceAnalyse()
+        {
+            lock (_freeSpaceMapLocker)
+            {
+                _freeSpaceMap.FreeSpaceAnalyse((ulong)Length);
+            }
+        }
+
+        public bool IsFreeSpace(ulong start, ulong size)
+        {
+            return _freeSpaceMap.IsFreeSpace(start, size);
+        }
+
         private void MultithreadDecryptBufer(byte[] inputBuffer, ref byte[] outputBuffer, int lenght, AesCryptoServiceProvider aes, bool thisLastBlock, ref byte[] iv)
         {
             int blockSize = 65536;
@@ -216,36 +265,6 @@ namespace CryptoDataBase.CryptoContainer.Services
             }
 
             Buffer.BlockCopy(inputBuffer, lenght - 16, lastIV, 0, 16);
-        }
-
-        public void Close()
-        {
-            _stream.Close();
-        }
-
-        public ulong GetFreeSpaceStartPos(ulong size, bool withWrite = true)
-        {
-            return _freeSpaceMap.GetFreeSpacePos(size, Length, withWrite);
-        }
-
-        public void RemoveFreeSpace(ulong start, ulong length)
-        {
-            _freeSpaceMap.RemoveFreeSpace(start, length);
-        }
-
-        public void AddFreeSpace(ulong start, ulong length)
-        {
-            _freeSpaceMap.AddFreeSpace(start, length);
-        }
-
-        public void FreeSpaceAnalyse()
-        {
-            _freeSpaceMap.FreeSpaceAnalyse((ulong)Length);
-        }
-
-        public bool IsFreeSpace(ulong start, ulong size)
-        {
-            return _freeSpaceMap.IsFreeSpace(start, size);
         }
     }
 }

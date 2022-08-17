@@ -67,12 +67,13 @@ namespace CryptoDataBase.CryptoContainer.Models
 
                     byte[] iconBytes = GetIconBytes(icon);
                     uint iconSize = iconBytes == null ? 0 : (uint)iconBytes.Length;
-                    //Вибираємо місце куди писати іконку
-                    ulong iconStartPos = dataRepository.GetFreeSpaceStartPos(MathHelper.GetMod16(iconSize));
+                    //if icon size == 0 then iconStartPos will be a random number
+                    ulong iconStartPos = GenID();
 
-                    if (iconBytes != null && iconSize > 0)
+                    if (iconSize > 0)
                     {
-                        dataRepository.WriteEncrypt((long)iconStartPos, iconBytes, IconIV);
+                        var result = dataRepository.WriteEncrypt(iconBytes, IconIV);
+                        iconStartPos = result.Start;
                     }
 
                     ElementName = name;
