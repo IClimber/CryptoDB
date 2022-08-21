@@ -43,7 +43,7 @@ namespace CryptoDataBase.CryptoContainer.Models
             {
                 ulong fileSize = (ulong)fileStream.Length;
 
-                byte[] iconBytes = GetIconBytes(icon);
+                byte[] iconBytes = ImageHelper.GetBytesFromBitmap(icon);
                 uint iconSize = iconBytes == null ? 0 : (uint)iconBytes.Length;
 
                 ulong fileStartPos = GenID();
@@ -74,7 +74,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                     _isCompressed = isCompressed;
                     _hash = new byte[16];
                     RandomHelper.GetBytes(_hash);
-                    PHash = GetIconPHash(icon);
+                    PHash = ImageHelper.GetBitmapPHash(icon);
                     Exists = true;
 
                     SaveInf();

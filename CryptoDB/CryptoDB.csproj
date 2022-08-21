@@ -120,6 +120,7 @@
     <Compile Include="CryptoContainer\Comparers\SPointPositionComparer.cs" />
     <Compile Include="CryptoContainer\Helpers\HashHelper.cs" />
     <Compile Include="CryptoContainer\Helpers\MathHelper.cs" />
+    <Compile Include="CryptoContainer\Helpers\ImageHelper.cs" />
     <Compile Include="CryptoContainer\Repositories\DataRepository.cs" />
     <Compile Include="CryptoContainer\Repositories\HeaderRepositoryFactory.cs" />
     <Compile Include="CryptoContainer\Repositories\HeaderStreamRepositoryV5.cs" />
