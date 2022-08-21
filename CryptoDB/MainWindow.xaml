@@ -5,7 +5,7 @@
 		xmlns:virt="clr-namespace:CryptoDataBase"
         x:Class="CryptoDataBase.MainWindow"
         Title="CryptoDB" Height="600" Width="1130" MinHeight="335" MinWidth="650" Name="mainWindow"
-		Drop="Files_Drop" AllowDrop="true" WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" Loaded="Window_Loaded" Closed="Window_Closed" Icon="MainIcon.ico">
+		Drop="Files_Drop" AllowDrop="true" WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown" Loaded="Window_Loaded" Closed="Window_Closed" Icon="MainIcon.ico" PreviewMouseDown="mainWindow_PreviewMouseDown">
 
 	<Window.Resources>
 		<local:BitmapToImageSourceConvert x:Key="Convert" />
@@ -23,6 +23,8 @@
 			<Menu DockPanel.Dock="Top" Background="#FF222227">
 				<MenuItem Header="База данных" >
 					<MenuItem Header="Открыть / Создать" Click="button1_Click"/>
+					<MenuItem Header="Изменить пароль" Visibility="{Binding ElementName=mainWindow, Path=CanChangePassword, Mode=OneWay}" Click="ChangePasswordButton_Click"/>
+					<MenuItem Header="Экспорт структуры" Click="ExportButton_Click"/>
 				</MenuItem>
 				<MenuItem Header="Вид" >
 					<MenuItem Header="Сортировать">
@@ -44,6 +46,7 @@
 					</MenuItem>
 					<CheckBox Content="Предупреждать о дубликатах" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
 					<Separator/>
+					<CheckBox Content="Разархивировать архивы при добавлении" IsChecked="{Binding ElementName=mainWindow, Path=ExtractArchiveWhenAdd, Mode=TwoWay}"/>
 					<CheckBox Content="Сохранять реальные имена файлов" Click="SaveRealFileName_Click"/>
 				</MenuItem>
 				<MenuItem Header="Буффер обмена">

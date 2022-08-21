@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using ImageConverter;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,10 +10,10 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Interaction logic for DuplicatesWindow.xaml
-	/// </summary>
-	public partial class DuplicatesWindow : Window
+    /// <summary>
+    /// Interaction logic for DuplicatesWindow.xaml
+    /// </summary>
+    public partial class DuplicatesWindow : Window
 	{
 		private DuplicatesWindow()
 		{

@@ -1,4 +1,5 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
+using CryptoDataBase.CryptoContainer.Types;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -10,10 +11,10 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Логика взаимодействия для PropertiesWindow.xaml
-	/// </summary>
-	public partial class PropertiesWindow : Window
+    /// <summary>
+    /// Логика взаимодействия для PropertiesWindow.xaml
+    /// </summary>
+    public partial class PropertiesWindow : Window
 	{
 		Element element;
 
@@ -81,7 +82,7 @@ namespace CryptoDataBase
 		{
 			int result = elements.Where(x => x.Type == ElementType.File).Count();
 
-			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirectoryElement item in elements.Where(x => x.Type == ElementType.Directory))
 			{
 				result += GetFilesCount(item.Elements.ToList());
 			}
@@ -91,9 +92,9 @@ namespace CryptoDataBase
 
 		private int GetDirsCount(List<Element> elements)
 		{
-			int result = elements.Where(x => x.Type == ElementType.Dir).Count();
+			int result = elements.Where(x => x.Type == ElementType.Directory).Count();
 
-			foreach (DirElement item in elements.Where(x => x.Type == ElementType.Dir))
+			foreach (DirectoryElement item in elements.Where(x => x.Type == ElementType.Directory))
 			{
 				result += GetDirsCount(item.Elements.ToList());
 			}
@@ -132,7 +133,7 @@ namespace CryptoDataBase
 			OpenFileDialog op = new OpenFileDialog();
 			if (op.ShowDialog() == System.Windows.Forms.DialogResult.OK)
 			{
-				Bitmap bmp = ImgConverter.GetIcon(op.FileName, MainWindow.thumbnailSize);
+				Bitmap bmp = ImgConverter.GetIcon(op.FileName, MainWindow.THUMBNAIL_SIZE);
 				element.Icon = bmp;
 				Thumbnail.Source = ImgConverter.BitmapToImageSource(bmp);
 				bmp?.Dispose();

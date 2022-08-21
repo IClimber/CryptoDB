@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -12,10 +12,10 @@ using System.Windows.Media.Imaging;
 
 namespace CryptoDataBase
 {
-	/// <summary>
-	/// Логика взаимодействия для DocSource.xaml
-	/// </summary>
-	public partial class ImageViewer : Window
+    /// <summary>
+    /// Логика взаимодействия для DocSource.xaml
+    /// </summary>
+    public partial class ImageViewer : Window
 	{
 		public const int STANDART_DPI = 96;
 
@@ -27,13 +27,17 @@ namespace CryptoDataBase
 		private double ZoomStep = 1.1;
 		private Transform originalTransform;
 		private readonly int Dpi = STANDART_DPI;
-		public bool IsStretch { get; set; } = false;
+		public bool IsStretch { get { return _isStretch; } set { _isStretch = value; _isStretchGlobal = value; } }
+		private bool _isStretch = false;
+		private static bool _isStretchGlobal = false;
 
 		private System.Windows.Controls.ListView parentListView;
 		BitmapImage bmp = null;
 
 		public ImageViewer()
 		{
+			IsStretch = _isStretchGlobal;
+
 			InitializeComponent();
 			Dpi = (int)(STANDART_DPI * (Screen.PrimaryScreen.Bounds.Width / SystemParameters.PrimaryScreenWidth));
 

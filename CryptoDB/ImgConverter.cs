@@ -1,4 +1,4 @@
-﻿using CryptoDataBase.CDB;
+﻿using CryptoDataBase.CryptoContainer.Models;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 
 namespace ImageConverter
 {
-	static class ImgConverter
+    static class ImgConverter
 	{
 		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif" };
 
@@ -63,10 +63,10 @@ namespace ImageConverter
 			var bitmap = new BitmapImage();
 			try
 			{
-				stream.Position = 0;
 				bitmap.BeginInit();
-				bitmap.StreamSource = stream;
+				bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile;
 				bitmap.CacheOption = BitmapCacheOption.OnLoad;
+				bitmap.StreamSource = stream;
 				bitmap.EndInit();
 				bitmap.Freeze();
 			}
@@ -150,6 +150,35 @@ namespace ImageConverter
 				return null;
 			}
 		}
+
+		public static Bitmap GetIcon(string FileName, Stream sourceStream, int RectSize)
+		{
+			try
+			{
+				Bitmap bmp;
+				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
+				{
+					bmp = new Bitmap(sourceStream);
+				}
+				else if (Path.GetExtension(FileName).ToLower() == ".ico")
+				{
+					bmp = new Icon(sourceStream, 256, 256).ToBitmap();
+				}
+				else
+				{
+					bmp = IconConverter.GetImage(FileName);
+				}
+
+				Bitmap result = ResizeImage(bmp, RectSize);
+				bmp.Dispose();
+
+				return result;
+			}
+			catch
+			{
+				return null;
+			}
+		}
 	}
 
 
@@ -159,7 +188,7 @@ namespace ImageConverter
 		{
 			using (Bitmap bmp = (value as Element).Icon)
 			{
-				if ((bmp == null) && (value is DirElement))
+				if ((bmp == null) && (value is DirectoryElement))
 				{
 					return ImgConverter.BitmapToImageSource(CryptoDataBase.Properties.Resources.DirIcon);
 				}
