@@ -65,7 +65,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                     Header = new Header(parent.Header.Repository, ElementType.Directory);
                     DataRepository = dataRepository;
 
-                    byte[] iconBytes = GetIconBytes(icon);
+                    byte[] iconBytes = ImageHelper.GetBytesFromBitmap(icon);
                     uint iconSize = iconBytes == null ? 0 : (uint)iconBytes.Length;
                     //if icon size == 0 then iconStartPos will be a random number
                     ulong iconStartPos = GenID();
@@ -81,7 +81,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                     ParentElementId = parent.Id;
                     IconStartPos = iconStartPos;
                     IconSizeInner = iconSize;
-                    PHash = GetIconPHash(icon);
+                    PHash = ImageHelper.GetBitmapPHash(icon);
                     Parent = parent;
 
                     SaveInf();
@@ -603,7 +603,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         public List<Element> FindAllByIcon(Bitmap image, byte sensative = 0, bool findInSubDirectories = true)
         {
-            byte[] pHash = GetIconPHash(image);
+            byte[] pHash = ImageHelper.GetBitmapPHash(image);
             List<Element> result = new List<Element>();
             InnerFindAllByPHash(result, pHash, sensative, findInSubDirectories);
 
@@ -626,7 +626,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                 {
                     if (element.IconSize > 0)
                     {
-                        if (ComparePHashes(element.IconPHash, pHash, sensative))
+                        if (ImageHelper.ComparePHashes(element.IconPHash, pHash, sensative))
                         {
                             resultList.Add(element);
                         }

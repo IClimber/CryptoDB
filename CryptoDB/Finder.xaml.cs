@@ -1,4 +1,5 @@
-﻿using CryptoDataBase.CryptoContainer.Models;
+﻿using CryptoDataBase.CryptoContainer.Helpers;
+using CryptoDataBase.CryptoContainer.Models;
 using ImageConverter;
 using System;
 using System.Collections.Generic;
@@ -235,7 +236,7 @@ namespace CryptoDataBase
 
 					for (int j = from; j < to; j++)
 					{
-						if (Element.ComparePHashes(search_array[i].IconPHash, search_in_array[j].IconPHash, sensative) && !search_array[i].Equals(search_in_array[j]))
+						if (ImageHelper.ComparePHashes(search_array[i].IconPHash, search_in_array[j].IconPHash, sensative) && !search_array[i].Equals(search_in_array[j]))
 						{
 							lock (addLock)
 							{
