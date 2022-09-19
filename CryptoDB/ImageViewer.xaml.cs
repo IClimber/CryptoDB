@@ -23,6 +23,7 @@ namespace CryptoDataBase
 		List<Element> elements;
 		private Point origin;  // Original Offset of image
 		private Point start;   // Original Position of the mouse
+		private int rotate = 0;
 		private double Zoom = 1;
 		private double ZoomStep = 1.1;
 		private Transform originalTransform;
@@ -142,6 +143,7 @@ namespace CryptoDataBase
 			image.Width = 0;
 			image.Height = 0;
 			image.RenderTransform = new ScaleTransform();
+			rotate = 0;
 			image.Stretch = Stretch.None;
 			Zoom = 1;
 			//image.Source = img;
@@ -244,8 +246,8 @@ namespace CryptoDataBase
 			double imageHeight = image.Height;
 			double borderWidth = border.RenderSize.Width;
 			double borderHeight = border.RenderSize.Height;
-			double a = image.Width / CalculateImageWidth();
-			double b = image.Height / CalculateImageHeight();
+			double a = imageWidth / CalculateImageWidth();
+			double b = imageHeight / CalculateImageHeight();
 			if (a < b)
 			{
 				imageHeight = CalculateImageHeight() * a;
@@ -255,40 +257,133 @@ namespace CryptoDataBase
 				imageWidth = CalculateImageWidth() * b;
 			}
 
-			double minOffsetX;
-			double maxOffsetX;
+			if (rotate == 1 || rotate == 3)
+			{
+				var x = imageWidth;
+				imageWidth = imageHeight;
+				imageHeight = x;
+			}
+
 			if ((imageWidth * Zoom) > border.RenderSize.Width)
 			{
-				minOffsetX = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
-				maxOffsetX = -((borderWidth - imageWidth) / 2);
+				var imgXMinCenter = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
+				var imgXMaxCenter = -((borderWidth - imageWidth) / 2);
+				double minOffsetX = imgXMinCenter;
+				double maxOffsetX = imgXMaxCenter;
+
+				switch (rotate)
+				{
+					case 1:
+						{
+							minOffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXMaxCenter;
+							maxOffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXMinCenter;
+							break;
+						}
+					case 2:
+						{
+							minOffsetX = imageWidth - imgXMaxCenter;
+							maxOffsetX = imageWidth - imgXMinCenter;
+							break;
+						}
+					case 3:
+						{
+							minOffsetX = (imageHeight - imageWidth) / 2 + imgXMinCenter;
+							maxOffsetX = (imageHeight - imageWidth) / 2 + imgXMaxCenter;
+							break;
+						}
+				}
 
 				OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
 				OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
 			}
 			else
 			{
-				minOffsetX = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
-				OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
-				OffsetX = OffsetX > minOffsetX ? minOffsetX : OffsetX;
+				var imgXCenter = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
+				switch (rotate)
+				{
+					case 0:
+						{
+							OffsetX = imgXCenter;
+							break;
+						}
+					case 1:
+						{
+							OffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXCenter;
+							break;
+						}
+					case 2:
+						{
+							OffsetX = imageWidth - imgXCenter;
+							break;
+						}
+					case 3:
+						{
+							OffsetX = (imageHeight - imageWidth) / 2 + imgXCenter;
+							break;
+						}
+				}
 			}
 
-			double minOffsetY;
-			double maxOffsetY;
-			if ((imageHeight * Zoom) > borderHeight)
-			{
-				minOffsetY = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
-				maxOffsetY = -((borderHeight - imageHeight) / 2);
+            if ((imageHeight * Zoom) > borderHeight)
+            {
+				var imgYMinCenter = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
+				var imgYMaxCenter = -((borderHeight - imageHeight) / 2);
+				double minOffsetY = imgYMinCenter;
+				double maxOffsetY = imgYMaxCenter;
 
-				OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
-				OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
+				switch (rotate)
+                {
+                    case 1:
+                        {
+							minOffsetY = (imageWidth - imageHeight) / 2 + imgYMinCenter;
+							maxOffsetY = (imageWidth - imageHeight) / 2 + imgYMaxCenter;
+							break;
+						}
+					case 2:
+                        {
+							minOffsetY = imageHeight - imgYMaxCenter;
+							maxOffsetY = imageHeight - imgYMinCenter;
+							break;
+						}
+					case 3:
+                        {
+							minOffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYMaxCenter;
+							maxOffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYMinCenter;
+							break;
+						}
+                }
+
+                OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
+                OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
+            }
+            else
+            {
+				var imgYCenter = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
+				switch (rotate)
+				{
+					case 0:
+						{
+							OffsetY = imgYCenter;
+							break;
+						}
+					case 1:
+						{
+							OffsetY = (imageWidth - imageHeight) / 2 + imgYCenter;
+							break;
+						}
+					case 2:
+						{
+							OffsetY = imageHeight - imgYCenter;
+							break;
+						}
+					case 3:
+						{
+							OffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYCenter;
+							break;
+						}
+				}
 			}
-			else
-			{
-				minOffsetY = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
-				OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
-				OffsetY = OffsetY > minOffsetY ? minOffsetY : OffsetY;
-			}
-		}
+        }
 
 		private void image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
 		{
@@ -332,6 +427,11 @@ namespace CryptoDataBase
 				{
 					Zoom = 1;
 					image.RenderTransform = originalTransform;
+
+					m = image.RenderTransform.Value;
+					m.RotateAt(rotate * 90, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
+					image.RenderTransform = new MatrixTransform(m);
+
 					return;
 				}
 			}
@@ -347,9 +447,15 @@ namespace CryptoDataBase
 		private void Rotate_Click(object sender, RoutedEventArgs e)
 		{
 			double angle = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
+			rotate += (angle == 90 ? 1 : -1);
+			rotate = rotate < 0 ? 3 : (rotate > 3 ? 0 : rotate);
 			Matrix m = image.RenderTransform.Value;
 			m.RotateAt(angle, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
-			Title = image.RenderSize.Width.ToString();
+			var newOffsetX = m.OffsetX;
+			var newOffsetY = m.OffsetY;
+			SetOffset(ref newOffsetX, ref newOffsetY);
+			m.OffsetX = newOffsetX;
+			m.OffsetY = newOffsetY;
 			image.RenderTransform = new MatrixTransform(m);
 		}
 
@@ -376,7 +482,7 @@ namespace CryptoDataBase
 		{
 			SaveFileDialog sd = new SaveFileDialog();
 			sd.FileName = elements[currentIndex].Name;
-			sd.DefaultExt = System.IO.Path.GetExtension(elements[currentIndex].Name);
+			sd.DefaultExt = Path.GetExtension(elements[currentIndex].Name);
 			sd.Filter = "Image (*." + sd.DefaultExt.ToUpper() + ")|*." + sd.DefaultExt.ToUpper();
 			if (sd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
 			{
