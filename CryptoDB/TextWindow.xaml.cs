@@ -1,6 +1,7 @@
 ﻿using CryptoDataBase.CryptoContainer.Helpers;
 using CryptoDataBase.CryptoContainer.Models;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -73,40 +74,37 @@ namespace CryptoDataBase
 		public TextWindow(FileElement element) : this()
 		{
 			this.element = element;
-			MemoryStream ms = new MemoryStream();
-			element.SaveTo(ms);
-			TextRange textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-			ms.Position = 0;
-			textRange.Load(ms, DataFormats.Text);
-			textRange.ApplyPropertyValue(Paragraph.MarginProperty, new Thickness(0));
+			Title = element.Name;
+			using (MemoryStream ms = new MemoryStream())
+			{
+				element.SaveTo(ms);
+				ms.Position = 0;				
+				textBox.Text = StreamToString(ms);
 
-			//Получаємо хеш файла
-			ms.Position = 0;
-			textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-			textRange.Save(ms, DataFormats.Text);
-			ms.Position = 0;
-			textHash = HashHelper.GetMD5(ms);
-			ms.Dispose();
+				ms.Position = 0;
+				textHash = HashHelper.GetMD5(ms);
+			}
 
-			richTextBox.Focus();
+			textBox.Focus();
 		}
 
 		private void SaveChanges(bool ShowRequest)
 		{
-			TextRange textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-			MemoryStream ms = new MemoryStream();
-			textRange.Save(ms, DataFormats.Text);
+			MemoryStream ms = StringToStream(textBox.Text);
 			ms.Position = 0;
 			byte[] newHash = HashHelper.GetMD5(ms);
+
 			if (HashHelper.CompareHash(textHash, newHash))
 			{
 				ms.Dispose();
+
 				return;
 			}
 
 			if ((ShowRequest) && (MessageBox.Show(this, "Сохранить изменения", "Сохранение", MessageBoxButton.OKCancel) != MessageBoxResult.OK))
 			{
 				ms.Dispose();
+
 				return;
 			}
 
@@ -119,8 +117,27 @@ namespace CryptoDataBase
 			{
 				MessageBox.Show(ex.Message);
 			}
+
 			ms.Dispose();
 			textHash = newHash;
+		}
+
+		private string StreamToString(MemoryStream stream)
+		{
+			StreamReader reader = new StreamReader(stream);
+
+			return reader.ReadToEnd();
+		}
+
+		private MemoryStream StringToStream(string text)
+		{
+			var stream = new MemoryStream();
+			var writer = new StreamWriter(stream);
+			writer.Write(text);
+			writer.Flush();
+			stream.Position = 0;
+
+			return stream;
 		}
 	}
 }
