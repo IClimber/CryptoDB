@@ -12,10 +12,10 @@ using System.Windows.Media.Imaging;
 
 namespace CryptoDataBase
 {
-    /// <summary>
-    /// Логика взаимодействия для DocSource.xaml
-    /// </summary>
-    public partial class ImageViewer : Window
+	/// <summary>
+	/// Логика взаимодействия для DocSource.xaml
+	/// </summary>
+	public partial class ImageViewer : Window
 	{
 		public const int STANDART_DPI = 96;
 
@@ -172,10 +172,9 @@ namespace CryptoDataBase
 			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();
 
-			InitImageSize();
-
 			image.Stretch = Stretch.Uniform;
 			originalTransform = image.RenderTransform;
+			InitImageSize();
 
 			//GC.Collect();
 		}
@@ -186,19 +185,40 @@ namespace CryptoDataBase
 			{
 				double imgWidth = CalculateImageWidth();
 				double imgHeight = CalculateImageHeight();
-				if (IsStretch || (imgWidth > border.RenderSize.Width) || (imgHeight > border.RenderSize.Height))
+				double imgRotatedWidth = imgWidth;
+				double imgRotatedHeight = imgHeight;
+				bool needSwap = (rotate == 90 || rotate == 270);
+
+                if (needSwap)
 				{
-					image.Width = border.RenderSize.Width;
-					image.Height = border.RenderSize.Height;
+					(imgRotatedHeight, imgRotatedWidth) = (imgRotatedWidth, imgRotatedHeight);
 				}
-				else
-				{
-					image.Width = imgWidth;
-					image.Height = imgHeight;
-				}
+
+                if (IsStretch || (imgRotatedWidth > border.RenderSize.Width) || (imgRotatedHeight > border.RenderSize.Height))
+                {
+                    imgWidth = border.RenderSize.Width;
+                    imgHeight = border.RenderSize.Height;
+
+					//TODO
+                    if (needSwap && imgRotatedWidth < imgRotatedHeight)
+                    {
+                        (imgHeight, imgWidth) = (imgWidth, imgHeight);
+                    }
+                }
+
+				image.Width = imgWidth;
+				image.Height = imgHeight;
 			}
 			catch
 			{ }
+
+			Matrix m = image.RenderTransform.Value;
+			var newOffsetX = m.OffsetX;
+			var newOffsetY = m.OffsetY;
+			SetOffset(ref newOffsetX, ref newOffsetY);
+			m.OffsetX = newOffsetX;
+			m.OffsetY = newOffsetY;
+			image.RenderTransform = new MatrixTransform(m);
 		}
 
 		private double getOriginalDpiX()
@@ -257,151 +277,97 @@ namespace CryptoDataBase
 				imageWidth = CalculateImageWidth() * b;
 			}
 
-			if (rotate == 1 || rotate == 3)
+			if (rotate == 90 || rotate == 270)
 			{
 				var x = imageWidth;
 				imageWidth = imageHeight;
 				imageHeight = x;
 			}
 
+			var imgXMinCenter = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
+			var imgXMaxCenter = imgXMinCenter;
+			var imgYMinCenter = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
+			var imgYMaxCenter = imgYMinCenter;
+
 			if ((imageWidth * Zoom) > border.RenderSize.Width)
 			{
-				var imgXMinCenter = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
-				var imgXMaxCenter = -((borderWidth - imageWidth) / 2);
-				double minOffsetX = imgXMinCenter;
-				double maxOffsetX = imgXMaxCenter;
-
-				switch (rotate)
-				{
-					case 1:
-						{
-							minOffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXMaxCenter;
-							maxOffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXMinCenter;
-							break;
-						}
-					case 2:
-						{
-							minOffsetX = imageWidth - imgXMaxCenter;
-							maxOffsetX = imageWidth - imgXMinCenter;
-							break;
-						}
-					case 3:
-						{
-							minOffsetX = (imageHeight - imageWidth) / 2 + imgXMinCenter;
-							maxOffsetX = (imageHeight - imageWidth) / 2 + imgXMaxCenter;
-							break;
-						}
-				}
-
-				OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
-				OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
+				imgXMinCenter = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
+				imgXMaxCenter = -((borderWidth - imageWidth) / 2);
 			}
-			else
+
+			if ((imageHeight * Zoom) > borderHeight)
 			{
-				var imgXCenter = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
-				switch (rotate)
-				{
-					case 0:
-						{
-							OffsetX = imgXCenter;
-							break;
-						}
-					case 1:
-						{
-							OffsetX = imageHeight + (imageWidth - imageHeight) / 2 - imgXCenter;
-							break;
-						}
-					case 2:
-						{
-							OffsetX = imageWidth - imgXCenter;
-							break;
-						}
-					case 3:
-						{
-							OffsetX = (imageHeight - imageWidth) / 2 + imgXCenter;
-							break;
-						}
-				}
+				imgYMinCenter = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
+				imgYMaxCenter = -((borderHeight - imageHeight) / 2);
 			}
 
-            if ((imageHeight * Zoom) > borderHeight)
-            {
-				var imgYMinCenter = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
-				var imgYMaxCenter = -((borderHeight - imageHeight) / 2);
-				double minOffsetY = imgYMinCenter;
-				double maxOffsetY = imgYMaxCenter;
+			double xOffset = 0;
+			double yOffset = 0;
+			double minXCenter = imgXMinCenter;
+			double maxXCenter = imgXMaxCenter;
+			double minYCenter = imgYMinCenter;
+			double maxYCenter = imgYMaxCenter;
 
-				switch (rotate)
-                {
-                    case 1:
-                        {
-							minOffsetY = (imageWidth - imageHeight) / 2 + imgYMinCenter;
-							maxOffsetY = (imageWidth - imageHeight) / 2 + imgYMaxCenter;
-							break;
-						}
-					case 2:
-                        {
-							minOffsetY = imageHeight - imgYMaxCenter;
-							maxOffsetY = imageHeight - imgYMinCenter;
-							break;
-						}
-					case 3:
-                        {
-							minOffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYMaxCenter;
-							maxOffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYMinCenter;
-							break;
-						}
-                }
-
-                OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
-                OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
-            }
-            else
-            {
-				var imgYCenter = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
-				switch (rotate)
-				{
-					case 0:
-						{
-							OffsetY = imgYCenter;
-							break;
-						}
-					case 1:
-						{
-							OffsetY = (imageWidth - imageHeight) / 2 + imgYCenter;
-							break;
-						}
-					case 2:
-						{
-							OffsetY = imageHeight - imgYCenter;
-							break;
-						}
-					case 3:
-						{
-							OffsetY = imageWidth + (imageHeight - imageWidth) / 2 - imgYCenter;
-							break;
-						}
-				}
+			switch (rotate)
+			{
+				case 90:
+					{
+						xOffset = imageHeight + (imageWidth - imageHeight) / 2;
+						yOffset = (imageWidth - imageHeight) / 2;
+						minXCenter = -imgXMaxCenter;
+						maxXCenter = -imgXMinCenter;
+						break;
+					}
+				case 180:
+					{
+						xOffset = imageWidth;
+						yOffset = imageHeight;
+						minXCenter = -imgXMaxCenter;
+						maxXCenter = -imgXMinCenter;
+						minYCenter = -imgYMaxCenter;
+						maxYCenter = -imgYMinCenter;
+						break;
+					}
+				case 270:
+					{
+						xOffset = (imageHeight - imageWidth) / 2;
+						yOffset = imageWidth + (imageHeight - imageWidth) / 2;
+						minYCenter = -imgYMaxCenter;
+						maxYCenter = -imgYMinCenter;
+						break;
+					}
 			}
-        }
+
+			double minOffsetX = xOffset + minXCenter;
+			double maxOffsetX = xOffset + maxXCenter;
+			double minOffsetY = yOffset + minYCenter;
+			double maxOffsetY = yOffset + maxYCenter;
+
+			OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
+			OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
+
+			OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
+			OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
+		}
 
 		private void image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
 		{
 			if (!image.IsMouseCaptured) return;
 			Point p = e.MouseDevice.GetPosition(border);
 
-			Matrix m = image.RenderTransform.Value;
+            Matrix m = image.RenderTransform.Value;
 			m.OffsetX = origin.X + (p.X - start.X);
 			m.OffsetY = origin.Y + (p.Y - start.Y);
 
-			double newOffsetX = m.OffsetX, newOffsetY = m.OffsetY;
+			double newOffsetX = m.OffsetX;
+			double newOffsetY = m.OffsetY;
 			SetOffset(ref newOffsetX, ref newOffsetY);
 			m.OffsetX = newOffsetX;
 			m.OffsetY = newOffsetY;
 
 			image.RenderTransform = new MatrixTransform(m);
-			//Title = m.OffsetX.ToString() + "   " + m.OffsetY.ToString();
-		}
+            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
+        }
 
 		private void MainWindow_MouseWheel(object sender, MouseWheelEventArgs e)
 		{
@@ -429,35 +395,33 @@ namespace CryptoDataBase
 					image.RenderTransform = originalTransform;
 
 					m = image.RenderTransform.Value;
-					m.RotateAt(rotate * 90, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
+					m.RotateAt(rotate, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
 					image.RenderTransform = new MatrixTransform(m);
 
 					return;
 				}
 			}
 
-			double newOffsetX = m.OffsetX, newOffsetY = m.OffsetY;
+			double newOffsetX = m.OffsetX;
+			double newOffsetY = m.OffsetY;
 			SetOffset(ref newOffsetX, ref newOffsetY);
 			m.OffsetX = newOffsetX;
 			m.OffsetY = newOffsetY;
-
 			image.RenderTransform = new MatrixTransform(m);
-		}
+            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
+        }
 
 		private void Rotate_Click(object sender, RoutedEventArgs e)
 		{
 			double angle = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
-			rotate += (angle == 90 ? 1 : -1);
-			rotate = rotate < 0 ? 3 : (rotate > 3 ? 0 : rotate);
-			Matrix m = image.RenderTransform.Value;
+			rotate += (angle == 90 ? 90 : -90);
+			rotate = rotate < 0 ? 270 : (rotate > 270 ? 0 : rotate);
+            Matrix m = image.RenderTransform.Value;
 			m.RotateAt(angle, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
-			var newOffsetX = m.OffsetX;
-			var newOffsetY = m.OffsetY;
-			SetOffset(ref newOffsetX, ref newOffsetY);
-			m.OffsetX = newOffsetX;
-			m.OffsetY = newOffsetY;
 			image.RenderTransform = new MatrixTransform(m);
-		}
+            InitImageSize();
+            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
+        }
 
 		private void grid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
 		{
