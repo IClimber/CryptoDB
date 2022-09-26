@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace CryptoDataBase
@@ -17,35 +16,18 @@ namespace CryptoDataBase
 	/// </summary>
 	public partial class ImageViewer : Window
 	{
-		public const int STANDART_DPI = 96;
-
 		int currentIndex;
 		List<Element> elements;
-		private Point origin;  // Original Offset of image
-		private Point start;   // Original Position of the mouse
-		private int rotate = 0;
-		private double Zoom = 1;
-		private double ZoomStep = 1.1;
-		private Transform originalTransform;
-		private readonly int Dpi = STANDART_DPI;
 		public bool IsStretch { get { return _isStretch; } set { _isStretch = value; _isStretchGlobal = value; } }
 		private bool _isStretch = false;
 		private static bool _isStretchGlobal = false;
-
 		private System.Windows.Controls.ListView parentListView;
-		BitmapImage bmp = null;
 
 		public ImageViewer()
 		{
 			IsStretch = _isStretchGlobal;
 
 			InitializeComponent();
-			Dpi = (int)(STANDART_DPI * (Screen.PrimaryScreen.Bounds.Width / SystemParameters.PrimaryScreenWidth));
-
-			MouseWheel += MainWindow_MouseWheel;
-			image.MouseLeftButtonDown += image_MouseLeftButtonDown;
-			image.MouseLeftButtonUp += image_MouseLeftButtonUp;
-			image.MouseMove += image_MouseMove;
 
 			toolPanel.Visibility = Visibility.Hidden;
 			prevImg.Visibility = Visibility.Hidden;
@@ -140,22 +122,15 @@ namespace CryptoDataBase
 
 			MemoryStream ms = new MemoryStream();
 			currentElement.SaveTo(ms);
-			image.Width = 0;
-			image.Height = 0;
-			image.RenderTransform = new ScaleTransform();
-			rotate = 0;
-			image.Stretch = Stretch.None;
-			Zoom = 1;
-			//image.Source = img;
-			//BitmapFrame bmp = null;
 
-			bmp = null;
+			BitmapImage bmp = null;
 
 			try
 			{
 				ms.Position = 0;
 				bmp = ImgConverter.StreamToBitmapImage(ms);
-				image.Source = bmp;
+				image.SetSource(bmp);
+				image.IsStretch = IsStretch;
 				//bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
 				//ImageBehavior.SetAnimatedSource(image, bmp);
 				//bmp = null;
@@ -171,257 +146,21 @@ namespace CryptoDataBase
 			TextBlockStatus2.Text = "Image resolution: " + bmp?.PixelWidth + " x " + bmp?.PixelHeight;
 			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();
-
-			image.Stretch = Stretch.Uniform;
-			originalTransform = image.RenderTransform;
-			InitImageSize();
-
-			//GC.Collect();
 		}
-
-		private void InitImageSize()
-		{
-			try
-			{
-				double imgWidth = CalculateImageWidth();
-				double imgHeight = CalculateImageHeight();
-				double imgRotatedWidth = imgWidth;
-				double imgRotatedHeight = imgHeight;
-				bool needSwap = (rotate == 90 || rotate == 270);
-
-                if (needSwap)
-				{
-					(imgRotatedHeight, imgRotatedWidth) = (imgRotatedWidth, imgRotatedHeight);
-				}
-
-                if (IsStretch || (imgRotatedWidth > border.RenderSize.Width) || (imgRotatedHeight > border.RenderSize.Height))
-                {
-                    imgWidth = border.RenderSize.Width;
-                    imgHeight = border.RenderSize.Height;
-
-					//TODO
-                    if (needSwap && imgRotatedWidth < imgRotatedHeight)
-                    {
-                        (imgHeight, imgWidth) = (imgWidth, imgHeight);
-                    }
-                }
-
-				image.Width = imgWidth;
-				image.Height = imgHeight;
-			}
-			catch
-			{ }
-
-			Matrix m = image.RenderTransform.Value;
-			var newOffsetX = m.OffsetX;
-			var newOffsetY = m.OffsetY;
-			SetOffset(ref newOffsetX, ref newOffsetY);
-			m.OffsetX = newOffsetX;
-			m.OffsetY = newOffsetY;
-			image.RenderTransform = new MatrixTransform(m);
-		}
-
-		private double getOriginalDpiX()
-		{
-			return bmp.DpiX > 0 ? bmp.DpiX : STANDART_DPI;
-		}
-
-		private double getOriginalDpiY()
-		{
-			return bmp.DpiY > 0 ? bmp.DpiY : STANDART_DPI;
-		}
-
-		private double CalculateImageWidth()
-		{
-			return bmp.Width * getOriginalDpiX() / Dpi;
-		}
-
-		private double CalculateImageHeight()
-		{
-			return bmp.Height * getOriginalDpiY() / Dpi;
-		}
-
-		private void image_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			if (image.IsMouseCaptured)
-			{
-				return;
-			}
-			image.CaptureMouse();
-
-
-			start = e.GetPosition(border);
-			origin.X = image.RenderTransform.Value.OffsetX;
-			origin.Y = image.RenderTransform.Value.OffsetY;
-		}
-
-		private void image_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-		{
-			image.ReleaseMouseCapture();
-		}
-
-		private void SetOffset(ref double OffsetX, ref double OffsetY)
-		{
-			double imageWidth = image.Width;
-			double imageHeight = image.Height;
-			double borderWidth = border.RenderSize.Width;
-			double borderHeight = border.RenderSize.Height;
-			double a = imageWidth / CalculateImageWidth();
-			double b = imageHeight / CalculateImageHeight();
-			if (a < b)
-			{
-				imageHeight = CalculateImageHeight() * a;
-			}
-			else
-			{
-				imageWidth = CalculateImageWidth() * b;
-			}
-
-			if (rotate == 90 || rotate == 270)
-			{
-				var x = imageWidth;
-				imageWidth = imageHeight;
-				imageHeight = x;
-			}
-
-			var imgXMinCenter = ((borderWidth - imageWidth * Zoom) / 2) - ((borderWidth - imageWidth) / 2);
-			var imgXMaxCenter = imgXMinCenter;
-			var imgYMinCenter = ((borderHeight - imageHeight * Zoom) / 2) - ((borderHeight - imageHeight) / 2);
-			var imgYMaxCenter = imgYMinCenter;
-
-			if ((imageWidth * Zoom) > border.RenderSize.Width)
-			{
-				imgXMinCenter = -((imageWidth * Zoom - borderWidth) + (borderWidth - imageWidth) / 2);
-				imgXMaxCenter = -((borderWidth - imageWidth) / 2);
-			}
-
-			if ((imageHeight * Zoom) > borderHeight)
-			{
-				imgYMinCenter = -((imageHeight * Zoom - borderHeight) + (borderHeight - imageHeight) / 2);
-				imgYMaxCenter = -((borderHeight - imageHeight) / 2);
-			}
-
-			double xOffset = 0;
-			double yOffset = 0;
-			double minXCenter = imgXMinCenter;
-			double maxXCenter = imgXMaxCenter;
-			double minYCenter = imgYMinCenter;
-			double maxYCenter = imgYMaxCenter;
-
-			switch (rotate)
-			{
-				case 90:
-					{
-						xOffset = imageHeight + (imageWidth - imageHeight) / 2;
-						yOffset = (imageWidth - imageHeight) / 2;
-						minXCenter = -imgXMaxCenter;
-						maxXCenter = -imgXMinCenter;
-						break;
-					}
-				case 180:
-					{
-						xOffset = imageWidth;
-						yOffset = imageHeight;
-						minXCenter = -imgXMaxCenter;
-						maxXCenter = -imgXMinCenter;
-						minYCenter = -imgYMaxCenter;
-						maxYCenter = -imgYMinCenter;
-						break;
-					}
-				case 270:
-					{
-						xOffset = (imageHeight - imageWidth) / 2;
-						yOffset = imageWidth + (imageHeight - imageWidth) / 2;
-						minYCenter = -imgYMaxCenter;
-						maxYCenter = -imgYMinCenter;
-						break;
-					}
-			}
-
-			double minOffsetX = xOffset + minXCenter;
-			double maxOffsetX = xOffset + maxXCenter;
-			double minOffsetY = yOffset + minYCenter;
-			double maxOffsetY = yOffset + maxYCenter;
-
-			OffsetX = OffsetX < minOffsetX ? minOffsetX : OffsetX;
-			OffsetX = OffsetX > maxOffsetX ? maxOffsetX : OffsetX;
-
-			OffsetY = OffsetY < minOffsetY ? minOffsetY : OffsetY;
-			OffsetY = OffsetY > maxOffsetY ? maxOffsetY : OffsetY;
-		}
-
-		private void image_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-		{
-			if (!image.IsMouseCaptured) return;
-			Point p = e.MouseDevice.GetPosition(border);
-
-            Matrix m = image.RenderTransform.Value;
-			m.OffsetX = origin.X + (p.X - start.X);
-			m.OffsetY = origin.Y + (p.Y - start.Y);
-
-			double newOffsetX = m.OffsetX;
-			double newOffsetY = m.OffsetY;
-			SetOffset(ref newOffsetX, ref newOffsetY);
-			m.OffsetX = newOffsetX;
-			m.OffsetY = newOffsetY;
-
-			image.RenderTransform = new MatrixTransform(m);
-            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
-        }
-
-		private void MainWindow_MouseWheel(object sender, MouseWheelEventArgs e)
-		{
-			Point p = e.MouseDevice.GetPosition(image);
-
-			Matrix m = image.RenderTransform.Value;
-			if (e.Delta > 0)
-			{
-				if ((Zoom * ZoomStep) <= 10)
-				{
-					Zoom *= ZoomStep;
-					m.ScaleAtPrepend(ZoomStep, ZoomStep, p.X, p.Y);
-				}
-			}
-			else
-			{
-				if ((Zoom / ZoomStep) >= 1)
-				{
-					Zoom /= ZoomStep;
-					m.ScaleAtPrepend(1 / ZoomStep, 1 / ZoomStep, p.X, p.Y);
-				}
-				else
-				{
-					Zoom = 1;
-					image.RenderTransform = originalTransform;
-
-					m = image.RenderTransform.Value;
-					m.RotateAt(rotate, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
-					image.RenderTransform = new MatrixTransform(m);
-
-					return;
-				}
-			}
-
-			double newOffsetX = m.OffsetX;
-			double newOffsetY = m.OffsetY;
-			SetOffset(ref newOffsetX, ref newOffsetY);
-			m.OffsetX = newOffsetX;
-			m.OffsetY = newOffsetY;
-			image.RenderTransform = new MatrixTransform(m);
-            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
-        }
 
 		private void Rotate_Click(object sender, RoutedEventArgs e)
 		{
 			double angle = int.Parse((string)((System.Windows.Controls.Button)sender).Tag);
-			rotate += (angle == 90 ? 90 : -90);
-			rotate = rotate < 0 ? 270 : (rotate > 270 ? 0 : rotate);
-            Matrix m = image.RenderTransform.Value;
-			m.RotateAt(angle, image.RenderSize.Width / 2, image.RenderSize.Height / 2);
-			image.RenderTransform = new MatrixTransform(m);
-            InitImageSize();
-            //Title = "Width: " + image.Width.ToString() + " Height: " + image.Height.ToString() + " Xoffset: " + m.OffsetX.ToString() + " Yoffset: " + m.OffsetY.ToString();
-        }
+			if (angle == 90)
+			{
+				image.Rotate90();
+			}
+
+			if (angle == 270)
+			{
+				image.Rotate270();
+			}
+		}
 
 		private void grid_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
 		{
@@ -510,14 +249,12 @@ namespace CryptoDataBase
 
 		private void Window_Closed(object sender, EventArgs e)
 		{
-			bmp = null;
-
 			GC.Collect();
 		}
 
 		private void IsStretchCheckBox_Click(object sender, RoutedEventArgs e)
 		{
-			InitImageSize();
+			image.IsStretch = IsStretch;
 		}
 
 		private void imageViewer_Loaded(object sender, RoutedEventArgs e)
