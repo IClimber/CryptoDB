@@ -120,6 +120,13 @@ namespace CryptoDataBase.Controls
             SetOffset(m.OffsetX, m.OffsetY);
         }
 
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+
+            InitImageSize();
+        }
+        
         private void OnImageMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (image.IsMouseCaptured)
@@ -139,7 +146,7 @@ namespace CryptoDataBase.Controls
             image.ReleaseMouseCapture();
         }
 
-        private void OnImageMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        private void OnImageMouseMove(object sender, MouseEventArgs e)
         {
             if (!image.IsMouseCaptured) return;
             Point p = e.MouseDevice.GetPosition(this);
@@ -269,6 +276,11 @@ namespace CryptoDataBase.Controls
 
         private void InitImageSize()
         {
+            if (image.Source == null)
+            {
+                return;
+            }
+
             try
             {
                 double imgWidth = CalculateImageWidth();

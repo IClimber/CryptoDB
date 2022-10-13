@@ -8,7 +8,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="local:ImageView">
                     <Grid>
-                        <Image x:Name="PART_image" Stretch="Uniform"/>
+                        <Image x:Name="PART_image" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="False" ScrollViewer.CanContentScroll="True" Grid.IsSharedSizeScope="False"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
