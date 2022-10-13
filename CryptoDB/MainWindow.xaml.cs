@@ -1,5 +1,4 @@
 ﻿using ClipboardAssist;
-using CryptoDataBase.CryptoContainer;
 using CryptoDataBase.CryptoContainer.Comparers;
 using CryptoDataBase.CryptoContainer.Exceptions;
 using CryptoDataBase.CryptoContainer.Helpers;
@@ -24,16 +23,16 @@ using System.Windows.Input;
 
 namespace CryptoDataBase
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged
+	/// <summary>
+	/// Логика взаимодействия для MainWindow.xaml
+	/// </summary>
+	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
 		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
 		private static string[] ArchiveExtensions = new string[] { ".zip", ".rar", ".7z", ".001", ".tar", ".gzip" };
 		private List<Element> CutList = new List<Element>();
-        CryptoContainer.CryptoContainer xdb;
+		CryptoContainer.CryptoContainer xdb;
 		string password;
 		string databaseFile;
 		public const int THUMBNAIL_SIZE = 200;
@@ -314,7 +313,14 @@ namespace CryptoDataBase
 							return;
 						}
 
-						item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
+						try
+						{
+							item.parentElement.AddFile(item.name, Path.GetFileName(item.name), false, bmp, ReportProgress);
+						}
+						catch (DuplicatesFileNameException)
+						{
+
+						}
 					}
 				}
 			}
@@ -324,7 +330,15 @@ namespace CryptoDataBase
 
 				try
 				{
-					newParent = item.parentElement.CreateDirectory(Path.GetFileName(item.name));
+					var element = item.parentElement.FindByName(Path.GetFileName(item.name));
+					if (element != null && element is DirectoryElement)
+					{
+						newParent = (DirectoryElement)element;
+					}
+					else
+					{
+						newParent = item.parentElement.CreateDirectory(Path.GetFileName(item.name));
+					}
 				}
 				catch (Exception e)
 				{
@@ -551,7 +565,7 @@ namespace CryptoDataBase
 				GC.Collect();
 
 				CanChangePassword = Visibility.Collapsed;
-                xdb = new CryptoContainer.CryptoContainer(databaseFile, e.Argument.ToString(), this.PerortProgress);
+				xdb = new CryptoContainer.CryptoContainer(databaseFile, e.Argument.ToString(), this.PerortProgress);
 				CanChangePassword = xdb.CanChangePassword() && !IsReadOnly ? Visibility.Visible : Visibility.Collapsed;
 				_faildedOpen = false;
 			}
