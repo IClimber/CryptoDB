@@ -55,6 +55,11 @@ namespace CryptoDataBase.CryptoContainer.Models
                 {
                     fileStartPos = dataRepository.WriteEncrypt(fileStream, _fileIV, out _hash, progress).Start;
                 }
+                else
+                {
+                    _hash = new byte[16];
+                    RandomHelper.GetBytes(_hash);
+                }
 
                 if (iconSize > 0)
                 {
@@ -72,8 +77,6 @@ namespace CryptoDataBase.CryptoContainer.Models
                     IconStartPos = iconStartPos;
                     IconSizeInner = iconSize;
                     _isCompressed = isCompressed;
-                    _hash = new byte[16];
-                    RandomHelper.GetBytes(_hash);
                     PHash = ImageHelper.GetBitmapPHash(icon);
                     Exists = true;
 
