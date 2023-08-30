@@ -19,7 +19,7 @@ namespace CryptoDataBase
 			InitializeComponent();
 
 			passwordBox.Focus();
-		}
+        }
 
 		private void buttonOk_Click(object sender, RoutedEventArgs e)
 		{
