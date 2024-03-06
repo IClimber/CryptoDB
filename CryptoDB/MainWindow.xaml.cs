@@ -679,10 +679,10 @@ namespace CryptoDataBase
 			return new BindingList<Element>(result.OrderByDescending(x => x.Type).ToList());
 		}
 
-		private void SetViewsElement(DirectoryElement parent, IList<Element> elements, Element selected = null, bool with_orders = true)
+		private void SetViewsElement(DirectoryElement parent, BindingList<Element> elements, Element selected = null)
 		{
 			RefreshPathPanel(parent != null ? parent : LastParent);
-			listView.ItemsSource = with_orders ? OrderBy(elements) : new BindingList<Element>(elements); ;
+			listView.ItemsSource = elements;
 
 			if (parent != null)
 			{
@@ -711,8 +711,10 @@ namespace CryptoDataBase
 			//Відкриваємо папку
 			if (element is DirectoryElement)
 			{
-				Element select = select_first ? (element as DirectoryElement).Elements.FirstOrDefault() : selected;
-				SetViewsElement((element as DirectoryElement), (element as DirectoryElement).Elements, select);
+                var elements = OrderBy((element as DirectoryElement).Elements);
+
+                Element select = select_first ? elements.FirstOrDefault() : selected;
+				SetViewsElement((element as DirectoryElement), elements, select);
 
 				return;
 			}
@@ -737,7 +739,7 @@ namespace CryptoDataBase
 
 		public void ShowList(List<Element> elements)
 		{
-			SetViewsElement(null, elements, null, false);
+            SetViewsElement(null, new BindingList<Element>(elements), null);
 		}
 
 		private void listView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1527,7 +1529,9 @@ namespace CryptoDataBase
 		{
 			bool sortDirect = ((sender as System.Windows.Controls.RadioButton).Tag as bool?) == true;
 			(sender as System.Windows.Controls.RadioButton).Tag = !sortDirect;
-			SetViewsElement((listView.Tag as DirectoryElement), listView.ItemsSource as IList<Element>);
+
+			var elements = new BindingList<Element>(listView.ItemsSource as IList<Element>);
+            SetViewsElement((listView.Tag as DirectoryElement), OrderBy(elements));
 		}
 
 		private void Insert_Click(object sender, RoutedEventArgs e)
