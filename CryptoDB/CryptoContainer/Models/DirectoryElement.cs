@@ -1,5 +1,4 @@
-﻿using CryptoDataBase.CryptoContainer.Comparers;
-using CryptoDataBase.CryptoContainer.Exceptions;
+﻿using CryptoDataBase.CryptoContainer.Exceptions;
 using CryptoDataBase.CryptoContainer.Helpers;
 using CryptoDataBase.CryptoContainer.Repositories;
 using CryptoDataBase.CryptoContainer.Services;
@@ -16,24 +15,24 @@ namespace CryptoDataBase.CryptoContainer.Models
     public class DirectoryElement : Element
     {
         public override ElementType Type => ElementType.Directory;
-        public IList<Element> Elements => _elements.AsReadOnly();
+        public IList<Element> Elements => _elements.Values.ToList().AsReadOnly();
         public override ulong Size => GetSize();
         public override ulong FullSize => GetFullSize();
         public override ulong FullEncryptSize => GetFullEncryptSize();
         public ulong Id => _id;
         public override DirectoryElement Parent { get { return ParentElement; } set { ChangeParent(value); } }
         private const int RawInfLength = 38;
-        private List<Element> _elements;
+        private Dictionary<string, Element> _elements;
         private ulong _id;
 
         protected DirectoryElement()
         {
-            _elements = new List<Element>();
+            _elements = new Dictionary<string, Element>();
         }
 
         protected DirectoryElement(object addElementLocker, object changeElementsLocker) : base(addElementLocker, changeElementsLocker)
         {
-            _elements = new List<Element>();
+            _elements = new Dictionary<string, Element>();
         }
 
         private DirectoryElement(string Name)
@@ -49,7 +48,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         //Створення папки при читані з файлу
         public DirectoryElement(Header header, DataRepository datarRepository, object addElementLocker, object changeElementsLocker) : base(header, datarRepository, addElementLocker, changeElementsLocker)
         {
-            _elements = new List<Element>();
+            _elements = new Dictionary<string, Element>();
             byte[] buf = header.GetInfoBuf();
 
             ReadElementParamsFromBuffer(buf);
@@ -95,7 +94,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     result += element.Size;
                 }
@@ -110,7 +109,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     result += element.FullSize;
                 }
@@ -125,7 +124,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     result += element.FullEncryptSize;
                 }
@@ -206,7 +205,7 @@ namespace CryptoDataBase.CryptoContainer.Models
             lock (ChangeElementsLocker)
             {
                 elementList = new Element[_elements.Count];
-                _elements.CopyTo(elementList);
+                _elements.Values.ToList().CopyTo(elementList);
             }
 
             foreach (var element in elementList)
@@ -271,43 +270,35 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         public override bool SetVirtualParent(DirectoryElement newParent)
         {
-            if (newParent == null || newParent == this)
+            if (newParent == null || newParent == this || newParent == Parent)
             {
                 return false;
             }
 
             lock (ChangeElementsLocker)
             {
-                if (FindByName(newParent._elements, ElementName) != null)
+                var key = ElementName.ToLower();
+
+                if (newParent.FileExists(key))
                 {
                     return false;
                 }
 
-                if (FindSubDirectoryByID(newParent.Id) != null)
+                //TODO: not need for virtual setter
+                /*if (FindSubDirectoryByID(newParent.Id) != null)
                 {
                     throw new RecursiveFolderAttachmentException();
-                }
+                }*/
 
-                int index;
                 if (ParentElement != null)
                 {
-                    if (FindByName(ParentElement._elements, ElementName, out index) != null)
-                    {
-                        ParentElement._elements.RemoveAt(index);
-                    }
+                    ParentElement._elements.Remove(key);
                 }
 
                 ParentElement = newParent;
                 ParentElementId = newParent.Id;
 
-                if (FindByName(ParentElement._elements, ElementName, out index) == null)
-                {
-                    ParentElement._elements.Insert(index, this);
-                }
-                else
-                {
-                    throw new DuplicatesFileNameException();
-                }
+                ParentElement._elements.Add(key, this);
             }
 
             return true;
@@ -315,16 +306,18 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         private void ChangeParent(DirectoryElement newParent)
         {
-            if (newParent == null || newParent == this)
+            if (newParent == null || newParent == this || newParent == Parent)
             {
                 return;
             }
 
             lock (ChangeElementsLocker)
             {
-                if (FindByName(newParent._elements, ElementName) != null)
+                var key = ElementName.ToLower();
+
+                if (newParent.FileExists(key))
                 {
-                    return;
+                    throw new DuplicatesFileNameException();
                 }
 
                 if (FindSubDirectoryByID(newParent.Id) != null)
@@ -332,27 +325,16 @@ namespace CryptoDataBase.CryptoContainer.Models
                     throw new RecursiveFolderAttachmentException();
                 }
 
-                int index;
                 if (ParentElement != null)
                 {
-                    if (FindByName((ParentElement as DirectoryElement)._elements, ElementName, out index) != null)
-                    {
-                        (ParentElement as DirectoryElement)._elements.RemoveAt(index);
-                    }
+                    ParentElement._elements.Remove(key);
                 }
 
                 bool writeToFile = ParentElementId != newParent.Id;
                 ParentElement = newParent;
                 ParentElementId = newParent.Id;
 
-                if (FindByName((ParentElement as DirectoryElement)._elements, ElementName, out index) == null)
-                {
-                    (ParentElement as DirectoryElement)._elements.Insert(index, this);
-                }
-                else
-                {
-                    throw new DuplicatesFileNameException();
-                }
+                ParentElement._elements.Add(key, this);
 
                 if (writeToFile)
                 {
@@ -361,11 +343,20 @@ namespace CryptoDataBase.CryptoContainer.Models
             }
         }
 
-        public void RefreshChildOrders()
+        public void UpdateElementKey(string oldKey, string newKey, Element element)
         {
+            var oldKeyLower = oldKey.ToLower();
+            var newKeyLower = newKey.ToLower();
+
+            if (oldKeyLower == newKeyLower)
+            {
+                return;
+            }
+
             lock (ChangeElementsLocker)
             {
-                _elements.Sort(new NameComparer());
+                _elements.Remove(oldKeyLower);
+                _elements.Add(newKeyLower, element);
             }
         }
 
@@ -378,16 +369,16 @@ namespace CryptoDataBase.CryptoContainer.Models
 
             lock (ChangeElementsLocker)
             {
-                Element duplicate = FindByName((ParentElement as DirectoryElement)._elements, newName);
+                Element duplicate = FindByName(ParentElement._elements, newName);
                 if (duplicate != null && duplicate != this)
                 {
-                    return;
+                    throw new DuplicatesFileNameException();
                 }
 
                 lock (DataRepository.WriteLock)
                 {
+                    ParentElement.UpdateElementKey(ElementName, newName, this);
                     ElementName = newName;
-                    (ParentElement as DirectoryElement).RefreshChildOrders();
                     SaveInf();
 
                     base.Rename(newName);
@@ -401,10 +392,7 @@ namespace CryptoDataBase.CryptoContainer.Models
             {
                 try
                 {
-                    if (FindByName(_elements, element.Name, out int index) != null)
-                    {
-                        _elements.RemoveAt(index);
-                    }
+                    _elements.Remove(element.Name.ToLower());
                 }
                 catch
                 {
@@ -419,14 +407,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                if (FindByName(_elements, element.Name, out int index) == null)
-                {
-                    _elements.Insert(index, element);
-                }
-                else
-                {
-                    throw new DuplicatesFileNameException();
-                }
+                _elements.Add(element.Name.ToLower(), element);
             }
 
             return true;
@@ -437,7 +418,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                return _elements.BinarySearch(new DirectoryElement(name), new NameComparer()) >= 0;
+                return _elements.ContainsKey(name.ToLower());
             }
         }
 
@@ -446,7 +427,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                foreach (DirectoryElement element in _elements.Where(x => x.Type == ElementType.Directory))
+                foreach (DirectoryElement element in _elements.Values.Where(x => x.Type == ElementType.Directory))
                 {
                     if (element.Id == id)
                     {
@@ -467,35 +448,18 @@ namespace CryptoDataBase.CryptoContainer.Models
         //Шукає в сортованому по Name списку
         public Element FindByName(string name)
         {
-            lock (ChangeElementsLocker)
-            {
-                int index = _elements.BinarySearch(new DirectoryElement(name), new NameComparer());
-
-                return index >= 0 ? _elements[index] : null;
-            }
+            return FindByName(_elements, name);
         }
 
         //Шукає в сортованому по Name списку
-        private Element FindByName(List<Element> elements, string name)
+        private Element FindByName(Dictionary<string, Element> elements, string name)
         {
             lock (ChangeElementsLocker)
             {
-                int index = elements.BinarySearch(new DirectoryElement(name), new NameComparer());
+                Element element = null;
+                elements.TryGetValue(name.ToLower(), out element);
 
-                return index >= 0 ? elements[index] : null;
-            }
-        }
-
-        //Шукає в сортованому по Name списку
-        private Element FindByName(List<Element> elements, string name, out int index)
-        {
-            lock (ChangeElementsLocker)
-            {
-                index = elements.BinarySearch(new DirectoryElement(name), new NameComparer());
-                Element result = index >= 0 ? elements[index] : null;
-                index = index < 0 ? Math.Abs(index) - 1 : index;
-
-                return result;
+                return element;
             }
         }
 
@@ -520,7 +484,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     int coincidencesNumber = 0;
 
@@ -557,7 +521,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     if (element.Name.IndexOf(name, StringComparison.CurrentCultureIgnoreCase) >= 0)
                     {
@@ -574,12 +538,9 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         public DirectoryElement CreateDirectory(string name, Bitmap icon)
         {
-            lock (ChangeElementsLocker)
+            if (FileExists(name))
             {
-                if (FindByName(_elements, name, out int index) != null)
-                {
-                    throw new DuplicatesFileNameException();
-                }
+                throw new DuplicatesFileNameException();
             }
 
             DirectoryElement directory;
@@ -622,7 +583,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     if (element.IconSize > 0)
                     {
@@ -652,7 +613,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             lock (ChangeElementsLocker)
             {
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     if (element is FileElement && HashHelper.CompareHash((element as FileElement).Hash, hash))
                     {
@@ -692,7 +653,7 @@ namespace CryptoDataBase.CryptoContainer.Models
                 Header.Delete();
                 DataRepository.AddFreeSpace(IconStartPos, MathHelper.GetMod16(IconSizeInner));
 
-                foreach (var element in _elements)
+                foreach (var element in _elements.Values)
                 {
                     if (element is FileElement)
                     {

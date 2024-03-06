@@ -1179,9 +1179,9 @@ namespace CryptoDataBase
 				{
 					item.Parent = newParent;
 				}
-				catch
+				catch (Exception e)
 				{
-
+                    System.Windows.MessageBox.Show(e.Message);
 				}
 			}
 

@@ -199,21 +199,22 @@ namespace CryptoDataBase.CryptoContainer.Models
                 return;
             }
 
-            if ((ParentElement as DirectoryElement).FileExists(newName))
+            lock (ChangeElementsLocker)
             {
-                throw new DuplicatesFileNameException();
-            }
-
-            lock (DataRepository.WriteLock)
-            {
-                lock (ChangeElementsLocker)
+                Element duplicate = ParentElement.FindByName(newName);
+                if (duplicate != null && duplicate != this)
                 {
-                    ElementName = newName;
-                    (ParentElement as DirectoryElement).RefreshChildOrders();
-                    SaveInf();
+                    throw new DuplicatesFileNameException();
                 }
 
-                base.Rename(newName);
+                lock (DataRepository.WriteLock)
+                {
+                    ParentElement.UpdateElementKey(ElementName, newName, this);
+                    ElementName = newName;
+                    SaveInf();
+
+                    base.Rename(newName);
+                }
             }
         }
 
@@ -287,7 +288,7 @@ namespace CryptoDataBase.CryptoContainer.Models
 
         private void ChangeParent(DirectoryElement newParent, bool withWrite = false)
         {
-            if (newParent == null)
+            if (newParent == null || newParent == Parent)
             {
                 return;
             }
@@ -296,19 +297,19 @@ namespace CryptoDataBase.CryptoContainer.Models
             {
                 if (newParent.FileExists(ElementName))
                 {
-                    return;
+                    throw new DuplicatesFileNameException();
                 }
 
                 if (ParentElement != null)
                 {
-                    (ParentElement as DirectoryElement).RemoveElementFromElementsList(this);
+                    ParentElement.RemoveElementFromElementsList(this);
                 }
 
                 bool writeToFile = ParentElementId != newParent.Id || withWrite;
                 ParentElement = newParent;
                 ParentElementId = newParent.Id;
 
-                (ParentElement as DirectoryElement).InsertElementToElementsList(this);
+                ParentElement.InsertElementToElementsList(this);
 
                 if (writeToFile)
                 {

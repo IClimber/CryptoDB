@@ -39,6 +39,7 @@ namespace CryptoDataBase.CryptoContainer
                 {
                     _headersFileStream.WriteByte(CurrentVersion);
                 }
+
                 IsReadOnly = false;
             }
             catch
@@ -48,8 +49,8 @@ namespace CryptoDataBase.CryptoContainer
                     _headersFileStream.Close();
                 }
 
-                _headersFileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
-                _dataFileStream = new FileStream(dataFilePath, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+                _headersFileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                _dataFileStream = new FileStream(dataFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 IsReadOnly = true;
             }
 
@@ -127,9 +128,9 @@ namespace CryptoDataBase.CryptoContainer
 
         private void ReadFileStruct(HeaderRepository.ProgressCallback progress)
         {
-            List<DirectoryElement> directories = new List<DirectoryElement>();
-            List<Element> elements = new List<Element>();
-            directories.Add(this);
+            Dictionary<ulong, DirectoryElement> directories = new Dictionary<ulong, DirectoryElement>();
+            Dictionary<ulong, List<Element>> elements = new Dictionary<ulong, List<Element>>();
+            directories.Add(Id, this);
 
             List<Header> headers = _headerRepository.ReadFileStruct(progress);
             int index = 0;
@@ -155,7 +156,7 @@ namespace CryptoDataBase.CryptoContainer
             directories.Clear();
         }
 
-        private void AddElementByHeader(List<DirectoryElement> directoriesList, List<Element> elementList, Header header)
+        private void AddElementByHeader(Dictionary<ulong, DirectoryElement> directoriesList, Dictionary<ulong, List<Element>> elementList, Header header)
         {
             Element element = null;
             if (header.ElementType == ElementType.File)
@@ -167,10 +168,19 @@ namespace CryptoDataBase.CryptoContainer
                 element = new DirectoryElement(header, DataRepository, AddElementLocker, ChangeElementsLocker);
             }
 
-            elementList.Add(element);
+            List<Element> foundElement;
+            if (!elementList.TryGetValue(element.ParentId, out foundElement))
+            {
+                foundElement = new List<Element>();
+                elementList.Add(element.ParentId, foundElement);
+            }
+
+            foundElement.Add(element);
+
             if (element is DirectoryElement)
             {
-                directoriesList.Add(element as DirectoryElement);
+                var dirElement = element as DirectoryElement;
+                directoriesList.Add(dirElement.Id, dirElement);
             }
 
             if ((element is FileElement) && ((element as FileElement).Size > 0))
@@ -184,39 +194,31 @@ namespace CryptoDataBase.CryptoContainer
             }
         }
 
-        private void FillParents(List<DirectoryElement> directoriesList, List<Element> elementList, HeaderRepository.ProgressCallback progress)
+        private void FillParents(Dictionary<ulong, DirectoryElement> directoriesList, Dictionary<ulong, List<Element>> elementList, HeaderRepository.ProgressCallback progress)
         {
-            directoriesList.Sort(new IDComparer());
             int index = 0;
-            int count = elementList.Count;
+            int count = directoriesList.Count;
             int lastProgress = 0;
-            foreach (var element in elementList)
-            {
-                DirectoryElement parent = FindParentByID(directoriesList, element.ParentId);
-                try
-                {
-                    element.SetVirtualParent(parent != null ? parent : this);
-                }
-                catch
-                { }
-                index++;
 
-                double percent = index / (double)count * 100.0;
-                if ((progress != null) && (lastProgress != (int)percent))
+            foreach (var directory in directoriesList.Values)
+            {
+                if (elementList.TryGetValue(directory.Id, out List<Element> foundElements))
                 {
-                    progress(percent, "Creating elements structure");
-                    lastProgress = (int)percent;
+                    foreach (var element in foundElements)
+                    {
+                        element.SetVirtualParent(directory);
+                    }
+
+                    index++;
+
+                    double percent = index / (double)count * 100.0;
+                    if ((progress != null) && (lastProgress != (int)percent))
+                    {
+                        progress(percent, "Creating elements structure");
+                        lastProgress = (int)percent;
+                    }
                 }
             }
-        }
-
-        //Шукає в сортованому по ID списку
-        private DirectoryElement FindParentByID(List<DirectoryElement> directories, ulong parentId)
-        {
-            var directory = new DirectoryElement(parentId);
-            int index = directories.BinarySearch(directory, new IDComparer());
-
-            return index >= 0 ? directories[index] : null;
         }
 
         public void Dispose()
