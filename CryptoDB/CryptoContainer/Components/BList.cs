@@ -37,6 +37,12 @@ namespace CryptoDataBase.CryptoContainer.Components
             RemoveAt(index);
         }
 
+        public void UpdatePosition(T item)
+        {
+            Remove(item);
+            Add(item);
+        }
+
         public int GetGreaterOrEqualIndex(T item)
         {
             int index = Count;

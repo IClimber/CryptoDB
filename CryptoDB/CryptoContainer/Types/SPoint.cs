@@ -21,5 +21,10 @@
         {
             return Start == sPoint.Start && Size == sPoint.Size;
         }
+
+        public bool FullIn(SPoint sPoint)
+        {
+            return Start >= sPoint.Start && End <= sPoint.End;
+        }
     }
 }

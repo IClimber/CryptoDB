@@ -1,6 +1,5 @@
 ﻿using CryptoDataBase.CryptoContainer.Comparers;
 using CryptoDataBase.CryptoContainer.Components;
-using CryptoDataBase.CryptoContainer.Exceptions;
 using CryptoDataBase.CryptoContainer.Helpers;
 using CryptoDataBase.CryptoContainer.Types;
 using System;
@@ -15,33 +14,32 @@ namespace CryptoDataBase.CryptoContainer.Services
         private BList<SPoint> _freeSpaceMapPos = new BList<SPoint>(new SPointPositionComparer());
         private readonly HashSet<PositionCounter> _counter = new HashSet<PositionCounter>();
 
-        public FreeSpaceMapService(long freeSpaceSize)
+        public FreeSpaceMapService(ulong freeSpaceSize)
         {
             if (freeSpaceSize > 0)
             {
-                SPoint freeSpace = new SPoint(0, (ulong)freeSpaceSize);
+                SPoint freeSpace = new SPoint(0, freeSpaceSize);
                 _freeSpaceMapPos.Add(freeSpace);
                 _freeSpaceMapSize.Add(freeSpace);
             }
         }
 
-        //Просто стирає вільне місце з карти вільного місця
-        public void RemoveFreeSpace(ulong start, ulong length)
+        public void RemoveFreeSpace(ulong start, ulong size)
         {
             lock (_freeSpaceMapLocker)
             {
-                if (length == 0)
+                if (size == 0)
                 {
                     return;
                 }
 
-                var point = new SPoint(start, length);
-                MergePoints(point);
+                var point = new SPoint(start, size);
+                CutPoints(point);
                 IncCounter(start);
             }
         }
 
-        public ulong GetFreeSpacePos(ulong size, long fileSize)
+        public ulong GetFreeSpacePos(ulong size, ulong fileSize)
         {
             lock (_freeSpaceMapLocker)
             {
@@ -50,143 +48,89 @@ namespace CryptoDataBase.CryptoContainer.Services
                     return RandomHelper.Random(ulong.MaxValue - 2) + 2;
                 }
 
-                ulong result = (ulong)fileSize;
-
                 int indexBySize = _freeSpaceMapSize.GetGreaterOrEqualIndex(new SPoint(0, size));
 
                 if (indexBySize >= _freeSpaceMapSize.Count)
                 {
-                    IncCounter(result);
+                    IncCounter(fileSize);
 
-                    return result;
+                    return fileSize;
                 }
 
-                SPoint sPoint = _freeSpaceMapSize[indexBySize];
+                SPoint point = _freeSpaceMapSize[indexBySize];
 
-                result = sPoint.Start;
+                var result = point.Start;
 
                 IncCounter(result);
                 _freeSpaceMapSize.RemoveAt(indexBySize);
 
-                if ((sPoint.Size - size) == 0)
+                if (point.Size == size)
                 {
-                    int indexByPos = _freeSpaceMapPos.GetLessOrEqualIndex(new SPoint(sPoint.Start, 0));
-                    _freeSpaceMapPos.RemoveAt(indexByPos);
-
-                    return result;
+                    _freeSpaceMapPos.Remove(point);
                 }
+                else
+                {
+                    point.Start += size;
+                    point.Size -= size;
 
-                sPoint.Start += size;
-                sPoint.Size -= size;
-
-                InsertSPointToSizeMap(sPoint);
+                    _freeSpaceMapSize.Add(point);
+                }
 
                 return result;
             }
         }
 
-        public bool AddFreeSpace(ulong start, ulong length)
+        public void AddFreeSpace(ulong start, ulong size)
         {
             lock (_freeSpaceMapLocker)
             {
-                if (length == 0)
+                if (size == 0)
                 {
-                    return true;
+                    return;
                 }
 
                 if (DecCounter(start))
                 {
-                    return true;
+                    return;
                 }
+
+                SPoint freeSpace = new SPoint(start, size);
 
                 if (_freeSpaceMapPos.Count == 0)
                 {
-                    SPoint freeSpace = new SPoint(start, length);
                     _freeSpaceMapPos.Add(freeSpace);
                     _freeSpaceMapSize.Add(freeSpace);
 
-                    return true;
+                    return;
                 }
 
-                int indexByPos = _freeSpaceMapPos.GetLessOrEqualIndex(new SPoint(start, 0));
-
-                SPoint prevPoint = null;
-                SPoint nextPoint = null;
-
-                if (indexByPos >= 0)
-                {
-                    prevPoint = _freeSpaceMapPos[indexByPos];
-                }
-
-                if ((indexByPos + 1) < _freeSpaceMapPos.Count)
-                {
-                    nextPoint = _freeSpaceMapPos[indexByPos + 1];
-                }
-
-                if ((prevPoint != null && start < (prevPoint.Start + prevPoint.Size)) || (nextPoint != null && (start + length) > nextPoint.Start))
-                {
-                    return false;
-                }
-
-                if (prevPoint != null && nextPoint != null && start == (prevPoint.Start + prevPoint.Size) && (start + length) == nextPoint.Start)
-                {
-                    prevPoint.Size += length + nextPoint.Size;
-                    _freeSpaceMapSize.Remove(prevPoint);
-                    InsertSPointToSizeMap(prevPoint);
-
-                    _freeSpaceMapPos.RemoveAt(indexByPos + 1);
-                    _freeSpaceMapSize.Remove(nextPoint);
-
-                    return true;
-                }
-
-                if (prevPoint != null && start == (prevPoint.Start + prevPoint.Size))
-                {
-                    prevPoint.Size += length;
-                    _freeSpaceMapSize.Remove(prevPoint);
-                    InsertSPointToSizeMap(prevPoint);
-
-                    return true;
-                }
-
-                if (nextPoint != null && (start + length) == nextPoint.Start)
-                {
-                    nextPoint.Start -= length;
-                    nextPoint.Size += length;
-                    _freeSpaceMapSize.Remove(nextPoint);
-                    InsertSPointToSizeMap(nextPoint);
-
-                    return true;
-                }
-
-                SPoint newSPoint = new SPoint(start, length);
-
-                _freeSpaceMapPos.Insert(indexByPos + 1, newSPoint);
-                InsertSPointToSizeMap(newSPoint);
-
-                return true;
+                MergePoints(freeSpace);
             }
         }
 
         public bool IsFreeSpace(ulong start, ulong size)
         {
-            int index = _freeSpaceMapPos.GetLessOrEqualIndex(new SPoint(start, 0));
-            SPoint sPoint = index >= 0 ? _freeSpaceMapPos[index] : null;
-
-            if (sPoint == null)
+            lock (_freeSpaceMapLocker)
             {
+                int index = _freeSpaceMapPos.GetLessOrEqualIndex(new SPoint(start, size));
+
+                if (index < 0)
+                {
+                    return false;
+                }
+
+                SPoint point = _freeSpaceMapPos[index];
+
+                if (point.End >= (start + size))
+                {
+                    return true;
+                }
+
                 return false;
             }
-
-            if (sPoint.Start <= start && (sPoint.Start + sPoint.Size) >= (start + size))
-            {
-                return true;
-            }
-
-            return false;
         }
 
-        private List<int> GetIntersectsIndexes(SPoint sPoint)
+        private List<int> GetIntersectsIndexes(SPoint sPoint, bool withLastStart = false)
         {
             var index = _freeSpaceMapPos.GetLessOrEqualIndex(sPoint);
 
@@ -198,7 +142,7 @@ namespace CryptoDataBase.CryptoContainer.Services
             var result = new List<int>();
             var point = _freeSpaceMapPos[index];
 
-            while (point.End <= sPoint.End || (point.Start < (sPoint.End)))
+            while (point.End <= sPoint.End || (!withLastStart && point.Start < sPoint.End) || (withLastStart && point.Start <= sPoint.End))
             {
                 result.Add(index);
 
@@ -232,7 +176,7 @@ namespace CryptoDataBase.CryptoContainer.Services
             return result.Count > 0 ? result : null;
         }
 
-        private void MergePoints(SPoint sPoint)
+        private void CutPoints(SPoint sPoint)
         {
             var indexes = GetIntersectsIndexes(sPoint);
 
@@ -243,7 +187,7 @@ namespace CryptoDataBase.CryptoContainer.Services
 
             if (indexes.Count > 1)
             {
-                MergeListOfPoints(sPoint, indexes);
+                CutListOfPoints(sPoint, indexes);
 
                 return;
             }
@@ -261,17 +205,18 @@ namespace CryptoDataBase.CryptoContainer.Services
                 return;
             }
 
-            if (point.Start < sPoint.Start && point.End == sPoint.End)
+            if (point.End == sPoint.End)
             {
-                point.Size = sPoint.Start - point.Start;
+                point.Size -= sPoint.Size;
             }
 
             if (point.Start == sPoint.Start && point.Size > sPoint.Size)
             {
                 point.Start = sPoint.End;
-                point.Size = point.Size - sPoint.Size;
+                point.Size -= sPoint.Size;
             }
 
+            //sPoint full in point
             if (point.Start < sPoint.Start && point.End > sPoint.End)
             {
                 var newPoint = new SPoint(sPoint.End, point.End - sPoint.End);
@@ -284,7 +229,7 @@ namespace CryptoDataBase.CryptoContainer.Services
             _freeSpaceMapSize.Add(point);
         }
 
-        private void MergeListOfPoints(SPoint sPoint, List<int> indexes)
+        private void CutListOfPoints(SPoint sPoint, List<int> indexes)
         {
             var list = GetIntersectsPoints(indexes);
 
@@ -319,17 +264,71 @@ namespace CryptoDataBase.CryptoContainer.Services
             }
         }
 
-        private void InsertSPointToSizeMap(SPoint sPoint)
+        private void MergePoints(SPoint sPoint)
         {
-            int indexBySize = _freeSpaceMapSize.BinarySearch(sPoint, new SPointSizeComparer());
-            indexBySize = indexBySize < 0 ? Math.Abs(indexBySize) - 1 : indexBySize;
+            var indexes = GetIntersectsIndexes(sPoint, true);
 
-            _freeSpaceMapSize.Insert(indexBySize, sPoint);
+            if (indexes == null)
+            {
+                return;
+            }
+
+            if (indexes.Count > 1)
+            {
+                MergeListOfPoints(sPoint, indexes);
+
+                return;
+            }
+
+            var index = indexes[0];
+
+            var point = _freeSpaceMapPos[index];
+
+            //sPoint full in point
+            if (point.End >= sPoint.End)
+            {
+                return;
+            }
+
+            if (point.End >= sPoint.Start)
+            {
+                point.Size = sPoint.End - point.Start;
+
+                _freeSpaceMapSize.UpdatePosition(point);
+            }
+            else
+            {
+                var newPoint = sPoint.Clone();
+                _freeSpaceMapPos.Add(newPoint);
+                _freeSpaceMapSize.Add(newPoint);
+            }
+        }
+
+        private void MergeListOfPoints(SPoint sPoint, List<int> indexes)
+        {
+            if (indexes == null)
+            {
+                return;
+            }
+
+            var list = GetIntersectsPoints(indexes);
+            var firstPointIndex = list[0].End < sPoint.Start ? 1 : 0;
+            var firstPoint = list[firstPointIndex];
+            var lastPoint = list[list.Count - 1];
+
+            firstPoint.Start = Math.Min(sPoint.Start, firstPoint.Start);
+            firstPoint.Size = Math.Max(sPoint.End, lastPoint.End) - firstPoint.Start;
+            _freeSpaceMapSize.UpdatePosition(firstPoint);
+
+            for (int i = firstPointIndex + 1; i < list.Count; i++)
+            {
+                _freeSpaceMapPos.Remove(list[i]);
+                _freeSpaceMapSize.Remove(list[i]);
+            }
         }
 
         private PositionCounter GetCounter(ulong start)
         {
-
             _counter.TryGetValue(new PositionCounter(start), out PositionCounter element);
 
             return element;
