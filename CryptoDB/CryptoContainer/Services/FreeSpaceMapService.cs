@@ -12,7 +12,7 @@ namespace CryptoDataBase.CryptoContainer.Services
         private object _freeSpaceMapLocker = new object();
         private BList<SPoint> _freeSpaceMapSize = new BList<SPoint>(new SPointSizeComparer());
         private BList<SPoint> _freeSpaceMapPos = new BList<SPoint>(new SPointPositionComparer());
-        private readonly HashSet<PositionCounter> _counter = new HashSet<PositionCounter>();
+        private readonly Dictionary<ulong, PositionCounter> _counter = new Dictionary<ulong, PositionCounter>();
 
         public FreeSpaceMapService(ulong freeSpaceSize)
         {
@@ -329,7 +329,7 @@ namespace CryptoDataBase.CryptoContainer.Services
 
         private PositionCounter GetCounter(ulong start)
         {
-            _counter.TryGetValue(new PositionCounter(start), out PositionCounter element);
+            _counter.TryGetValue(start, out PositionCounter element);
 
             return element;
         }
@@ -345,7 +345,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                 return;
             }
 
-            _counter.Add(new PositionCounter(start));
+            _counter.Add(start, new PositionCounter());
         }
 
         private bool DecCounter(ulong start)
@@ -361,7 +361,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                     return true;
                 }
 
-                _counter.Remove(element);
+                _counter.Remove(start);
             }
 
             return false;
