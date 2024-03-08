@@ -7,7 +7,7 @@ namespace CryptoDataBase.CryptoContainer.Comparers
     {
         int IComparer<SPoint>.Compare(SPoint x, SPoint y)
         {
-            return x.Start < y.Start ? -1 : x.Start > y.Start ? 1 : 0;
+            return x.Start.CompareTo(y.Start);
         }
     }
 }

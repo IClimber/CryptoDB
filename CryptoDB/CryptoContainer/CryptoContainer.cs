@@ -149,8 +149,6 @@ namespace CryptoDataBase.CryptoContainer
                 }
             }
 
-            DataRepository.FreeSpaceAnalyse();
-
             FillParents(directories, elements, progress);
             elements.Clear();
             directories.Clear();

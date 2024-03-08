@@ -75,11 +75,6 @@ namespace CryptoDataBase.CryptoContainer.Repositories
             return result;
         }
 
-        public void FreeSpaceAnalyse()
-        {
-            StreamService.FreeSpaceAnalyse();
-        }
-
         public void AddFreeSpace(ulong start, ulong length)
         {
             StreamService.AddFreeSpace(start, length);

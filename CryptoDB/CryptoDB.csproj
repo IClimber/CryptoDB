@@ -106,6 +106,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Controls\ImageView.cs" />
+    <Compile Include="CryptoContainer\Components\BList.cs" />
     <Compile Include="CryptoContainer\Exceptions\FreeSpaceMapWasNotCalculatedException.cs" />
     <Compile Include="CryptoContainer\Exceptions\InvalidFileStartPositionException.cs" />
     <Compile Include="CryptoContainer\Exceptions\FileIsTooBigException.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="ClipboardChange.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="CryptoContainer\Types\PositionCounter.cs" />
     <Compile Include="FileItem.cs" />
     <Compile Include="Message.xaml.cs">
       <DependentUpon>Message.xaml</DependentUpon>

@@ -23,7 +23,7 @@ namespace CryptoDataBase.CryptoContainer.Services
         public MultithreadingStreamService(Stream stream)
         {
             _stream = stream;
-            _freeSpaceMap = new FreeSpaceMapService(stream.Length, false);
+            _freeSpaceMap = new FreeSpaceMapService(stream.Length);
         }
 
         //Encrypt and write data from stream
@@ -193,14 +193,6 @@ namespace CryptoDataBase.CryptoContainer.Services
             lock (_freeSpaceMapLocker)
             {
                 _freeSpaceMap.AddFreeSpace(start, length);
-            }
-        }
-
-        public void FreeSpaceAnalyse()
-        {
-            lock (_freeSpaceMapLocker)
-            {
-                _freeSpaceMap.FreeSpaceAnalyse((ulong)Length);
             }
         }
 
