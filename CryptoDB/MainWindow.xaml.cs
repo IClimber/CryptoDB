@@ -1375,29 +1375,14 @@ namespace CryptoDataBase
 
 		private void FindDuplicate()
 		{
-			Bitmap icon;
+            Bitmap icon = (listView.SelectedItem as Element).Icon;
 
-			if ((listView.SelectedItem is FileElement) && IsImage((listView.SelectedItem as Element).Name))
-			{
-				MemoryStream ms = new MemoryStream();
-				(listView.SelectedItem as FileElement).SaveTo(ms);
-				ms.Position = 0;
-				Bitmap tmp = new Bitmap(ms);
-				icon = ImgConverter.ResizeImage(tmp, THUMBNAIL_SIZE);
-				tmp?.Dispose();
-				ms.Dispose();
-			}
-			else
-			{
-				icon = (listView.SelectedItem as Element).Icon;
-			}
-
-			DirectoryElement directory = (listView.Tag as DirectoryElement) != null ? (listView.Tag as DirectoryElement) : xdb;
-			Finder f = new Finder(directory, icon, ShowList);
-			icon = null;
-			f.Owner = this;
-			f.Show();
-		}
+            DirectoryElement directory = (listView.Tag as DirectoryElement) != null ? (listView.Tag as DirectoryElement) : xdb;
+            Finder f = new Finder(directory, icon, ShowList);
+            icon = null;
+            f.Owner = this;
+            f.Show();
+        }
 
 		private void MenuItem_Click_1(object sender, RoutedEventArgs e)
 		{

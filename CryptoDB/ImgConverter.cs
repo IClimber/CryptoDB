@@ -162,8 +162,8 @@ namespace ImageConverter
 				Bitmap bmp;
 				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
 				{
-					bmp = new Bitmap(sourceStream);
-				}
+                    bmp = BitmapImage2Bitmap(StreamToBitmapImage(sourceStream));
+                }
 				else if (Path.GetExtension(FileName).ToLower() == ".ico")
 				{
 					bmp = new Icon(sourceStream, 256, 256).ToBitmap();
