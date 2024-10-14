@@ -16,7 +16,7 @@ namespace ImageConverter
 {
     static class ImgConverter
 	{
-		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif" };
+		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif", ".webp" };
 
 		[DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -126,9 +126,13 @@ namespace ImageConverter
 			try
 			{
 				Bitmap bmp;
+
 				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
 				{
-					bmp = new Bitmap(FileName);
+					using (FileStream fs = new FileStream(FileName, FileMode.Open))
+					{
+						bmp = BitmapImage2Bitmap(StreamToBitmapImage(fs));
+					}
 				}
 				else if (Path.GetExtension(FileName).ToLower() == ".ico")
 				{
@@ -179,7 +183,20 @@ namespace ImageConverter
 				return null;
 			}
 		}
-	}
+
+        private static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
+        {
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                BitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
+                enc.Save(outStream);
+                return new Bitmap(outStream);
+
+                //return new Bitmap(bitmap);
+            }
+        }
+    }
 
 
 	public class BitmapToImageSourceConvert : IValueConverter

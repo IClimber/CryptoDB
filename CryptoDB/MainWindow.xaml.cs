@@ -28,7 +28,7 @@ namespace CryptoDataBase
 	/// </summary>
 	public partial class MainWindow : Window, INotifyPropertyChanged
 	{
-		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif" };
+		private static string[] ImageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".jfif", ".webp" };
 		private static string[] TextExtensions = new string[] { ".txt", ".sql", ".pas", ".cs", ".ini", ".log" };
 		private static string[] ArchiveExtensions = new string[] { ".zip", ".rar", ".7z", ".001", ".tar", ".gzip", ".cbr" };
 		private List<Element> CutList = new List<Element>();
