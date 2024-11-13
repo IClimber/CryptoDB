@@ -121,28 +121,27 @@ namespace CryptoDataBase
 			Title = currentElement.Name;
 
 			MemoryStream ms = new MemoryStream();
-			currentElement.SaveTo(ms);
-
 			BitmapImage bmp = null;
 
 			try
 			{
+				currentElement.SaveTo(ms);
 				ms.Position = 0;
 				bmp = ImgConverter.StreamToBitmapImage(ms);
 				image.SetSource(bmp);
 				image.IsStretch = IsStretch;
-				//bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-				//ImageBehavior.SetAnimatedSource(image, bmp);
-				//bmp = null;
-			}
+                //bmp = BitmapFrame.Create(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                //ImageBehavior.SetAnimatedSource(image, bmp);
+                //bmp = null;
+            }
 			catch
 			{
 
 			}
 
-			ms.Dispose();
+            ms.Dispose();
 
-			TextBlockStatus1.Text = "Image size: " + FormatingSize(currentElement.Size);
+            TextBlockStatus1.Text = "Image size: " + FormatingSize(currentElement.Size);
 			TextBlockStatus2.Text = "Image resolution: " + bmp?.PixelWidth + " x " + bmp?.PixelHeight;
 			TextBlockStatus3.Text = "DPI: X=" + (int?)bmp?.DpiX + "  Y=" + (int?)bmp?.DpiY;
 			TextBlockStatus4.Text = (currentIndex + 1).ToString() + @" / " + elements.Count.ToString();

@@ -22,9 +22,14 @@
             return Start == sPoint.Start && Size == sPoint.Size;
         }
 
-        public bool FullIn(SPoint sPoint)
+        public bool IsFullIn(SPoint sPoint)
         {
             return Start >= sPoint.Start && End <= sPoint.End;
+        }
+
+        public bool IsIntersects(SPoint sPoint)
+        {
+            return (Start <= sPoint.Start && End >= sPoint.Start) || (Start <= sPoint.End && End >= sPoint.End) || IsFullIn(sPoint);
         }
     }
 }

@@ -130,21 +130,26 @@ namespace CryptoDataBase.CryptoContainer.Services
             }
         }
 
-        private List<int> GetIntersectsIndexes(SPoint sPoint, bool withLastStart = false)
+        private List<SPoint> GetIntersectsPoints(SPoint sPoint, bool withLastStart = false)
         {
             var index = _freeSpaceMapPos.GetLessOrEqualIndex(sPoint);
+
+            if (index < 0 && _freeSpaceMapPos.Count > 0)
+            {
+                index = 0;
+            }
 
             if (index < 0)
             {
                 return null;
             }
 
-            var result = new List<int>();
+            var result = new List<SPoint>();
             var point = _freeSpaceMapPos[index];
 
-            while (point.End <= sPoint.End || (!withLastStart && point.Start < sPoint.End) || (withLastStart && point.Start <= sPoint.End))
+            while (sPoint.IsIntersects(point))
             {
-                result.Add(index);
+                result.Add(point);
 
                 index++;
 
@@ -156,21 +161,9 @@ namespace CryptoDataBase.CryptoContainer.Services
                 point = _freeSpaceMapPos[index];
             };
 
-            return result.Count > 0 ? result : null;
-        }
-
-        private List<SPoint> GetIntersectsPoints(List<int> indexes)
-        {
-            if (indexes == null)
+            if (index == 0 && _freeSpaceMapPos.Count > 1 && sPoint.IsIntersects(_freeSpaceMapPos[1]))
             {
-                return null;
-            }
-
-            var result = new List<SPoint>();
-
-            foreach (var index in indexes)
-            {
-                result.Add(_freeSpaceMapPos[index]);
+                result.Add(_freeSpaceMapPos[1]);
             }
 
             return result.Count > 0 ? result : null;
@@ -178,29 +171,27 @@ namespace CryptoDataBase.CryptoContainer.Services
 
         private void CutPoints(SPoint sPoint)
         {
-            var indexes = GetIntersectsIndexes(sPoint);
+            var points = GetIntersectsPoints(sPoint);
 
-            if (indexes == null)
+            if (points == null)
             {
                 return;
             }
 
-            if (indexes.Count > 1)
+            if (points.Count > 1)
             {
-                CutListOfPoints(sPoint, indexes);
+                CutListOfPoints(sPoint, points);
 
                 return;
             }
 
-            var index = indexes[0];
-
-            var point = _freeSpaceMapPos[index];
+            var point = points[0];
 
             _freeSpaceMapSize.Remove(point);
 
             if (point.EaqualsValue(sPoint))
             {
-                _freeSpaceMapPos.RemoveAt(index);
+                _freeSpaceMapPos.Remove(point);
 
                 return;
             }
@@ -229,10 +220,8 @@ namespace CryptoDataBase.CryptoContainer.Services
             _freeSpaceMapSize.Add(point);
         }
 
-        private void CutListOfPoints(SPoint sPoint, List<int> indexes)
+        private void CutListOfPoints(SPoint sPoint, List<SPoint> list)
         {
-            var list = GetIntersectsPoints(indexes);
-
             if (list == null)
             {
                 return;
@@ -266,59 +255,57 @@ namespace CryptoDataBase.CryptoContainer.Services
 
         private void MergePoints(SPoint sPoint)
         {
-            var indexes = GetIntersectsIndexes(sPoint, true);
+            var points = GetIntersectsPoints(sPoint, true);
 
-            if (indexes == null)
-            {
-                return;
-            }
-
-            if (indexes.Count > 1)
-            {
-                MergeListOfPoints(sPoint, indexes);
-
-                return;
-            }
-
-            var index = indexes[0];
-
-            var point = _freeSpaceMapPos[index];
-
-            //sPoint full in point
-            if (point.End >= sPoint.End)
-            {
-                return;
-            }
-
-            if (point.End >= sPoint.Start)
-            {
-                point.Size = sPoint.End - point.Start;
-
-                _freeSpaceMapSize.UpdatePosition(point);
-            }
-            else
+            if (points == null)
             {
                 var newPoint = sPoint.Clone();
                 _freeSpaceMapPos.Add(newPoint);
                 _freeSpaceMapSize.Add(newPoint);
+
+                return;
             }
+
+            if (points.Count > 1)
+            {
+                MergeListOfPoints(sPoint, points);
+
+                return;
+            }
+
+            var point = points[0];
+
+            //sPoint full in point
+            /*if (point.End >= sPoint.End)
+            {
+                return;
+            }*/
+
+            _freeSpaceMapSize.Remove(point);
+
+            point.Size = Math.Max(point.End, sPoint.End) - Math.Min(point.Start, sPoint.Start);
+            point.Start = Math.Min(point.Start, sPoint.Start);
+
+            _freeSpaceMapSize.Add(point);
+
+            return;
         }
 
-        private void MergeListOfPoints(SPoint sPoint, List<int> indexes)
+        private void MergeListOfPoints(SPoint sPoint, List<SPoint> list)
         {
-            if (indexes == null)
+            if (list == null)
             {
                 return;
             }
 
-            var list = GetIntersectsPoints(indexes);
             var firstPointIndex = list[0].End < sPoint.Start ? 1 : 0;
             var firstPoint = list[firstPointIndex];
             var lastPoint = list[list.Count - 1];
 
+            _freeSpaceMapSize.Remove(firstPoint);
             firstPoint.Start = Math.Min(sPoint.Start, firstPoint.Start);
             firstPoint.Size = Math.Max(sPoint.End, lastPoint.End) - firstPoint.Start;
-            _freeSpaceMapSize.UpdatePosition(firstPoint);
+            _freeSpaceMapSize.Add(firstPoint);
 
             for (int i = firstPointIndex + 1; i < list.Count; i++)
             {

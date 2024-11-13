@@ -131,6 +131,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                 {
                     _stream.Position = streamOffset;
                     _stream.Write(buffer, offset, count);
+                    _stream.Flush();
                 }
             }
         }
@@ -146,6 +147,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                 {
                     _stream.Position = streamOffset;
                     _stream.WriteByte(value);
+                    _stream.Flush();
                 }
             }
         }
