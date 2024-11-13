@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace CryptoDataBase.CryptoContainer.Helpers
 {
-    internal static class RandomHelper
+    public static class RandomHelper
     {
         public static void GetBytes(byte[] buffer)
         {
