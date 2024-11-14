@@ -51,9 +51,9 @@ namespace CryptoDataBase.CryptoContainer.Repositories
             }
         }
 
-        public SPoint WriteEncrypt(Stream inputStream, byte[] iv, out byte[] hash, MultithreadingStreamService.ProgressCallback progress)
+        public Segment WriteEncrypt(Stream inputStream, byte[] iv, out byte[] hash, MultithreadingStreamService.ProgressCallback progress)
         {
-            SPoint result;
+            Segment result;
 
             using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
             {
@@ -63,9 +63,9 @@ namespace CryptoDataBase.CryptoContainer.Repositories
             return result;
         }
 
-        public SPoint WriteEncrypt(byte[] inputData, byte[] iv)
+        public Segment WriteEncrypt(byte[] inputData, byte[] iv)
         {
-            SPoint result;
+            Segment result;
 
             using (AesCryptoServiceProvider aes = GetAesCryptoProvider(iv))
             {

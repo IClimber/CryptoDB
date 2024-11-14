@@ -119,7 +119,7 @@
     <Compile Include="CryptoContainer\Comparers\IDComparer.cs" />
     <Compile Include="CryptoContainer\Comparers\NameComparer.cs" />
     <Compile Include="CryptoContainer\Comparers\ExtComparer.cs" />
-    <Compile Include="CryptoContainer\Comparers\SPointPositionComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\SegmentPositionComparer.cs" />
     <Compile Include="CryptoContainer\Helpers\HashHelper.cs" />
     <Compile Include="CryptoContainer\Helpers\MathHelper.cs" />
     <Compile Include="CryptoContainer\Helpers\ImageHelper.cs" />
@@ -161,7 +161,7 @@
     <Compile Include="WpfAnimatedGif\Decoding\GifTrailer.cs" />
     <Compile Include="WpfAnimatedGif\ImageAnimationController.cs" />
     <Compile Include="WpfAnimatedGif\ImageBehavior.cs" />
-    <Compile Include="CryptoContainer\Comparers\SPointSizeComparer.cs" />
+    <Compile Include="CryptoContainer\Comparers\SegmentSizeComparer.cs" />
     <Compile Include="CryptoContainer\Helpers\CryptoHelper.cs" />
     <Compile Include="CryptoContainer\Helpers\RandomHelper.cs" />
     <Compile Include="CryptoContainer\Models\Element.cs" />
@@ -172,7 +172,7 @@
     <Compile Include="CryptoContainer\Services\FreeSpaceMapService.cs" />
     <Compile Include="CryptoContainer\Models\Header.cs" />
     <Compile Include="CryptoContainer\Services\MultithreadingStreamService.cs" />
-    <Compile Include="CryptoContainer\Types\SPoint.cs" />
+    <Compile Include="CryptoContainer\Types\Segment.cs" />
     <Compile Include="CryptoContainer\CryptoContainer.cs" />
     <Compile Include="DuplicatesWindow.xaml.cs">
       <DependentUpon>DuplicatesWindow.xaml</DependentUpon>

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace CryptoDataBase.CryptoContainer.Comparers
 {
-    public class SPointPositionComparer : IComparer<SPoint>
+    public class SegmentPositionComparer : IComparer<Segment>
     {
-        int IComparer<SPoint>.Compare(SPoint x, SPoint y)
+        int IComparer<Segment>.Compare(Segment x, Segment y)
         {
             return x.Start.CompareTo(y.Start);
         }

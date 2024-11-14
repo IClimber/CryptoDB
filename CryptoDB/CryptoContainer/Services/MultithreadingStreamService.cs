@@ -27,7 +27,7 @@ namespace CryptoDataBase.CryptoContainer.Services
         }
 
         //Encrypt and write data from stream
-        public SPoint WriteEncrypt(Stream inputStream, AesCryptoServiceProvider aes, out byte[] hash, ProgressCallback progress)
+        public Segment WriteEncrypt(Stream inputStream, AesCryptoServiceProvider aes, out byte[] hash, ProgressCallback progress)
         {
             lock (_writeLock)
             {
@@ -85,12 +85,12 @@ namespace CryptoDataBase.CryptoContainer.Services
 
                 hash = md5.Hash;
 
-                return new SPoint((ulong)startPosition, dataRealSize);
+                return new Segment((ulong)startPosition, dataRealSize);
             }
         }
 
         //Encrypt and write data from array
-        public SPoint WriteEncrypt(byte[] inputData, AesCryptoServiceProvider aes)
+        public Segment WriteEncrypt(byte[] inputData, AesCryptoServiceProvider aes)
         {
             lock (_writeLock)
             {
@@ -116,7 +116,7 @@ namespace CryptoDataBase.CryptoContainer.Services
                     cs.FlushFinalBlock();
                 }
 
-                return new SPoint((ulong)startPosition, dataRealSize);
+                return new Segment((ulong)startPosition, dataRealSize);
             }
         }
 
