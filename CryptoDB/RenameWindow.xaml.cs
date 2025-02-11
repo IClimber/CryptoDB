@@ -1,4 +1,5 @@
-﻿using CryptoDataBase.CryptoContainer.Types;
+﻿using CryptoDataBase.CryptoContainer.Helpers;
+using CryptoDataBase.CryptoContainer.Types;
 using System.Windows;
 using System.Windows.Input;
 
@@ -9,6 +10,8 @@ namespace CryptoDataBase
     /// </summary>
     public partial class RenameWindow : Window
 	{
+		private string _oldName;
+
 		public RenameWindow()
 		{
 			InitializeComponent();
@@ -17,6 +20,7 @@ namespace CryptoDataBase
 
 		public RenameWindow(string oldName, ElementType type) : this()
 		{
+			_oldName = oldName;
 			textBox.Text = oldName;
 
 			int length = type == ElementType.File ? oldName.LastIndexOf('.') : oldName.Length;
@@ -25,8 +29,11 @@ namespace CryptoDataBase
 
 		private void button1_Click(object sender, RoutedEventArgs e)
 		{
-			DialogResult = true;
-			Close();
+            if (textBox.Text == StringHelper.SanitizeFileName(textBox.Text) || textBox.Text == _oldName)
+			{
+                DialogResult = true;
+                Close();
+            }
 		}
 
 		private void textBox_PreviewKeyDown(object sender, KeyEventArgs e)

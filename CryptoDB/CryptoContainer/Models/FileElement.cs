@@ -176,7 +176,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         public override void SaveTo(string pathToSave, MultithreadingStreamService.ProgressCallback progress = null)
         {
             Directory.CreateDirectory(pathToSave);
-            using (FileStream stream = new FileStream(pathToSave + '\\' + ElementName, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (FileStream stream = new FileStream(pathToSave + '\\' + StringHelper.SanitizeFileName(ElementName), FileMode.Create, FileAccess.Write, FileShare.Read))
             {
                 SaveTo(stream, progress);
             }

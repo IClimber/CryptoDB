@@ -1085,7 +1085,7 @@ namespace CryptoDataBase
 						tmp1.Save(stream, ImageFormat.Jpeg);
 						tmp1?.Dispose();
 						Bitmap icon = ImgConverter.ResizeImage(tmp, THUMBNAIL_SIZE);
-						string FileName = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss.fff") + ".jpg";
+						string FileName = DateTime.Now.ToString("dd.MM.yyyy HH_mm_ss.fff") + ".jpg";
 
 						if (isCompareImage)
 						{

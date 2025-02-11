@@ -198,7 +198,7 @@ namespace CryptoDataBase.CryptoContainer.Models
         {
             bool randomNames = getFileName != null;
 
-            string tempName = name == "" ? ElementName : name;
+            string tempName = name == "" ? StringHelper.SanitizeFileName(ElementName) : name;
             Directory.CreateDirectory(destPath + '\\' + tempName);
             Element[] elementList;
 
