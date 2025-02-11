@@ -136,20 +136,23 @@ namespace CryptoDataBase.CryptoContainer.Models
             }
 
             MemoryStream stream = new MemoryStream();
-            DataRepository.MultithreadDecrypt((long)IconStartPos, stream, IconSizeInner, IconIV, null);
 
             try
             {
+                DataRepository.MultithreadDecrypt((long)IconStartPos, stream, IconSizeInner, IconIV, null);
+
                 stream.Position = 0;
                 var bitmap = ImageHelper.GetBitmapFromStream(stream);
-                stream.Dispose();
 
                 return bitmap;
             }
             catch
             {
-                stream.Dispose();
                 return null;
+            }
+            finally
+            {
+                stream.Dispose();
             }
         }
 
