@@ -13,6 +13,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -86,7 +87,22 @@ namespace CryptoDataBase
 		{
 			InitializeComponent();
 
-			databaseFile = DatabaseFile;
+            App.LanguageChanged += LanguageChanged;
+
+            CultureInfo currLang = App.Language;
+
+            menuLanguage.Items.Clear();
+            foreach (var lang in App.Languages)
+            {
+                var menuLang = new System.Windows.Controls.MenuItem();
+                menuLang.Header = lang.DisplayName;
+                menuLang.Tag = lang;
+                menuLang.IsChecked = lang.Equals(currLang);
+                menuLang.Click += ChangeLanguageClick;
+                menuLanguage.Items.Add(menuLang);
+            }
+
+            databaseFile = DatabaseFile;
 
 			xdbLoadWorker.WorkerReportsProgress = true;
 			xdbLoadWorker.WorkerSupportsCancellation = true;
@@ -111,7 +127,31 @@ namespace CryptoDataBase
 			search_text_box.TextChanged += SearchTextBox_TextChanged;
 		}
 
-		private void ClipboardChange(object sender, ClipboardChangedEventArgs e)
+        private void LanguageChanged(Object sender, EventArgs e)
+        {
+            CultureInfo currLang = App.Language;
+
+            foreach (System.Windows.Controls.MenuItem i in menuLanguage.Items)
+            {
+                CultureInfo ci = i.Tag as CultureInfo;
+                i.IsChecked = ci != null && ci.Equals(currLang);
+            }
+        }
+
+        private void ChangeLanguageClick(Object sender, EventArgs e)
+        {
+            var mi = sender as System.Windows.Controls.MenuItem;
+            if (mi != null)
+            {
+                CultureInfo lang = mi.Tag as CultureInfo;
+                if (lang != null)
+                {
+                    App.Language = lang;
+                }
+            }
+        }
+
+        private void ClipboardChange(object sender, ClipboardChangedEventArgs e)
 		{
 			InsertImageFromClipboard(true);
 		}

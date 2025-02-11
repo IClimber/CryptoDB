@@ -21,7 +21,7 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<CheckBox Content="Больше не показывать" Width="Auto" HorizontalAlignment="Left" VerticalAlignment="Top" Click="CheckBox_Click"/>
+        <CheckBox Content="{DynamicResource m_Duplicates_Dont_Show_Again}" Width="Auto" HorizontalAlignment="Left" VerticalAlignment="Top" Click="CheckBox_Click"/>
 		
 		<StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" >
 			<Image Name="OrigImage" Width="200" Height="200" Stretch="None"/>

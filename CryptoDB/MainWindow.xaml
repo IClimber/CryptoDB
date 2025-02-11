@@ -21,43 +21,44 @@
 
 		<DockPanel Background="#FF222227">
 			<Menu DockPanel.Dock="Top" Background="#FF222227">
-				<MenuItem Header="База данных" >
-					<MenuItem Header="Открыть / Создать" Click="button1_Click"/>
-					<MenuItem Header="Изменить пароль" Visibility="{Binding ElementName=mainWindow, Path=CanChangePassword, Mode=OneWay}" Click="ChangePasswordButton_Click"/>
-					<MenuItem Header="Экспорт структуры" Click="ExportButton_Click"/>
+                <MenuItem Header="{DynamicResource m_menu_DB}" >
+                    <MenuItem Header="{DynamicResource m_menu_DB_Open_Create}" Click="button1_Click"/>
+                    <MenuItem Header="{DynamicResource m_menu_DB_Change_Password}" Visibility="{Binding ElementName=mainWindow, Path=CanChangePassword, Mode=OneWay}" Click="ChangePasswordButton_Click"/>
+                    <MenuItem Header="{DynamicResource m_menu_DB_Structure_Export}" Click="ExportButton_Click"/>
 				</MenuItem>
-				<MenuItem Header="Вид" >
-					<MenuItem Header="Сортировать">
-						<RadioButton Name="NameSort" Click="Sort_Click" GroupName="SortButton" Content="Имя" />
-						<RadioButton Name="TypeSort" Click="Sort_Click" GroupName="SortButton" Content="Тип" />
-						<RadioButton Name="SizeSort" Click="Sort_Click" GroupName="SortButton" Content="Размер" />
-						<RadioButton Name="DateSort" Click="Sort_Click" GroupName="SortButton" Content="Дата" />
+                <MenuItem Header="{DynamicResource m_menu_View}" >
+                    <MenuItem Header="{DynamicResource m_menu_View_Sorting}">
+                        <RadioButton Name="NameSort" Click="Sort_Click" GroupName="SortButton" Content="{DynamicResource m_menu_View_Sorting_By_Name}" />
+                        <RadioButton Name="TypeSort" Click="Sort_Click" GroupName="SortButton" Content="{DynamicResource m_menu_View_Sorting_By_Extension}" />
+                        <RadioButton Name="SizeSort" Click="Sort_Click" GroupName="SortButton" Content="{DynamicResource m_menu_View_Sorting_By_Size}" />
+                        <RadioButton Name="DateSort" Click="Sort_Click" GroupName="SortButton" Content="{DynamicResource m_menu_View_Sorting_By_Date}" />
 					</MenuItem>
 				</MenuItem>
-				<MenuItem Header="Файлы" >
-					<CheckBox Content="Не добавлять дубликаты" Click="CompareFileHash_Click"/>
+                <MenuItem Header="{DynamicResource m_menu_Files}" >
+                    <CheckBox Content="{DynamicResource m_menu_Files_Skip_Duplicates}" Click="CompareFileHash_Click"/>
 
-					<MenuItem Header="Похожие изображения" >
-						<CheckBox Content="Не добавлять" Click="CompareImagePHash_Click"/>
+                    <MenuItem Header="{DynamicResource m_menu_Files_Similar_Images}" >
+                        <CheckBox Content="{DynamicResource m_menu_Files_Similar_Images_Skip}" Click="CompareImagePHash_Click"/>
 						<StackPanel Orientation="Horizontal">
 							<Slider Name="sensativeImg_Slider" Maximum="10" Width="100" IsSnapToTickEnabled="True" ValueChanged="DuplicateSensative_Change" />
 							<Label Content="{Binding ElementName=sensativeImg_Slider, Path=Value}" HorizontalContentAlignment="Center" Width="15" Margin="5,0,0,0"/>
 						</StackPanel>
 					</MenuItem>
-					<CheckBox Content="Предупреждать о дубликатах" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
+                    <CheckBox Content="{DynamicResource m_menu_Files_Similar_Images_Warn_About_Duplicates}" IsChecked="{Binding ElementName=mainWindow, Path=ShowDuplicateMessage, Mode=TwoWay}"/>
 					<Separator/>
-					<CheckBox Content="Разархивировать архивы при добавлении" IsChecked="{Binding ElementName=mainWindow, Path=ExtractArchiveWhenAdd, Mode=TwoWay}"/>
-					<CheckBox Content="Сохранять реальные имена файлов" Click="SaveRealFileName_Click"/>
+                    <CheckBox Content="{DynamicResource m_menu_Files_Unzip_Archives_When_Adding}" IsChecked="{Binding ElementName=mainWindow, Path=ExtractArchiveWhenAdd, Mode=TwoWay}"/>
+                    <CheckBox Content="{DynamicResource m_menu_Files_Export_Files_With_Real_Names}" Click="SaveRealFileName_Click"/>
 				</MenuItem>
-				<MenuItem Header="Буффер обмена">
-					<CheckBox Content="Автоматическая вставка" Click="AutoInsert"/>
-					<CheckBox Name="clipboardClean_CheckBox" Content="Очищать после вставки"/>
-				</MenuItem>
-				<MenuItem Header="Параметры" Visibility="Hidden">
-					<MenuItem Header="Информация" Click="MenuItem_Info"/>
-				</MenuItem>
+                <MenuItem Header="{DynamicResource m_menu_Clipboard}">
+                    <CheckBox Content="{DynamicResource m_menu_Clipboard_Automatically_Save}" Click="AutoInsert"/>
+                    <CheckBox Name="clipboardClean_CheckBox" Content="{DynamicResource m_menu_Clipboard_Clear_Clipboard_After_Pasting}"/>
+                </MenuItem>
+                <MenuItem Header="{DynamicResource m_menu_Options}">
+                    <MenuItem x:Name="menuLanguage" Header="{DynamicResource m_menu_Options_Language}" />
+                    <MenuItem Header="{DynamicResource m_menu_Options_About}" Visibility="Collapsed" Click="MenuItem_Info"/>
+                </MenuItem>
 
-			</Menu>
+            </Menu>
 		</DockPanel>
 
 		<StackPanel Name="pathPanel" Grid.Row="1" Height="Auto" Orientation="Horizontal" Background="#FF333337"/>
@@ -70,9 +71,9 @@
 
 			<ListView.ContextMenu>
 				<ContextMenu Foreground="#FF333337" Name="MainContextMenu">
-					<MenuItem Header="Создать папку" Click="MenuItem_CreateNewDir" Style="{x:Null}" />
-					<MenuItem Header="Создать текстовый документ" Click="MenuItem_CreateNewTextFile" Style="{x:Null}" />
-					<MenuItem Header="Вставить" Click="Insert_Click" Style="{x:Null}" />
+                    <MenuItem Header="{DynamicResource m_Context_Create_Directory}" Click="MenuItem_CreateNewDir" Style="{x:Null}" />
+                    <MenuItem Header="{DynamicResource m_Context_Create_Text_Document}" Click="MenuItem_CreateNewTextFile" Style="{x:Null}" />
+                    <MenuItem Header="{DynamicResource m_Context_Insert}" Click="Insert_Click" Style="{x:Null}" />
 				</ContextMenu>
 			</ListView.ContextMenu>
 
@@ -109,8 +110,8 @@
 					<StackPanel Orientation="Vertical" MaxWidth="200" MaxHeight="240" Height="240" >
 						<StackPanel.ContextMenu>
 							<ContextMenu Foreground="#FF333337">
-								<MenuItem Header="Вырезать" Click="MenuItem_Click" Style="{x:Null}" />
-								<MenuItem Header="Поиск дубликата" Click="MenuItem_Click_1" Style="{x:Null}" />
+                                <MenuItem Header="{DynamicResource m_Context_Cut}" Click="MenuItem_Click" Style="{x:Null}" />
+                                <MenuItem Header="{DynamicResource m_Context_Search_Duplicate}" Click="MenuItem_Click_1" Style="{x:Null}" />
 							</ContextMenu>
 						</StackPanel.ContextMenu>
 						<Image Width="200" Height="200" Stretch="None" Source="{Binding Converter={StaticResource Convert}}" />

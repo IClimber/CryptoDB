@@ -1,0 +1,79 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Main window -->
+    <v:String x:Key="m_menu_DB">Database</v:String>
+    <v:String x:Key="m_menu_DB_Open_Create">Open/Create</v:String>
+    <v:String x:Key="m_menu_DB_Change_Password">Change Password</v:String>
+    <v:String x:Key="m_menu_DB_Structure_Export">Export Structure</v:String>
+    <v:String x:Key="m_menu_View">View</v:String>
+    <v:String x:Key="m_menu_View_Sorting">Sort By</v:String>
+    <v:String x:Key="m_menu_View_Sorting_By_Name">By Name</v:String>
+    <v:String x:Key="m_menu_View_Sorting_By_Extension">By Type</v:String>
+    <v:String x:Key="m_menu_View_Sorting_By_Size">By Size</v:String>
+    <v:String x:Key="m_menu_View_Sorting_By_Date">By Date</v:String>
+    <v:String x:Key="m_menu_Files">Files</v:String>
+    <v:String x:Key="m_menu_Files_Skip_Duplicates">Skip Duplicates</v:String>
+    <v:String x:Key="m_menu_Files_Similar_Images">Similar Images</v:String>
+    <v:String x:Key="m_menu_Files_Similar_Images_Skip">Do Not Add</v:String>
+    <v:String x:Key="m_menu_Files_Similar_Images_Warn_About_Duplicates">Warn About Duplicates</v:String>
+    <v:String x:Key="m_menu_Files_Unzip_Archives_When_Adding">Unzip Archives Before Adding</v:String>
+    <v:String x:Key="m_menu_Files_Export_Files_With_Real_Names">Export Files with Real Names</v:String>
+    <v:String x:Key="m_menu_Clipboard">Clipboard</v:String>
+    <v:String x:Key="m_menu_Clipboard_Automatically_Save">Automatically Paste Images</v:String>
+    <v:String x:Key="m_menu_Clipboard_Clear_Clipboard_After_Pasting">Clear Clipboard After Pasting</v:String>
+    <v:String x:Key="m_menu_Options">Options</v:String>
+    <v:String x:Key="m_menu_Options_Language">Language</v:String>
+    <v:String x:Key="m_menu_Options_About">About</v:String>
+    <v:String x:Key="m_Context_Create_Directory">Create Directory</v:String>
+    <v:String x:Key="m_Context_Create_Text_Document">Create Text Document</v:String>
+    <v:String x:Key="m_Context_Insert">Paste</v:String>
+    <v:String x:Key="m_Context_Cut">Cut</v:String>
+    <v:String x:Key="m_Context_Search_Duplicate">Search for Duplicate</v:String>
+
+    <!-- Duplicates window -->
+    <v:String x:Key="m_Duplicates_Dont_Show_Again">Don't show again</v:String>
+
+    <!-- Finder window -->
+    <v:String x:Key="m_Finder_Title">Search</v:String>
+    <v:String x:Key="m_Finder_File_Name">File Name</v:String>
+    <v:String x:Key="m_Finder_Search_In_All_Directories">Search Everywhere</v:String>
+    <v:String x:Key="m_Finder_Search_As_Tags">Search by Tags</v:String>
+    <v:String x:Key="m_Finder_Search_By_All_Tags">Search Across All Tags</v:String>
+    <v:String x:Key="m_Finder_Sensative">Sensitivity:</v:String>
+    <v:String x:Key="m_Finder_Clear">Clear</v:String>
+    <v:String x:Key="m_Finder_Find">Find</v:String>
+
+    <!-- Image viewer window -->
+    <v:String x:Key="m_Image_Viewer_Title">Image Viewer</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Save_As">Save As</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Rename">Rename</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Delete">Delete</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Rotate_270">Rotate 270°</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Rotate_90">Rotate 90°</v:String>
+    <v:String x:Key="m_Image_Viewer_Menu_Stretch_To_Full_Window">Stretch to Full Window</v:String>
+
+    <!-- Password window -->
+    <v:String x:Key="m_Password_Title">Password</v:String>
+    <v:String x:Key="m_Password_Enter_Your_Password">Enter Your Password</v:String>
+    <v:String x:Key="m_Password_Cancel">Cancel</v:String>
+    <v:String x:Key="m_Password_Ok">OK</v:String>
+
+    <!-- Properties window -->
+    <v:String x:Key="m_Property_Title">Properties</v:String>
+    <v:String x:Key="m_Property_File_Location">Location:</v:String>
+    <v:String x:Key="m_Property_Files_Count">File Count:</v:String>
+    <v:String x:Key="m_Property_Directories_Count">Directory Count:</v:String>
+    <v:String x:Key="m_Property_File_Size">Size:</v:String>
+    <v:String x:Key="m_Property_Full_File_Size">Total Size:</v:String>
+    <v:String x:Key="m_Property_Encrypted_File_Size">Encrypted Size:</v:String>
+    <v:String x:Key="m_Property_File_Icon">Icon:</v:String>
+    <v:String x:Key="m_Property_Change_Icon">Change</v:String>
+    <v:String x:Key="m_Property_Delete_Icon">Delete</v:String>
+
+    <!-- Rename window -->
+    <v:String x:Key="m_Rename_Title">Rename</v:String>
+    <v:String x:Key="m_Rename_Cancel">Cancel</v:String>
+    <v:String x:Key="m_Rename_Ok">OK</v:String>
+</ResourceDictionary>

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CryptoDataBase"
         mc:Ignorable="d"
-        Title="" Height="431" Width="766" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing" >
+        Height="431" Width="766" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

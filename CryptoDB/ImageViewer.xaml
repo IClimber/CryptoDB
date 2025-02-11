@@ -7,7 +7,7 @@
 		xmlns:controls="clr-namespace:CryptoDataBase.Controls"
 		mc:Ignorable="d"
 		Name="imageViewer"
-        Title="Просмотр изображений" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip" Closed="Window_Closed" Loaded="imageViewer_Loaded" SnapsToDevicePixels="false">
+        Title="{DynamicResource m_Image_Viewer_Title}" Height="600" Width="1000" WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown" ShowInTaskbar="False" WindowState="Maximized" ResizeMode="CanResizeWithGrip" Closed="Window_Closed" Loaded="imageViewer_Loaded" SnapsToDevicePixels="false">
     <Grid Name="grid" Background="#FF222227" MouseMove="grid_MouseMove">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50" Name="prevImgColumn"/>
@@ -38,12 +38,12 @@
 		</Border>
 
 		<ToolBar Grid.Row="0" Grid.ColumnSpan="3" Name="toolPanel" >
-            <Button Content="Сохранить как" Width="100" Click="SaveAs_Click" />
-            <Button Content="Переименовать" Width="100" Click="Rename_Click" />
-            <Button Content="Удалить" Width="100" Click="Delete_Click" />
-            <Button Content="Поворот 270" Width="100" Tag="270" Click="Rotate_Click" />
-			<Button Content="Поворот 90" Width="100" Tag="90" Click="Rotate_Click"/>
-			<CheckBox Content="На все окно" Height="18" Name="IsStretchCheckBox" VerticalAlignment="Center" IsChecked="{Binding ElementName=imageViewer, Path=IsStretch, Mode=TwoWay}" Click="IsStretchCheckBox_Click"/>
+            <Button Content="{DynamicResource m_Image_Viewer_Menu_Save_As}" Width="100" Click="SaveAs_Click" />
+            <Button Content="{DynamicResource m_Image_Viewer_Menu_Rename}" Width="100" Click="Rename_Click" />
+            <Button Content="{DynamicResource m_Image_Viewer_Menu_Delete}" Width="100" Click="Delete_Click" />
+            <Button Content="{DynamicResource m_Image_Viewer_Menu_Rotate_270}" Width="100" Tag="270" Click="Rotate_Click" />
+            <Button Content="{DynamicResource m_Image_Viewer_Menu_Rotate_90}" Width="100" Tag="90" Click="Rotate_Click"/>
+            <CheckBox Content="{DynamicResource m_Image_Viewer_Menu_Stretch_To_Full_Window}" Height="18" Name="IsStretchCheckBox" VerticalAlignment="Center" IsChecked="{Binding ElementName=imageViewer, Path=IsStretch, Mode=TwoWay}" Click="IsStretchCheckBox_Click"/>
 		</ToolBar>
 
         <StatusBar HorizontalAlignment="Stretch" Margin="0,0,0,0" Grid.Row="2" Grid.ColumnSpan="3" VerticalAlignment="Stretch" Background="#FF222227">

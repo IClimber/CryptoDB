@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CryptoDataBase"
         mc:Ignorable="d"
-        Title="PropertiesWindow" Height="Auto" SizeToContent="Height" Width="402.966" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="NoResize" PreviewKeyDown="Window_PreviewKeyDown">
+        Title="{DynamicResource m_Property_Title}" Height="Auto" SizeToContent="Height" Width="402.966" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" ResizeMode="NoResize" PreviewKeyDown="Window_PreviewKeyDown">
 	<Grid Background="#FF222227">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -21,40 +21,40 @@
 			<RowDefinition Height="*" Name="IconRow"/>
 		</Grid.RowDefinitions>
 
-		<Label Content="Расположение:" Grid.Row="0" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0" />
+        <Label Content="{DynamicResource m_Property_File_Location}" Grid.Row="0" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0" />
 		<Label Grid.Row="0" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="ParentLabel" TextWrapping="Wrap"/>
 		</Label>
 
-		<Label Content="Файлов:" Grid.Row="1" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+        <Label Content="{DynamicResource m_Property_Files_Count}" Grid.Row="1" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 		<Label Grid.Row="1" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="FilesCountLabel"/>
 		</Label>
 
-		<Label Content="Папок:" Grid.Row="2" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+        <Label Content="{DynamicResource m_Property_Directories_Count}" Grid.Row="2" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 		<Label Grid.Row="2" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="DirsCountLabel"/>
 		</Label>
 
-		<Label Content="Размер:" Grid.Row="3" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+        <Label Content="{DynamicResource m_Property_File_Size}" Grid.Row="3" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 		<Label Grid.Row="3" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="SizeLabel"/>
 		</Label>
 
-		<Label Content="Полный размер:" Grid.Row="4" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+        <Label Content="{DynamicResource m_Property_Full_File_Size}" Grid.Row="4" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 		<Label Grid.Row="4" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="FullSizeLabel"/>
 		</Label>
 
-		<Label Content="Шифрованный размер:" Grid.Row="5" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+        <Label Content="{DynamicResource m_Property_Encrypted_File_Size}" Grid.Row="5" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
 		<Label Grid.Row="5" Grid.Column="1" Height="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0">
 			<TextBlock Name="FullEncryptSizeLabel"/>
 		</Label>
 
 		<StackPanel Grid.Row="6">
-			<Label Content="Иконка:" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
-			<Button Content="Изменить" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ChangeIcon_Button_Click"/>
-			<Button Content="Удалить" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ClearIcon_Button_Click"/>
+            <Label Content="{DynamicResource m_Property_File_Icon}" Width="Auto" Height="Auto" VerticalAlignment="Top" Foreground="#FFD2FFCE" Margin="5,5,0,0"/>
+            <Button Content="{DynamicResource m_Property_Change_Icon}" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ChangeIcon_Button_Click"/>
+            <Button Content="{DynamicResource m_Property_Delete_Icon}" Width="75" HorizontalAlignment="Left" Margin="5" Padding="10,5,10,5" Click="ClearIcon_Button_Click"/>
 		</StackPanel>
 		<Image Name="Thumbnail" Grid.Row="6" Grid.Column="1" Width="200" Height="200" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" Stretch="None"/>
 	</Grid>
