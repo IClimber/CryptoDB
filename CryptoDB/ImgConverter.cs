@@ -127,11 +127,11 @@ namespace ImageConverter
 			{
 				Bitmap bmp;
 
-				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
+                if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
 				{
 					using (FileStream fs = new FileStream(FileName, FileMode.Open))
 					{
-						bmp = BitmapImage2Bitmap(StreamToBitmapImage(fs));
+                        bmp = BitmapImage2Bitmap(StreamToBitmapImage(fs));
 					}
 				}
 				else if (Path.GetExtension(FileName).ToLower() == ".ico")
@@ -144,7 +144,7 @@ namespace ImageConverter
 				}
 
 				Bitmap result = ResizeImage(bmp, RectSize);
-				bmp.Dispose();
+                bmp.Dispose();
 				return result;
 
 				//Icon.ExtractAssociatedIcon(FileName).ToBitmap();
@@ -191,9 +191,11 @@ namespace ImageConverter
                 BitmapEncoder enc = new BmpBitmapEncoder();
                 enc.Frames.Add(BitmapFrame.Create(bitmapImage));
                 enc.Save(outStream);
-                return new Bitmap(outStream);
 
-                //return new Bitmap(bitmap);
+				using (Bitmap bitmap = new Bitmap(outStream))
+				{
+                    return new Bitmap(bitmap);
+                }
             }
         }
     }

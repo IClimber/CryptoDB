@@ -396,7 +396,7 @@ namespace CryptoDataBase
 
 		private Bitmap GetIcon(string FileName)
 		{
-			return ImgConverter.GetIcon(FileName, THUMBNAIL_SIZE);
+            return ImgConverter.GetIcon(FileName, THUMBNAIL_SIZE);
 		}
 
 		private void AddFiles(List<FileItem> files)
