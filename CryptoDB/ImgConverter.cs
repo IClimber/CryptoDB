@@ -1,4 +1,5 @@
 ﻿using CryptoDataBase.CryptoContainer.Models;
+using CryptoDataBase.Helpers;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -15,174 +16,185 @@ using System.Windows.Media.Imaging;
 namespace ImageConverter
 {
     static class ImgConverter
-	{
-		public static string[] imageExtensions = new string[] { ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".psd", ".tif", ".tiff", ".jfif", ".webp" };
+    {
+        public static string[] imageExtensions = new string[] { "bmp", "jpg", "jpeg", "png", "gif", "psd", "tif", "tiff", "jfif", "webp" };
+        public static string[] videoExtensions = new string[] { "mkv", "mp4", "m2ts", "3gp", "webm", "flv", "vob", "wmv", "mpg", "mpeg", "m4v", "rm", "ts", "avi", "mov", "3gpp", "rmvb", "divx", "mts" };
 
-		[DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool DeleteObject([In] IntPtr hObject);
+        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DeleteObject([In] IntPtr hObject);
 
-		public static ImageSource BitmapToImageSource(Bitmap bmp)
-		{
-			if (bmp == null)
-			{
-				return null;
-			}
-			var handle = bmp.GetHbitmap();
-			try
-			{
-				return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-			}
-			finally
-			{
-				DeleteObject(handle);
-			}
-		}
+        public static ImageSource BitmapToImageSource(Bitmap bmp)
+        {
+            if (bmp == null)
+            {
+                return null;
+            }
+            var handle = bmp.GetHbitmap();
+            try
+            {
+                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally
+            {
+                DeleteObject(handle);
+            }
+        }
 
-		public static Bitmap BitmapFromSource(BitmapSource bitmapsource)
-		{
-			Bitmap bitmap;
-			using (MemoryStream outStream = new MemoryStream())
-			{
-				BitmapEncoder enc = new BmpBitmapEncoder();
-				enc.Frames.Add(BitmapFrame.Create(bitmapsource));
-				enc.Save(outStream);
-				bitmap = new Bitmap(outStream);
-			}
+        public static Bitmap BitmapFromSource(BitmapSource bitmapsource)
+        {
+            Bitmap bitmap;
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                BitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create(bitmapsource));
+                enc.Save(outStream);
+                bitmap = new Bitmap(outStream);
+            }
 
-			return bitmap;
-		}
+            return bitmap;
+        }
 
-		public static bool isImage(string FileName)
-		{
-			return imageExtensions.Contains(Path.GetExtension(FileName).ToLower());
-		}
+        public static bool isImage(string FileName)
+        {
+            return imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower());
+        }
 
-		public static BitmapImage StreamToBitmapImage(Stream stream)
-		{
-			var bitmap = new BitmapImage();
-			try
-			{
-				bitmap.BeginInit();
-				bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile;
-				bitmap.CacheOption = BitmapCacheOption.OnLoad;
-				bitmap.StreamSource = stream;
-				bitmap.EndInit();
-				bitmap.Freeze();
-			}
-			catch
-			{
-				return null;
-			}
+        public static BitmapImage StreamToBitmapImage(Stream stream)
+        {
+            var bitmap = new BitmapImage();
+            try
+            {
+                bitmap.BeginInit();
+                bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile;
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                bitmap.Freeze();
+            }
+            catch
+            {
+                return null;
+            }
 
-			return bitmap;
-		}
+            return bitmap;
+        }
 
-		private static Bitmap _ResizeImage(Bitmap image, int width, int height)
-		{
-			var destRect = new System.Drawing.Rectangle(0, 0, width, height);
-			var destImage = new Bitmap(width, height, image.PixelFormat);
+        private static Bitmap _ResizeImage(Bitmap image, int width, int height)
+        {
+            var destRect = new System.Drawing.Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height, image.PixelFormat);
 
-			try
-			{
-				destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+            try
+            {
+                destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
 
-				using (var graphics = Graphics.FromImage(destImage))
-				{
-					graphics.CompositingMode = CompositingMode.SourceCopy;
-					graphics.CompositingQuality = CompositingQuality.HighQuality;
-					graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-					graphics.SmoothingMode = SmoothingMode.HighQuality;
-					graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                using (var graphics = Graphics.FromImage(destImage))
+                {
+                    graphics.CompositingMode = CompositingMode.SourceCopy;
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    graphics.SmoothingMode = SmoothingMode.HighQuality;
+                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-					using (var wrapMode = new ImageAttributes())
-					{
-						wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-						graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
-					}
-				}
-			}
-			catch (Exception m)
-			{
-				//MessageBox.Show(m.Message);
-			}
+                    using (var wrapMode = new ImageAttributes())
+                    {
+                        wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                        graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
+                    }
+                }
+            }
+            catch (Exception m)
+            {
+                //MessageBox.Show(m.Message);
+            }
 
-			return destImage;
-		}
+            return destImage;
+        }
 
-		public static Bitmap ResizeImage(Bitmap image, int sideSize)
-		{
-			double k1 = image.Width / (double)sideSize;
-			double k2 = image.Height / (double)sideSize;
+        public static Bitmap ResizeImage(Bitmap image, int sideSize)
+        {
+            double k = Math.Max(image.Width, image.Height) / (double)sideSize;
 
-			int width = (k1 < 1 || k2 < 1) ? image.Width : (int)(k1 > k2 ? (image.Width / k1) : (image.Width / k2));
-			int height = (k1 < 1 || k2 < 1) ? image.Height : (int)(k1 > k2 ? (image.Height / k1) : (image.Height / k2));
+            double width = k <= 1 ? image.Width : image.Width / k;
+            double height = k <= 1 ? image.Height : image.Height / k;
 
-			return _ResizeImage(image, width, height);
-		}
+            return _ResizeImage(image, (int)width, (int)height);
+        }
 
-		public static Bitmap GetIcon(string FileName, int RectSize)
-		{
-			try
-			{
-				Bitmap bmp;
+        public static Bitmap GetIcon(string FileName, int RectSize)
+        {
+            try
+            {
+                Bitmap bmp = null;
 
-                if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
-				{
-					using (FileStream fs = new FileStream(FileName, FileMode.Open))
-					{
+                if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
+                {
+                    using (FileStream fs = new FileStream(FileName, FileMode.Open))
+                    {
                         bmp = BitmapImage2Bitmap(StreamToBitmapImage(fs));
-					}
-				}
-				else if (Path.GetExtension(FileName).ToLower() == ".ico")
-				{
-					bmp = new Icon(FileName, 256, 256).ToBitmap();
-				}
-				else
-				{
-					bmp = IconConverter.GetImage(FileName);
-				}
+                    }
+                }
+                else if (Path.GetExtension(FileName).ToLower() == ".ico")
+                {
+                    bmp = new Icon(FileName, 256, 256).ToBitmap();
+                }
+                else if (videoExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
+                {
+                    try
+                    {
+                        bmp = VideoHelper.GetFrameWithWaterMark(FileName);
+                    }
+                    catch
+                    {
+                    }
+                }
 
-				Bitmap result = ResizeImage(bmp, RectSize);
+                if (bmp == null)
+                {
+                    bmp = IconConverter.GetImage(FileName);
+                }
+
+                Bitmap result = ResizeImage(bmp, RectSize);
                 bmp.Dispose();
-				return result;
+                return result;
 
-				//Icon.ExtractAssociatedIcon(FileName).ToBitmap();
-			}
-			catch
-			{
-				return null;
-			}
-		}
+                //Icon.ExtractAssociatedIcon(FileName).ToBitmap();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
 
-		public static Bitmap GetIcon(string FileName, Stream sourceStream, int RectSize)
-		{
-			try
-			{
-				Bitmap bmp;
-				if (imageExtensions.Contains(Path.GetExtension(FileName).ToLower()))
-				{
+        public static Bitmap GetIcon(string FileName, Stream sourceStream, int RectSize)
+        {
+            try
+            {
+                Bitmap bmp;
+                if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
+                {
                     bmp = BitmapImage2Bitmap(StreamToBitmapImage(sourceStream));
                 }
-				else if (Path.GetExtension(FileName).ToLower() == ".ico")
-				{
-					bmp = new Icon(sourceStream, 256, 256).ToBitmap();
-				}
-				else
-				{
-					bmp = IconConverter.GetImage(FileName);
-				}
+                else if (Path.GetExtension(FileName).ToLower() == ".ico")
+                {
+                    bmp = new Icon(sourceStream, 256, 256).ToBitmap();
+                }
+                else
+                {
+                    bmp = IconConverter.GetImage(FileName);
+                }
 
-				Bitmap result = ResizeImage(bmp, RectSize);
-				bmp.Dispose();
+                Bitmap result = ResizeImage(bmp, RectSize);
+                bmp.Dispose();
 
-				return result;
-			}
-			catch
-			{
-				return null;
-			}
-		}
+                return result;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         private static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
         {
@@ -192,8 +204,8 @@ namespace ImageConverter
                 enc.Frames.Add(BitmapFrame.Create(bitmapImage));
                 enc.Save(outStream);
 
-				using (Bitmap bitmap = new Bitmap(outStream))
-				{
+                using (Bitmap bitmap = new Bitmap(outStream))
+                {
                     return new Bitmap(bitmap);
                 }
             }
@@ -201,24 +213,24 @@ namespace ImageConverter
     }
 
 
-	public class BitmapToImageSourceConvert : IValueConverter
-	{
-		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-		{
-			using (Bitmap bmp = (value as Element).Icon)
-			{
-				if ((bmp == null) && (value is DirectoryElement))
-				{
-					return ImgConverter.BitmapToImageSource(CryptoDataBase.Properties.Resources.DirIcon);
-				}
+    public class BitmapToImageSourceConvert : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            using (Bitmap bmp = (value as Element).Icon)
+            {
+                if ((bmp == null) && (value is DirectoryElement))
+                {
+                    return ImgConverter.BitmapToImageSource(CryptoDataBase.Properties.Resources.DirIcon);
+                }
 
-				return ImgConverter.BitmapToImageSource(bmp);
-			}
-		}
+                return ImgConverter.BitmapToImageSource(bmp);
+            }
+        }
 
-		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-		{
-			return null;
-		}
-	}
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return null;
+        }
+    }
 }

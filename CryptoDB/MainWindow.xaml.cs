@@ -161,6 +161,11 @@ namespace CryptoDataBase
 			return ImageExtensions.Contains(Path.GetExtension(FileName).ToLower());
 		}
 
+		public static bool isVideo(string FileName)
+		{
+			return ImgConverter.videoExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower());
+		}
+
 		public static bool IsText(string FileName)
 		{
 			return TextExtensions.Contains(System.IO.Path.GetExtension(FileName).ToLower());

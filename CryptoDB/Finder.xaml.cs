@@ -195,11 +195,9 @@ namespace CryptoDataBase
 			{
 				string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-				if ((files.Length > 0) && (MainWindow.IsImage(files[0])))
+				if ((files.Length > 0) && (MainWindow.IsImage(files[0]) || MainWindow.isVideo(files[0])))
 				{
-					Bitmap tmp = new Bitmap(files[0]);
-					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.THUMBNAIL_SIZE));
-					tmp?.Dispose();
+					SetThumbnail(ImgConverter.GetIcon(files[0], MainWindow.THUMBNAIL_SIZE));
 				}
 			}
 		}
@@ -267,7 +265,7 @@ namespace CryptoDataBase
 		{
 			foreach (Element element in parent.Elements)
 			{
-				if (element.IconSize > 0 && MainWindow.IsImage(element.Name))
+				if (element.IconSize > 0)
 				{
 					resultList.Add(element);
 				}
