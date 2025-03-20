@@ -161,9 +161,9 @@ namespace CryptoDataBase.CryptoContainer.Models
             lock (AddElementLocker)
             {
                 byte[] buf;
-                uint oldIconSize = IconSizeInner;
+                uint oldIconSize = (uint)MathHelper.GetMod16(IconSizeInner);
 
-                DataRepository.AddFreeSpace(IconStartPos, IconSizeInner);
+                DataRepository.AddFreeSpace(IconStartPos, oldIconSize);
 
                 IconSizeInner = 0;
                 IconStartPos = GenID();
