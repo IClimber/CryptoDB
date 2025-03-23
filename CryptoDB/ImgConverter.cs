@@ -12,12 +12,13 @@ using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 namespace ImageConverter
 {
     static class ImgConverter
     {
-        public static string[] imageExtensions = new string[] { "bmp", "jpg", "jpeg", "png", "gif", "psd", "tif", "tiff", "jfif", "webp" };
+        public static string[] imageExtensions = new string[] { "bmp", "jpg", "jpeg", "png", "gif", "psd", "tif", "tiff", "jfif", "webp", "svg" };
         public static string[] videoExtensions = new string[] { "mkv", "mp4", "m2ts", "3gp", "webm", "flv", "vob", "wmv", "mpg", "mpeg", "m4v", "rm", "ts", "avi", "mov", "3gpp", "rmvb", "divx", "mts" };
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
@@ -128,7 +129,11 @@ namespace ImageConverter
             {
                 Bitmap bmp = null;
 
-                if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
+                if (Path.GetExtension(FileName).ToLower() == ".bmp")
+                {
+                    bmp = new Bitmap(FileName);
+                }
+                else if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
                 {
                     return GetImageThumbFromFile(FileName, RectSize);
                 }
@@ -170,7 +175,12 @@ namespace ImageConverter
             try
             {
                 Bitmap bmp;
-                if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
+
+                if (Path.GetExtension(FileName).ToLower() == ".bmp")
+                {
+                    bmp = new Bitmap(sourceStream);
+                }
+                else if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
                 {
                     return GetImageThumbFromStream(sourceStream, RectSize);
                 }
@@ -209,11 +219,23 @@ namespace ImageConverter
                 using (var resized = NetVips.Image.ThumbnailStream(sourceStream, width: RectSize, height: RectSize))
                 {
                     resized.PngsaveStream(outStream, q: 100, keep: NetVips.Enums.ForeignKeep.Icc);
-                }
 
-                using (Bitmap temp = new Bitmap(outStream))
-                {
-                    return new Bitmap(temp);
+                    if (resized.Bands == 3 || resized.Bands == 4)
+                    {
+                        return new Bitmap(outStream);
+                    }
+
+                    using (Bitmap temp = new Bitmap(outStream))
+                    {
+                        Bitmap formatedBitmap = new Bitmap(temp.Width, temp.Height, PixelFormat.Format24bppRgb);
+
+                        using (Graphics gr = Graphics.FromImage(formatedBitmap))
+                        {
+                            gr.DrawImage(temp, new Rectangle(0, 0, formatedBitmap.Width, formatedBitmap.Height));
+                        }
+
+                        return formatedBitmap;
+                    }
                 }
             }
         }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 
 namespace CryptoDataBase.CryptoContainer.Helpers
 {
@@ -71,13 +72,10 @@ namespace CryptoDataBase.CryptoContainer.Helpers
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    if (bitmap?.PixelFormat == PixelFormat.Format32bppArgb)
+                    if (bitmap != null)
                     {
-                        bitmap.Save(ms, ImageFormat.Png);
-                    }
-                    else
-                    {
-                        bitmap?.Save(ms, ImageFormat.Jpeg);
+                        ImageFormat format = (new PixelFormat[] { PixelFormat.Format32bppPArgb, PixelFormat.Format32bppArgb, PixelFormat.Format32bppRgb }).Contains(bitmap.PixelFormat) ? ImageFormat.Png : ImageFormat.Jpeg;
+                        bitmap.Save(ms, format);
                     }
                     ms.Position = 0;
 
