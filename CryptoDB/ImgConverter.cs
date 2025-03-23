@@ -55,7 +55,7 @@ namespace ImageConverter
             return bitmap;
         }
 
-        public static bool isImage(string FileName)
+        public static bool IsImage(string FileName)
         {
             return imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower());
         }
@@ -130,10 +130,7 @@ namespace ImageConverter
 
                 if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
                 {
-                    using (FileStream fs = new FileStream(FileName, FileMode.Open))
-                    {
-                        bmp = BitmapImage2Bitmap(StreamToBitmapImage(fs));
-                    }
+                    return GetImageThumbFromFile(FileName, RectSize);
                 }
                 else if (Path.GetExtension(FileName).ToLower() == ".ico")
                 {
@@ -157,11 +154,12 @@ namespace ImageConverter
 
                 Bitmap result = ResizeImage(bmp, RectSize);
                 bmp.Dispose();
+
                 return result;
 
                 //Icon.ExtractAssociatedIcon(FileName).ToBitmap();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
@@ -174,7 +172,7 @@ namespace ImageConverter
                 Bitmap bmp;
                 if (imageExtensions.Contains(Path.GetExtension(FileName).Replace(".", "").ToLower()))
                 {
-                    bmp = BitmapImage2Bitmap(StreamToBitmapImage(sourceStream));
+                    return GetImageThumbFromStream(sourceStream, RectSize);
                 }
                 else if (Path.GetExtension(FileName).ToLower() == ".ico")
                 {
@@ -196,6 +194,31 @@ namespace ImageConverter
             }
         }
 
+        public static Bitmap GetImageThumbFromFile(string FileName, int RectSize)
+        {
+            using (var inputStream = File.OpenRead(FileName))
+            {
+                return GetImageThumbFromStream(inputStream, RectSize);
+            }
+        }
+
+        public static Bitmap GetImageThumbFromStream(Stream sourceStream, int RectSize)
+        {
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                using (var resized = NetVips.Image.ThumbnailStream(sourceStream, width: RectSize, height: RectSize))
+                {
+                    resized.PngsaveStream(outStream, q: 100, keep: NetVips.Enums.ForeignKeep.Icc);
+                }
+
+                using (Bitmap temp = new Bitmap(outStream))
+                {
+                    return new Bitmap(temp);
+                }
+            }
+        }
+
+        // Deprecated
         private static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
         {
             using (MemoryStream outStream = new MemoryStream())

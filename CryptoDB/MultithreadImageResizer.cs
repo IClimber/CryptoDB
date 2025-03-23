@@ -14,7 +14,7 @@ namespace CryptoDataBase
 		private List<FileItem> list = new List<FileItem>();
 		private Object addLock = new Object();
 		private IDictionary<string, Bitmap> images = new Dictionary<string, Bitmap>();
-		private int images_count = 0;
+		private int imagesCount = 0;
 		private BackgroundWorker ResizeWorker = new BackgroundWorker();
 		private static int threadsCount = (int)Math.Ceiling(Environment.ProcessorCount / 2.0);
 
@@ -89,12 +89,12 @@ namespace CryptoDataBase
 				lock (addLock)
 				{
 					images.Add(list[l].name, bmp);
-					images_count = images.Count;
+					imagesCount = images.Count;
 				}
 
 				lock (sleepLock)
 				{
-					while (images_count > threadsCount)
+					while (imagesCount > threadsCount)
 					{
 						Thread.Sleep(1);
 					};
@@ -115,7 +115,7 @@ namespace CryptoDataBase
 			{
 				bitmap = images[fileName];
 				images.Remove(fileName);
-				images_count = images.Count;
+				imagesCount = images.Count;
 			}
 
 			return bitmap;
