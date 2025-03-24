@@ -123,11 +123,13 @@ namespace CryptoDataBase.CryptoContainer.Models
             return ParentElement == null ? this : ParentElement.GetRootDirectory();
         }
 
-        private Bitmap GetIcon()
+        public MemoryStream GetIconStream()
         {
+            MemoryStream stream = new MemoryStream();
+
             if (IconSize == 0)
             {
-                return null;
+                return stream;
             }
 
             if (IconIV == null)
@@ -135,24 +137,36 @@ namespace CryptoDataBase.CryptoContainer.Models
                 IconIV = HashHelper.GetMD5(Header.IV);
             }
 
-            MemoryStream stream = new MemoryStream();
-
             try
             {
                 DataRepository.MultithreadDecrypt((long)IconStartPos, stream, IconSizeInner, IconIV, null);
-
                 stream.Position = 0;
-                var bitmap = ImageHelper.GetBitmapFromStream(stream);
 
-                return bitmap;
+                return stream;
+            }
+            catch
+            {
+                return stream;
+            }
+        }
+
+        private Bitmap GetIcon()
+        {
+            try
+            {
+                using (var stream = GetIconStream())
+                {
+                    if (stream.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    return ImageHelper.GetBitmapFromStream(stream);
+                }
             }
             catch
             {
                 return null;
-            }
-            finally
-            {
-                stream.Dispose();
             }
         }
 

@@ -565,6 +565,12 @@ namespace CryptoDataBase.CryptoContainer.Models
         public List<Element> FindAllByIcon(Bitmap image, byte sensative = 0, bool findInSubDirectories = true)
         {
             byte[] pHash = ImageHelper.GetBitmapPHash(image);
+            
+            return FindAllByIconPHash(pHash, sensative, findInSubDirectories);
+        }
+
+        public List<Element> FindAllByIconPHash(byte[] pHash, byte sensative = 0, bool findInSubDirectories = true)
+        {
             List<Element> result = new List<Element>();
             InnerFindAllByPHash(result, pHash, sensative, findInSubDirectories);
 
