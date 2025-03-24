@@ -130,6 +130,30 @@ namespace CryptoDataBase.CryptoContainer.Services
             }
         }
 
+        public ulong GetTotalFreeSpaceSize()
+        {
+            ulong size = 0;
+
+            foreach (Segment segment in _freeSpaceMapSize)
+            {
+                size += segment.Size;
+            }
+
+            return size;
+        }
+
+        public ulong GetTotalSegmentsCount()
+        {
+            ulong size = 0;
+
+            foreach (Segment segment in _freeSpaceMapSize)
+            {
+                size += segment.Size;
+            }
+
+            return size;
+        }
+
         private List<Segment> GetIntersectsSegments(Segment segment, bool withLastStart = false)
         {
             var index = _freeSpaceMapPos.GetLessOrEqualIndex(segment);

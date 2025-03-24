@@ -195,7 +195,7 @@ namespace CryptoDataBase.CryptoContainer.Repositories
                     double percent1 = percent / (double)length * 100.0;
                     if ((progress != null) && (lastProgress != (int)percent1))
                     {
-                        progress(percent1, "Reading elements from file");
+                        progress(percent1, "(2/5) Reading elements from file");
                         lastProgress = (int)percent1;
                     }
                 }

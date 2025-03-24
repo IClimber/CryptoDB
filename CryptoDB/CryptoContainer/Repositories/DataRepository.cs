@@ -90,6 +90,11 @@ namespace CryptoDataBase.CryptoContainer.Repositories
             return StreamService.IsFreeSpace(start, size);
         }
 
+        public ulong GetTotalFreeSpaceSize()
+        {
+            return StreamService.GetTotalFreeSpaceSize();
+        }
+
         public void Dispose()
         {
             BaseStream.Close();

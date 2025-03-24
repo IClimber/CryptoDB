@@ -23,7 +23,7 @@ namespace CryptoDataBase.CryptoContainer
 
         public CryptoContainer(string fileName, string password, HeaderRepository.ProgressCallback progress = null)
         {
-            progress?.Invoke(0, "Creating AES key");
+            progress?.Invoke(0, "(1/5) Creating AES key");
 
             AddElementLocker = new object();
             ChangeElementsLocker = new object();
@@ -130,31 +130,63 @@ namespace CryptoDataBase.CryptoContainer
         {
             Dictionary<ulong, DirectoryElement> directories = new Dictionary<ulong, DirectoryElement>();
             Dictionary<ulong, List<Element>> elements = new Dictionary<ulong, List<Element>>();
+            List<Segment> fileSpaces = new List<Segment>();
             directories.Add(Id, this);
 
             List<Header> headers = _headerRepository.ReadFileStruct(progress);
+
+            ParseElements(headers, directories, elements, fileSpaces, progress);
+            CalculateFreeSpace(fileSpaces, progress);
+            FillParents(directories, elements, progress);
+
+            directories.Clear();
+            elements.Clear();
+            fileSpaces.Clear();
+        }
+
+        private void ParseElements(List<Header> headers, Dictionary<ulong, DirectoryElement> directories, Dictionary<ulong, List<Element>> elements, List<Segment> fileSpaces, HeaderRepository.ProgressCallback progress)
+        {
             int index = 0;
             double percent = 0;
             int lastProgress = 0;
+
             foreach (Header header in headers)
             {
-                AddElementByHeader(directories, elements, header);
-                index++;
+                AddElementByHeader(directories, elements, header, fileSpaces);
 
+                index++;
                 percent = index / (double)headers.Count * 100.0;
                 if ((progress != null) && (lastProgress != (int)percent))
                 {
-                    progress(percent, "Parsing elements");
+                    progress(percent, "(3/5) Parsing elements");
                     lastProgress = (int)percent;
                 }
             }
-
-            FillParents(directories, elements, progress);
-            elements.Clear();
-            directories.Clear();
         }
 
-        private void AddElementByHeader(Dictionary<ulong, DirectoryElement> directoriesList, Dictionary<ulong, List<Element>> elementList, Header header)
+        private void CalculateFreeSpace(List<Segment> fileSpaces, HeaderRepository.ProgressCallback progress)
+        {
+            int index = 0;
+            double percent = 0;
+            int lastProgress = 0;
+
+            fileSpaces.Sort(new SegmentPositionComparer());
+
+            foreach (Segment segment in fileSpaces)
+            {
+                DataRepository.RemoveFreeSpace(segment.Start, segment.Size);
+
+                index++;
+                percent = index / (double)fileSpaces.Count * 100.0;
+                if ((progress != null) && (lastProgress != (int)percent))
+                {
+                    progress(percent, "(4/5) Calculate free space");
+                    lastProgress = (int)percent;
+                }
+            }
+        }
+
+        private void AddElementByHeader(Dictionary<ulong, DirectoryElement> directoriesList, Dictionary<ulong, List<Element>> elementList, Header header, List<Segment> fileSpaces)
         {
             Element element = null;
             if (header.ElementType == ElementType.File)
@@ -183,12 +215,14 @@ namespace CryptoDataBase.CryptoContainer
 
             if ((element is FileElement) && ((element as FileElement).Size > 0))
             {
-                DataRepository.RemoveFreeSpace((element as FileElement).FileStartPos, MathHelper.GetMod16((element as FileElement).Size));
+                fileSpaces.Add(new Segment((element as FileElement).FileStartPos, MathHelper.GetMod16((element as FileElement).Size)));
+                //DataRepository.RemoveFreeSpace((element as FileElement).FileStartPos, MathHelper.GetMod16((element as FileElement).Size));
             }
 
             if (element.IconSize > 0)
             {
-                DataRepository.RemoveFreeSpace(element.IconStartPosition, MathHelper.GetMod16(element.IconSize));
+                fileSpaces.Add(new Segment(element.IconStartPosition, MathHelper.GetMod16(element.IconSize)));
+                //DataRepository.RemoveFreeSpace(element.IconStartPosition, MathHelper.GetMod16(element.IconSize));
             }
         }
 
@@ -212,7 +246,7 @@ namespace CryptoDataBase.CryptoContainer
                     double percent = index / (double)count * 100.0;
                     if ((progress != null) && (lastProgress != (int)percent))
                     {
-                        progress(percent, "Creating elements structure");
+                        progress(percent, "(5/5) Creating elements structure");
                         lastProgress = (int)percent;
                     }
                 }

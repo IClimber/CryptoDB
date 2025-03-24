@@ -82,7 +82,7 @@ namespace CryptoDataBase.CryptoContainer.Repositories
                 percent = headersStream.Position / (double)headersStream.Length * 100.0;
                 if ((progress != null) && (lastProgress != (int)percent))
                 {
-                    progress(percent, "Reading elements from file");
+                    progress(percent, "Reading elements from file (2/5)");
                     lastProgress = (int)percent;
                 }
             }

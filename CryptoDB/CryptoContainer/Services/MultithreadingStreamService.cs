@@ -203,6 +203,11 @@ namespace CryptoDataBase.CryptoContainer.Services
             return _freeSpaceMap.IsFreeSpace(start, size);
         }
 
+        public ulong GetTotalFreeSpaceSize()
+        {
+            return _freeSpaceMap.GetTotalFreeSpaceSize();
+        }
+
         private void MultithreadDecryptBufer(byte[] inputBuffer, ref byte[] outputBuffer, int lenght, AesCryptoServiceProvider aes, bool thisLastBlock, ref byte[] iv)
         {
             int blockSize = 65536;
