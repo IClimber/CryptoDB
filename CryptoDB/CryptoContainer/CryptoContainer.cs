@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace CryptoDataBase.CryptoContainer
 {
@@ -170,9 +171,9 @@ namespace CryptoDataBase.CryptoContainer
             double percent = 0;
             int lastProgress = 0;
 
-            fileSpaces.Sort(new SegmentPositionComparer());
+            var sortedSegments = fileSpaces.AsParallel().OrderBy(segment => segment.Start);
 
-            foreach (Segment segment in fileSpaces)
+            foreach (Segment segment in sortedSegments)
             {
                 DataRepository.RemoveFreeSpace(segment.Start, segment.Size);
 
