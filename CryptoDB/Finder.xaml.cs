@@ -22,6 +22,7 @@ namespace CryptoDataBase
 
 		DirectoryElement search_directory;
 		Bitmap _bitmap;
+		byte[] _pHash;
 		private BackgroundWorker searchWorker = new BackgroundWorker();
 		private CallBackResult resultCallback;
 		private const int FIND_BY_NAME = 0;
@@ -54,11 +55,13 @@ namespace CryptoDataBase
 			search_directory = Root;
 		}
 
-		public Finder(DirectoryElement Root, Bitmap thumbnail, CallBackResult Result) : this(Root)
+		public Finder(DirectoryElement Root, Bitmap thumbnail, byte[] pHash, CallBackResult Result) : this(Root)
 		{
 			resultCallback = Result;
 			SetThumbnail(thumbnail);
-		}
+			_pHash = pHash;
+
+        }
 
 		private void SetThumbnail(Bitmap thumbnail)
 		{
@@ -97,7 +100,7 @@ namespace CryptoDataBase
 			switch (e.Argument)
 			{
 				case FIND_BY_ICON:
-					resultList = getSearchableDir().FindAllByIcon(_bitmap, _sensative);
+					resultList = getSearchableDir().FindAllByIconPHash(_pHash, _sensative);
 					break;
 				case FIND_DUPLICATE_BY_ICON:
 					resultList = FindAllDuplicateImage(_sensative);
@@ -146,9 +149,13 @@ namespace CryptoDataBase
 			{
 				if (Clipboard.ContainsImage())
 				{
-					Bitmap tmp = ImgConverter.BitmapFromSource(Clipboard.GetImage());
-					SetThumbnail(ImgConverter.ResizeImage(tmp, MainWindow.THUMBNAIL_SIZE));
-					tmp?.Dispose();
+					using (Bitmap tmp = ImgConverter.BitmapFromSource(Clipboard.GetImage()))
+					{
+                        var thumb = ImgConverter.ResizeImage(tmp, MainWindow.THUMBNAIL_SIZE);
+
+                        SetThumbnail(thumb);
+                        _pHash = ImageHelper.GetBitmapPHash(thumb);
+                    }
 				}
 			}
 		}
@@ -197,8 +204,11 @@ namespace CryptoDataBase
 
 				if ((files.Length > 0) && (MainWindow.IsImage(files[0]) || MainWindow.isVideo(files[0])))
 				{
-					SetThumbnail(ImgConverter.GetIcon(files[0], MainWindow.THUMBNAIL_SIZE));
-				}
+					var bitmap = ImgConverter.GetIcon(files[0], MainWindow.THUMBNAIL_SIZE);
+
+                    SetThumbnail(bitmap);
+                    _pHash = ImageHelper.GetBitmapPHash(bitmap);
+                }
 			}
 		}
 

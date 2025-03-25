@@ -111,6 +111,7 @@
 						<StackPanel.ContextMenu>
 							<ContextMenu Foreground="#FF333337">
                                 <MenuItem Header="{DynamicResource m_Context_Cut}" Click="MenuItem_Click" Style="{x:Null}" />
+                                <!-- <MenuItem Header="{DynamicResource m_Context_Update_Icon}" Click="MenuItem_Update_Icon_Click" Style="{x:Null}" /> -->
                                 <MenuItem Header="{DynamicResource m_Context_Search_Duplicate}" Click="MenuItem_Click_1" Style="{x:Null}" />
 							</ContextMenu>
 						</StackPanel.ContextMenu>
